@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, TextInput } from 'react-native';
 import { DashboardLayout, NavItem, DataTable, StatCard, CardGrid, KitchenMenuWidget } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
 import { useAuthStore, useStaffStore } from '@store/index';
+import { staffApi } from '@shared/api/staffApi';
 import { LEAVE_TYPES } from '@store/index';
 
 const NAV_ITEMS: NavItem[] = [
@@ -24,9 +25,43 @@ export function StaffDashboard() {
   const store = useStaffStore();
   const { notices, minutes, resources, leaveRequests, directory } = store;
 
-  const pendingLeave = leaveRequests.filter((r) => r.status === 'Pending');
-  const approvedLeave = leaveRequests.filter((r) => r.status === 'Approved');
-  const onLeaveStaff = directory.filter((d) => d.status === 'On Leave');
+  const [backendDirectory, setBackendDirectory] = useState<any[]>([]);
+  const [backendLeave, setBackendLeave] = useState<any[]>([]);
+
+  useEffect(() => {
+    staffApi.getDirectory().then((data) => setBackendDirectory(data)).catch(() => {});
+    staffApi.getLeaveRequests().then((data) => setBackendLeave(data)).catch(() => {});
+  }, []);
+
+  const allDirectory = backendDirectory.length > 0 ? backendDirectory.map((s: any) => ({
+    id: s.id,
+    name: s.name,
+    role: s.role,
+    position: s.position,
+    department: s.department,
+    phone: s.phone || '',
+    email: s.email || '',
+    status: s.status,
+  })) : directory;
+
+  const allLeaveRequests = backendLeave.length > 0 ? backendLeave.map((l: any) => ({
+    id: l.id,
+    staffName: l.staffName,
+    staffRole: l.staffRole,
+    dateSubmitted: l.createdAt ? new Date(l.createdAt).toISOString().slice(0, 10) : '',
+    startDate: l.startDate,
+    endDate: l.endDate,
+    type: l.type,
+    reason: l.reason,
+    status: l.status,
+    reviewedBy: l.reviewedBy,
+    reviewDate: l.reviewDate,
+    reviewNotes: l.reviewNotes,
+  })) : leaveRequests;
+
+  const pendingLeave = allLeaveRequests.filter((r) => r.status === 'Pending');
+  const approvedLeave = allLeaveRequests.filter((r) => r.status === 'Approved');
+  const onLeaveStaff = allDirectory.filter((d) => d.status === 'On Leave');
   const urgentNotices = notices.filter((n) => n.priority === 'Urgent');
 
   const renderBadge = (text: string, color: string) => (
@@ -132,8 +167,8 @@ export function StaffDashboard() {
             <Text style={styles.pageTitle}>Staff Overview</Text>
             <Text style={styles.pageSubtitle}>Welcome, {staffName}</Text>
             <CardGrid>
-              <StatCard label="Total Staff" value={directory.length} accentColor={colors.primary} />
-              <StatCard label="Active" value={directory.filter((d) => d.status === 'Active').length} accentColor={colors.success} />
+              <StatCard label="Total Staff" value={allDirectory.length} accentColor={colors.primary} />
+              <StatCard label="Active" value={allDirectory.filter((d) => d.status === 'Active').length} accentColor={colors.success} />
               <StatCard label="On Leave" value={onLeaveStaff.length} accentColor={colors.warning} />
               <StatCard label="Pending Leave" value={pendingLeave.length} accentColor={colors.danger} />
               <StatCard label="Notices" value={notices.length} accentColor={colors.info} />
@@ -183,7 +218,7 @@ export function StaffDashboard() {
         return <ResourcesPage resources={resources} />;
 
       case 'leave':
-        return <LeavePage leaveRequests={leaveRequests} store={store} staffName={staffName} renderBadge={renderBadge} />;
+        return <LeavePage leaveRequests={allLeaveRequests} store={store} staffName={staffName} renderBadge={renderBadge} />;
 
       case 'menu':
         return (
@@ -193,7 +228,7 @@ export function StaffDashboard() {
         );
 
       case 'directory':
-        return <DirectoryPage directory={directory} renderBadge={renderBadge} />;
+        return <DirectoryPage directory={allDirectory} renderBadge={renderBadge} />;
 
       case 'reports':
         return <ReportsPage store={store} generatePDF={generatePDF} />;

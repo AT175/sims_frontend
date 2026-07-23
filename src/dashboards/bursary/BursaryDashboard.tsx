@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, TextInput } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid, DataTable } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
 import { useAuthStore, useBursarStore, useBursaryStore, useKitchenStore } from '@store/index';
+import { bursaryApi } from '@shared/api/bursaryApi';
 import {
   CASH_TXN_CATEGORIES,
   RETURN_PERIODS, MEAL_TYPES, HOUSES, SUPPLY_UNITS,
@@ -53,6 +54,12 @@ export function BursaryDashboard() {
     approvedBudgetSubs.reduce((s, b) => s + b.totalRequested, 0) +
     approvedKitchenReqs.reduce((s, r) => s + r.amount, 0) +
     processedPayroll.reduce((s, p) => s + p.netSalary, 0);
+
+  const [backendFeeSummary, setBackendFeeSummary] = useState<{ totalBilled: number; totalCollected: number; totalOutstanding: number; recordCount: number } | null>(null);
+
+  useEffect(() => {
+    bursaryApi.getSummary().then(setBackendFeeSummary).catch(() => {});
+  }, []);
 
   const renderBadge = (text: string, color: string) => (
     <View style={[styles.statusBadge, { backgroundColor: color + '20' }]}>
@@ -197,6 +204,13 @@ export function BursaryDashboard() {
               <StatCard label="Pending Petty Cash" value={pendingPettyCash.length} accentColor={colors.accent} />
               <StatCard label="Pending Procurement" value={pendingProcurement.length} accentColor={colors.danger} />
               <StatCard label="To Disburse" value={formatGH(totalToDisburse)} subtitle="Accountant approved" accentColor={colors.primary} />
+              {backendFeeSummary && (
+                <>
+                  <StatCard label="Fees Billed (Backend)" value={formatGH(backendFeeSummary.totalBilled)} subtitle={`${backendFeeSummary.recordCount} records`} accentColor={colors.info} />
+                  <StatCard label="Fees Collected (Backend)" value={formatGH(backendFeeSummary.totalCollected)} accentColor={colors.success} />
+                  <StatCard label="Fees Outstanding (Backend)" value={formatGH(backendFeeSummary.totalOutstanding)} accentColor={colors.danger} />
+                </>
+              )}
             </CardGrid>
 
             {totalToDisburse > 0 && (

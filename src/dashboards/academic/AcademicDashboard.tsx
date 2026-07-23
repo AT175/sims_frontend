@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal, TextInput, ScrollView } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid, DataTable, RequisitionModal } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
@@ -6,6 +6,7 @@ import { useAuthStore } from '@store/authStore';
 import { useRequisitionStore } from '@store/requisitionStore';
 import { usePLCStore } from '@store/plcStore';
 import { useAcademicStore } from '@store/academicStore';
+import { academicApi } from '@shared/api/academicApi';
 import {
   RESULTS_ENTRY_STATUSES, SPIP_PRIORITIES, SPIP_FOCUS_AREAS, SPIP_GOAL_STATUSES,
   CURRICULUM_STATUSES, CALENDAR_EVENT_TYPES, TERM_NAMES,
@@ -63,6 +64,14 @@ export function AcademicDashboard() {
   } = aStore;
 
   const stats = getOverallStats();
+
+  const [backendTimetable, setBackendTimetable] = useState<any[]>([]);
+  const [backendResults, setBackendResults] = useState<any[]>([]);
+
+  useEffect(() => {
+    academicApi.getTimetable().then(setBackendTimetable).catch(() => {});
+    academicApi.getResults().then(setBackendResults).catch(() => {});
+  }, []);
 
   // Modal states
   const [showExamModal, setShowExamModal] = useState(false);
@@ -369,7 +378,22 @@ export function AcademicDashboard() {
                 <Text style={styles.actionBtnText}>+ Add Timetable Entry</Text>
               </TouchableOpacity>
             </View>
-            {timetables.length === 0 && <Text style={styles.emptyText}>No timetable entries yet.</Text>}
+            {timetables.length === 0 && backendTimetable.length === 0 && <Text style={styles.emptyText}>No timetable entries yet.</Text>}
+            {backendTimetable.length > 0 && (
+              <View style={{ marginTop: spacing.md }}>
+                <Text style={styles.sectionTitle}>Backend Timetable Entries ({backendTimetable.length})</Text>
+                {backendTimetable.map((t: any) => (
+                  <View key={t.id} style={styles.reqCard}>
+                    <View style={styles.reqHeader}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.reqTitle}>{t.subject}</Text>
+                        <Text style={styles.reqMeta}>{t.classSection} | {t.day} | {t.startTime}–{t.endTime} | Room {t.room || 'N/A'} | {t.teacher || 'TBD'}</Text>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
             {timetables.map((t) => (
               <View key={t.id} style={styles.reqCard}>
                 <View style={styles.reqHeader}>
