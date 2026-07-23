@@ -16,7 +16,7 @@ import { useAuthStore } from '@store/authStore';
 import { useRegistryStore } from '@store/registryStore';
 import type { Programme, PaymentMethod } from '@store/registryStore';
 import { PROGRAMMES } from '@store/registryStore';
-import { colors } from '@theme/index';
+import { colors, spacing } from '@theme/index';
 import { loginStyles as s } from './loginStyles';
 
 type Tab = 'signin' | 'apply' | 'status';
@@ -26,29 +26,50 @@ type StatusStep = 'lookup' | 'result';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IS_NARROW = SCREEN_WIDTH < 900;
 
+const HERO_SLIDES = [
+  { image: '/b1.jpg', caption: 'Terchire Senior High School' },
+  { image: '/b3.jpeg', caption: 'Quality Education & Discipline' },
+  { image: '/b4.jpeg', caption: 'A Center for Excellence in Ahafo' },
+  { image: '/b5.jpeg', caption: 'Nimdɛɛ Firi Onyame' },
+  { image: '/b6.jpeg', caption: 'Building Future Leaders' },
+  { image: '/b7.jpeg', caption: 'Serving Tano North Since 2011' },
+  { image: '/8.jpeg', caption: 'Our Campus Community' },
+];
+
 const INFO_SLIDES = [
-  { image: '/slide1.jpg', title: 'Excellence in Education', text: 'Top-performing WASSCE students for over 25 years, with a 98% university placement rate.', accent: colors.primaryLight },
-  { image: '/slide2.jpg', title: 'Vibrant Campus Life', text: 'Inter-house sports, drama club, debate society, and STEM fairs — something for every student.', accent: colors.accent },
-  { image: '/slide3.jpg', title: 'Recent Achievements', text: '2025 Regional Athletics Champions · National Science Quiz semi-finalists · Best Debate Team.', accent: colors.success },
-  { image: '/slide4.jpg', title: 'Upcoming Events', text: 'Open Day — July 15 · Speech & Prize Giving — July 28 · GTU Exams begin August 5.', accent: colors.info },
-  { image: '/slide5.jpg', title: 'Our Community', text: 'Over 1,800 students, 120 dedicated staff, and a thriving PTA working together for success.', accent: colors.purple },
+  { image: '/slide1.jpg', title: 'Quality Education', text: 'Dedicated to training learners to high education standards through collaborative stakeholder efforts.', accent: colors.primaryLight },
+  { image: '/slide2.jpg', title: 'Discipline & Character', text: 'Instilling moral integrity and discipline in every student, creating responsible citizens.', accent: colors.accent },
+  { image: '/slide3.jpg', title: 'Our Programmes', text: 'General Arts, Business, and Agriculture programmes designed to prepare students for the future.', accent: colors.success },
+  { image: '/slide4.jpg', title: 'Ahafo Region', text: 'Serving the Tano North District since 2011, providing accessible secondary education to the community.', accent: colors.info },
+  { image: '/slide5.jpg', title: 'Our Community', text: 'A growing school community of students, teachers, and stakeholders working together for excellence.', accent: colors.purple },
 ];
 
 const QUICK_STATS = [
-  { label: 'Students', value: '1,800+' },
-  { label: 'Staff', value: '120' },
-  { label: 'Placement', value: '98%' },
-  { label: 'Founded', value: '2000' },
+  { label: 'Students', value: '164+' },
+  { label: 'Programmes', value: '3' },
+  { label: 'Region', value: 'Ahafo' },
+  { label: 'Founded', value: '2011' },
 ];
 
 export function LoginScreen() {
   const { login, loginTemp, isLoading, error, clearError } = useAuthStore();
   const registryStore = useRegistryStore();
 
+  const [view, setView] = useState<'home' | 'portal'>('home');
   const [activeTab, setActiveTab] = useState<Tab>('signin');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  const openPortal = (tab: Tab) => { setView('portal'); setActiveTab(tab); clearError(); };
+  const goHome = () => setView('home');
+
+  const scrollViewRef = useRef<any>(null);
+  const aboutY = useRef(0);
+  const scrollToAbout = () => {
+    setView('home');
+    setTimeout(() => scrollViewRef.current?.scrollTo?.({ y: aboutY.current, animated: true }), 100);
+  };
 
   // Admission
   const [admissionStep, setAdmissionStep] = useState<AdmissionStep>('search');
@@ -80,6 +101,11 @@ export function LoginScreen() {
   const slideAnim = useRef(new Animated.Value(0)).current;
   const tabAnim = useRef(new Animated.Value(1)).current;
 
+  // Hero flash animation carousel
+  const [heroSlide, setHeroSlide] = useState(0);
+  const heroFade = useRef(new Animated.Value(1)).current;
+  const heroScale = useRef(new Animated.Value(1)).current;
+
   useEffect(() => {
     const interval = setInterval(() => {
       Animated.parallel([
@@ -96,6 +122,24 @@ export function LoginScreen() {
     }, 5000);
     return () => clearInterval(interval);
   }, [fadeAnim, slideAnim]);
+
+  // Hero flash animation - crossfade + Ken Burns zoom
+  useEffect(() => {
+    if (view !== 'home') return;
+    const interval = setInterval(() => {
+      Animated.parallel([
+        Animated.timing(heroFade, { toValue: 0, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+      ]).start(() => {
+        setHeroSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+        heroScale.setValue(1.08);
+        Animated.parallel([
+          Animated.timing(heroFade, { toValue: 1, duration: 700, useNativeDriver: true, easing: Easing.out(Easing.ease) }),
+          Animated.timing(heroScale, { toValue: 1, duration: 4000, useNativeDriver: true, easing: Easing.out(Easing.ease) }),
+        ]).start();
+      });
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [heroFade, heroScale, view]);
 
   const switchTab = (tab: Tab) => {
     if (tab === activeTab) return;
@@ -171,25 +215,216 @@ export function LoginScreen() {
 
   // ── Render ──
   return (
-    <View style={s.screen}>
-      {IS_NARROW && (
-        <View style={s.compactHeader}>
-          <View style={s.compactLogoRow}>
-            <View style={s.compactLogoRing}><Text style={s.compactLogoText}>SIMS</Text></View>
-            <View><Text style={s.compactTitle}>SIMS</Text><Text style={s.compactSubtitle}>School Management System</Text></View>
+    <View style={s.homeScreen}>
+      {view === 'home' ? (
+        <ScrollView ref={scrollViewRef} style={s.homeScroll} contentContainerStyle={s.homeScrollContent} showsVerticalScrollIndicator={false}>
+          {/* Header */}
+          <View style={s.header}>
+            <TouchableOpacity style={s.headerLogoRow} onPress={goHome}>
+              <View style={s.headerLogoBox}><Text style={s.headerLogoText}>TSHS</Text></View>
+              <View><Text style={s.headerSchoolName}>Terchire SHS</Text><Text style={s.headerSchoolSub}>Nimdɛɛ Firi Onyame</Text></View>
+            </TouchableOpacity>
+            <View style={s.headerNav}>
+              {!IS_NARROW && <>
+                <TouchableOpacity onPress={goHome}><Text style={s.headerNavLink}>Home</Text></TouchableOpacity>
+                <TouchableOpacity onPress={scrollToAbout}><Text style={s.headerNavLink}>About Us</Text></TouchableOpacity>
+              </>}
+              <TouchableOpacity style={s.headerGhostBtn} onPress={() => openPortal('signin')}><Text style={s.headerGhostText}>Login</Text></TouchableOpacity>
+              <TouchableOpacity style={s.headerCtaBtn} onPress={() => openPortal('apply')}><Text style={s.headerCtaText}>Apply</Text></TouchableOpacity>
+            </View>
           </View>
-        </View>
-      )}
-      <View style={s.splitContainer}>
+
+          {/* Hero with flash animation carousel */}
+          <View style={s.hero}>
+            {HERO_SLIDES.map((slide, i) => (
+              <Animated.Image
+                key={i}
+                source={{ uri: slide.image }}
+                style={[
+                  s.heroBg,
+                  {
+                    opacity: i === heroSlide ? heroFade : 0,
+                    transform: i === heroSlide ? [{ scale: heroScale }] : [{ scale: 1 }],
+                  },
+                ]}
+                resizeMode="cover"
+              />
+            ))}
+            <View style={s.heroOverlay} />
+            <View style={s.heroContent}>
+              <View style={s.heroBadge}><Text style={s.heroBadgeText}>★ EST. 2011 · AHAFO REGION · GES ACCREDITED</Text></View>
+              <Text style={s.heroTitle}>Welcome to{'\n'}<Text style={s.heroTitleAccent}>Terchire Senior High School</Text></Text>
+              <Text style={s.heroSubtitle}>A center for quality education and discipline in the Ahafo Region. "Nimdɛɛ Firi Onyame" — Knowledge comes from God.</Text>
+              <View style={s.heroBtnRow}>
+                <TouchableOpacity style={s.heroBtnPrimary} onPress={() => openPortal('apply')} activeOpacity={0.85}>
+                  <Text style={s.heroBtnPrimaryText}>Apply for Admission</Text>
+                  <Text style={s.heroBtnPrimaryText}>→</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={s.heroBtnSecondary} onPress={() => openPortal('signin')} activeOpacity={0.85}>
+                  <Text style={s.heroBtnSecondaryText}>Staff / Student Login</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            {/* Hero dots indicator */}
+            <View style={s.heroDots}>
+              {HERO_SLIDES.map((_, i) => (
+                <View key={i} style={[s.heroDot, i === heroSlide && s.heroDotActive]} />
+              ))}
+            </View>
+          </View>
+
+          {/* About Section */}
+          <View style={[s.section, s.aboutBg]} onLayout={(e) => { aboutY.current = e.nativeEvent.layout.y; }}>
+            <View style={s.sectionNarrow}>
+              <Text style={s.sectionTitle}>About <Text style={s.sectionTitleAccent}>Our School</Text></Text>
+              <Text style={s.sectionSubtitle}>Established in 2011 in Terchire, Tano North District of the Ahafo Region, Terchire Senior High School is dedicated to providing high-quality education and discipline to its learners.</Text>
+              <View style={s.aboutGrid}>
+                <View style={s.aboutCard}>
+                  <View style={s.aboutCardIconWrap}><Text style={s.aboutCardIcon}>🎯</Text></View>
+                  <Text style={s.aboutCardTitle}>Our Mission</Text>
+                  <Text style={s.aboutCardText}>To train learners to high levels of education standards through the collaborative effort of all relevant stakeholders.</Text>
+                </View>
+                <View style={s.aboutCard}>
+                  <View style={s.aboutCardIconWrap}><Text style={s.aboutCardIcon}>🌟</Text></View>
+                  <Text style={s.aboutCardTitle}>Our Vision</Text>
+                  <Text style={s.aboutCardText}>A center for quality education and discipline, serving the Tano North District and the Ahafo Region with dedication and excellence.</Text>
+                </View>
+                <View style={s.aboutCard}>
+                  <View style={s.aboutCardIconWrap}><Text style={s.aboutCardIcon}>🤝</Text></View>
+                  <Text style={s.aboutCardTitle}>Our Motto</Text>
+                  <Text style={s.aboutCardText}>"Nimdɛɛ Firi Onyame" — Knowledge comes from God. We believe in nurturing both the intellect and character of every student through collaborative effort and discipline.</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Features Section */}
+          <View style={[s.section, s.featuresBg]}>
+            <View style={s.sectionNarrow}>
+              <Text style={s.sectionTitle}>Why Choose <Text style={s.sectionTitleAccent}>Terchire SHS?</Text></Text>
+              <Text style={s.sectionSubtitle}>A single-track public senior high school committed to collaborative learning and discipline in the Ahafo Region.</Text>
+              <View style={s.featuresGrid}>
+                <View style={s.featureCard}>
+                  <View style={s.featureIconWrap}><Text style={s.featureIcon}>📚</Text></View>
+                  <Text style={s.featureTitle}>Quality Education</Text>
+                  <Text style={s.featureText}>Dedicated teachers committed to training learners to high education standards through collaborative stakeholder efforts.</Text>
+                </View>
+                <View style={s.featureCard}>
+                  <View style={s.featureIconWrap}><Text style={s.featureIcon}>🏆</Text></View>
+                  <Text style={s.featureTitle}>Discipline & Character</Text>
+                  <Text style={s.featureText}>We instill discipline and moral integrity in every student, creating responsible citizens ready to serve their community.</Text>
+                </View>
+                <View style={s.featureCard}>
+                  <View style={s.featureIconWrap}><Text style={s.featureIcon}>💻</Text></View>
+                  <Text style={s.featureTitle}>Agriculture Programme</Text>
+                  <Text style={s.featureText}>Hands-on agricultural training that equips students with practical skills for food production and agribusiness.</Text>
+                </View>
+                <View style={s.featureCard}>
+                  <View style={s.featureIconWrap}><Text style={s.featureIcon}>🏡</Text></View>
+                  <Text style={s.featureTitle}>Business & Arts</Text>
+                  <Text style={s.featureText}>Comprehensive Business and General Arts programmes that prepare students for university and professional careers.</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Stats Band */}
+          <View style={s.statsBand}>
+            <View style={s.statsBandGrid}>
+              {QUICK_STATS.map((st) => (
+                <View key={st.label} style={s.statsBandItem}>
+                  <Text style={s.statsBandValue}>{st.value}</Text>
+                  <Text style={s.statsBandLabel}>{st.label.toUpperCase()}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* CTA Section */}
+          <View style={s.ctaSection}>
+            <Text style={s.ctaTitle}>Ready to Join Our Community?</Text>
+            <Text style={s.ctaText}>Apply for admission today or check your application status. Our admissions team is here to help you every step of the way.</Text>
+            <View style={s.heroBtnRow}>
+              <TouchableOpacity style={s.heroBtnPrimary} onPress={() => openPortal('apply')} activeOpacity={0.85}>
+                <Text style={s.heroBtnPrimaryText}>Apply Now</Text>
+                <Text style={s.heroBtnPrimaryText}>→</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.heroBtnSecondary} onPress={() => openPortal('status')} activeOpacity={0.85}>
+                <Text style={s.heroBtnSecondaryText}>Check Status</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Footer */}
+          <View style={s.footer}>
+            <View style={s.footerGrid}>
+              <View style={s.footerColWide}>
+                <View style={s.footerBrandRow}>
+                  <View style={s.footerBrandBox}><Text style={s.footerBrandText}>TSHS</Text></View>
+                  <Text style={s.footerBrandName}>Terchire Senior High School</Text>
+                </View>
+                <Text style={s.footerAbout}>A public senior high school in Terchire, Ahafo Region, dedicated to quality education and discipline since 2011. "Nimdɛɛ Firi Onyame" — Knowledge comes from God.</Text>
+              </View>
+              <View style={s.footerCol}>
+                <Text style={s.footerColTitle}>Quick Links</Text>
+                <TouchableOpacity onPress={goHome}><Text style={s.footerLink}>Home</Text></TouchableOpacity>
+                <TouchableOpacity onPress={scrollToAbout}><Text style={s.footerLink}>About Us</Text></TouchableOpacity>
+                <TouchableOpacity onPress={() => openPortal('apply')}><Text style={s.footerLink}>Apply for Admission</Text></TouchableOpacity>
+                <TouchableOpacity onPress={() => openPortal('status')}><Text style={s.footerLink}>Check Status</Text></TouchableOpacity>
+                <TouchableOpacity onPress={() => openPortal('signin')}><Text style={s.footerLink}>Staff Login</Text></TouchableOpacity>
+              </View>
+              <View style={s.footerCol}>
+                <Text style={s.footerColTitle}>Programmes</Text>
+                <Text style={s.footerLink}>General Arts</Text>
+                <Text style={s.footerLink}>Business</Text>
+                <Text style={s.footerLink}>Agriculture</Text>
+              </View>
+              <View style={s.footerCol}>
+                <Text style={s.footerColTitle}>Contact Us</Text>
+                <View style={s.footerContactRow}><Text style={s.footerContactIcon}>📍</Text><Text style={s.footerContactText}>P.O. Box 1, Terchire, Ahafo Region</Text></View>
+                <View style={s.footerContactRow}><Text style={s.footerContactIcon}>📞</Text><Text style={s.footerContactText}>+233 24 471 3468</Text></View>
+                <View style={s.footerContactRow}><Text style={s.footerContactIcon}>✉</Text><Text style={s.footerContactText}>terchireshs@ges.gov.gh</Text></View>
+                <View style={s.footerContactRow}><Text style={s.footerContactIcon}>🕐</Text><Text style={s.footerContactText}>Mon–Fri: 7:30 AM – 3:30 PM</Text></View>
+              </View>
+            </View>
+            <View style={s.footerBottom}>
+              <Text style={s.footerCopyright}>© 2026 Terchire Senior High School · SIMS v0.1.0 · All rights reserved</Text>
+            </View>
+          </View>
+        </ScrollView>
+      ) : (
+        <View style={s.portalOverlay}>
+          <View style={s.portalCloseBar}>
+            <TouchableOpacity style={s.portalCloseLogo} onPress={goHome}>
+              <View style={s.portalCloseLogoBox}><Text style={s.portalCloseLogoText}>TSHS</Text></View>
+              <Text style={s.portalCloseSchool}>Terchire SHS</Text>
+            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <TouchableOpacity onPress={() => { setActiveTab('signin'); clearError(); }} style={[s.portalCloseBtn, activeTab === 'signin' && { backgroundColor: 'rgba(255,201,60,0.15)' }]}>
+                <Text style={[s.portalCloseText, activeTab === 'signin' && { color: colors.accent }]}>Login</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { setActiveTab('apply'); clearError(); }} style={[s.portalCloseBtn, activeTab === 'apply' && { backgroundColor: 'rgba(255,201,60,0.15)' }]}>
+                <Text style={[s.portalCloseText, activeTab === 'apply' && { color: colors.accent }]}>Apply</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { setActiveTab('status'); clearError(); }} style={[s.portalCloseBtn, activeTab === 'status' && { backgroundColor: 'rgba(255,201,60,0.15)' }]}>
+                <Text style={[s.portalCloseText, activeTab === 'status' && { color: colors.accent }]}>Status</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.portalCloseBtn} onPress={goHome}>
+                <Text style={s.portalCloseText}>← Home</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={s.portalBody}>
+            <View style={s.splitContainer}>
         {!IS_NARROW && (
           <View style={s.brandPanel}>
             <Image source={{ uri: '/banner3.png' }} style={s.brandBgImage} resizeMode="cover" />
             <View style={s.brandOverlay} />
             <View style={s.brandContent}>
               <View style={s.brandLogoSection}>
-                <View style={s.logoRing}><View style={s.logoInner}><Text style={s.logoText}>SIMS</Text></View></View>
-                <Text style={s.brandTitle}>School Information{'\n'}Management System</Text>
-                <Text style={s.brandTagline}>Empowering Ghanaian Senior High Schools</Text>
+                <View style={s.logoRing}><View style={s.logoInner}><Text style={s.logoText}>TSHS</Text></View></View>
+                <Text style={s.brandTitle}>Terchire Senior{'\n'}High School</Text>
+                <Text style={s.brandTagline}>Nimdɛɛ Firi Onyame — Knowledge comes from God</Text>
               </View>
               <View style={s.carouselContainer}>
                 <Animated.View style={[s.carouselSlide, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
@@ -224,19 +459,11 @@ export function LoginScreen() {
           <View style={s.formPanelInner}>
             {!IS_NARROW && (
               <View style={s.formHeader}>
-                <Text style={s.formWelcome}>Welcome Back</Text>
-                <Text style={s.formWelcomeSub}>Sign in to your account or apply for admission</Text>
+                <Text style={s.formWelcome}>{activeTab === 'signin' ? 'Welcome Back' : activeTab === 'apply' ? 'Admission Application' : 'Check Application Status'}</Text>
+                <Text style={s.formWelcomeSub}>{activeTab === 'signin' ? 'Sign in to your account' : activeTab === 'apply' ? 'Apply for admission to Terchire SHS' : 'Enter your details to check your status'}</Text>
               </View>
             )}
-            {/* Tab Bar */}
-            <View style={s.tabBar}>
-              {([{ key: 'signin', label: 'Sign In' }, { key: 'apply', label: 'Apply' }, { key: 'status', label: 'Check Status' }] as { key: Tab; label: string }[]).map((tab) => (
-                <TouchableOpacity key={tab.key} style={s.tabItem} onPress={() => switchTab(tab.key)} activeOpacity={0.7}>
-                  <Text style={[s.tabLabel, activeTab === tab.key && s.tabLabelActive]}>{tab.label}</Text>
-                  {activeTab === tab.key && <View style={s.tabIndicator} />}
-                </TouchableOpacity>
-              ))}
-            </View>
+            {/* Direct form view - no tabs, each button links directly */}
             <Animated.View style={[s.formContent, { opacity: tabAnim, transform: [{ translateY: tabAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }]}>
               <ScrollView style={s.scrollView} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
                 {activeTab === 'signin' && (
@@ -463,9 +690,11 @@ export function LoginScreen() {
               </ScrollView>
             </Animated.View>
           </View>
-          <View style={s.footerBar}><Text style={s.footerText}>© 2026 Ghana SHS SIMS · v0.1.0</Text></View>
+          </View>
+        </View>
         </View>
       </View>
+      )}
     </View>
   );
 }
