@@ -35,23 +35,31 @@ export function SystemAdminDashboard() {
   // User modal state
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<SystemUser | null>(null);
-  const [userForm, setUserForm] = useState({ username: '', displayName: '', email: '', roles: [] as RoleId[] });
+  const [userForm, setUserForm] = useState({ username: '', displayName: '', email: '', password: '', roles: [] as RoleId[] });
+
+  // Reset password modal state
+  const [resetUser, setResetUser] = useState<SystemUser | null>(null);
+  const [newPassword, setNewPassword] = useState('');
 
   const handleAddUser = () => {
     setEditingUser(null);
-    setUserForm({ username: '', displayName: '', email: '', roles: [] });
+    setUserForm({ username: '', displayName: '', email: '', password: '', roles: [] });
     setShowUserModal(true);
   };
 
   const handleEditUser = (user: SystemUser) => {
     setEditingUser(user);
-    setUserForm({ username: user.username, displayName: user.displayName, email: user.email, roles: [...user.roles] });
+    setUserForm({ username: user.username, displayName: user.displayName, email: user.email, password: '', roles: [...user.roles] });
     setShowUserModal(true);
   };
 
   const handleSaveUser = () => {
     if (!userForm.username.trim() || !userForm.displayName.trim()) {
       Alert.alert('Error', 'Username and display name are required');
+      return;
+    }
+    if (!editingUser && !userForm.password.trim()) {
+      Alert.alert('Error', 'Password is required for new users');
       return;
     }
     if (editingUser) {
@@ -181,7 +189,7 @@ export function SystemAdminDashboard() {
                       <Text style={styles.miniApproveBtnText}>Activate</Text>
                     </TouchableOpacity>
                   ) : null}
-                  <TouchableOpacity style={styles.miniBtn} onPress={() => { store.resetUserPassword(user.id); Alert.alert('Success', `Password reset for ${user.username}. Temporary password sent to ${user.email}.`); }}>
+                  <TouchableOpacity style={styles.miniBtn} onPress={() => { setResetUser(user); setNewPassword(''); }}>
                     <Text style={styles.miniBtnText}>Reset Pwd</Text>
                   </TouchableOpacity>
                   {user.username !== 'admin' && (
@@ -448,6 +456,15 @@ export function SystemAdminDashboard() {
                 keyboardType="email-address"
               />
 
+              <Text style={styles.inputLabel}>Password{editingUser ? ' (leave blank to keep current)' : ''}</Text>
+              <TextInput
+                style={styles.textInput}
+                value={userForm.password}
+                onChangeText={(v) => setUserForm((f) => ({ ...f, password: v }))}
+                placeholder="Enter password"
+                secureTextEntry
+              />
+
               <Text style={styles.inputLabel}>Roles</Text>
               <Text style={styles.autoAssignHint}>Select one or more roles for this user</Text>
               <View style={styles.rolePickerRow}>
@@ -476,6 +493,38 @@ export function SystemAdminDashboard() {
                 </TouchableOpacity>
               </View>
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Reset Password Modal ── */}
+      <Modal visible={resetUser !== null} transparent animationType="fade" onRequestClose={() => setResetUser(null)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Reset Password</Text>
+            <Text style={styles.pageSubtitle}>Enter a new password for {resetUser?.displayName} ({resetUser?.username})</Text>
+            <Text style={styles.inputLabel}>New Password</Text>
+            <TextInput
+              style={styles.textInput}
+              value={newPassword}
+              onChangeText={setNewPassword}
+              placeholder="Enter new password"
+              secureTextEntry
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalApproveBtn} onPress={() => {
+                if (!newPassword.trim()) { Alert.alert('Error', 'Please enter a new password'); return; }
+                store.resetUserPassword(resetUser!.id, newPassword.trim());
+                Alert.alert('Success', `Password reset for ${resetUser!.username}`);
+                setResetUser(null);
+                setNewPassword('');
+              }}>
+                <Text style={styles.modalBtnTextWhite}>Reset Password</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => { setResetUser(null); setNewPassword(''); }}>
+                <Text style={styles.modalBtnTextSecondary}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>

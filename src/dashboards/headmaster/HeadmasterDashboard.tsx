@@ -101,9 +101,11 @@ export function HeadmasterDashboard() {
   const [resolutionNotes, setResolutionNotes] = useState('');
 
   const [showUserModal, setShowUserModal] = useState(false);
-  const [userForm, setUserForm] = useState({ username: '', displayName: '', email: '', roles: [] as RoleId[], status: 'Active' as UserStatus, tenantId: 'tenant_001' });
+  const [userForm, setUserForm] = useState({ username: '', displayName: '', email: '', password: '', roles: [] as RoleId[], status: 'Active' as UserStatus, tenantId: 'tenant_001' });
   const [showRoleModal, setShowRoleModal] = useState<SystemUser | null>(null);
   const [roleDraft, setRoleDraft] = useState<RoleId[]>([]);
+  const [resetUser, setResetUser] = useState<SystemUser | null>(null);
+  const [newPassword, setNewPassword] = useState('');
 
   const [showAccessModal, setShowAccessModal] = useState(false);
   const [accessForm, setAccessForm] = useState({ userId: '', dashboardKey: '', allowedPages: [] as string[], fullAccess: false });
@@ -150,12 +152,16 @@ export function HeadmasterDashboard() {
       Alert.alert('Error', 'Username and display name are required.');
       return;
     }
+    if (!userForm.password.trim()) {
+      Alert.alert('Error', 'Password is required for new users.');
+      return;
+    }
     if (userForm.roles.length === 0) {
       Alert.alert('Error', 'At least one role must be assigned.');
       return;
     }
     sysAdminStore.addUser({ username: userForm.username.trim(), displayName: userForm.displayName.trim(), email: userForm.email.trim(), roles: userForm.roles, status: userForm.status, tenantId: userForm.tenantId });
-    setUserForm({ username: '', displayName: '', email: '', roles: [], status: 'Active', tenantId: 'tenant_001' });
+    setUserForm({ username: '', displayName: '', email: '', password: '', roles: [], status: 'Active', tenantId: 'tenant_001' });
     setShowUserModal(false);
     Alert.alert('Success', 'User account created.');
   };
@@ -634,7 +640,7 @@ export function HeadmasterDashboard() {
                       <Text style={styles.userMiniBtnText}>Suspend</Text>
                     </TouchableOpacity>
                   )}
-                  <TouchableOpacity style={styles.userMiniBtn} onPress={() => { sysAdminStore.resetUserPassword(u.id); Alert.alert('Password Reset', `Password reset link sent to ${u.displayName}.`); }}>
+                  <TouchableOpacity style={styles.userMiniBtn} onPress={() => { setResetUser(u); setNewPassword(''); }}>
                     <Text style={styles.userMiniBtnText}>Reset PW</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.userMiniBtnDanger} onPress={() => Alert.alert('Delete User', `Permanently delete ${u.displayName}?`, [{ text: 'Cancel' }, { text: 'Delete', onPress: () => { sysAdminStore.deleteUser(u.id); Alert.alert('Deleted', `${u.displayName} removed.`); } }])}>
@@ -988,6 +994,8 @@ export function HeadmasterDashboard() {
               <TextInput style={styles.textInput} value={userForm.displayName} onChangeText={(v) => setUserForm((f) => ({ ...f, displayName: v }))} placeholder="e.g. John Mensah" />
               <Text style={styles.inputLabel}>Email</Text>
               <TextInput style={styles.textInput} value={userForm.email} onChangeText={(v) => setUserForm((f) => ({ ...f, email: v }))} placeholder="e.g. jmensah@sims.edu" autoCapitalize="none" />
+              <Text style={styles.inputLabel}>Password</Text>
+              <TextInput style={styles.textInput} value={userForm.password} onChangeText={(v) => setUserForm((f) => ({ ...f, password: v }))} placeholder="Enter password" secureTextEntry />
               <Text style={styles.inputLabel}>Status</Text>
               <View style={styles.chipRow}>
                 {USER_STATUSES.map((s) => (
@@ -1013,6 +1021,31 @@ export function HeadmasterDashboard() {
                 </TouchableOpacity>
               </View>
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Reset Password Modal ── */}
+      <Modal visible={resetUser !== null} transparent animationType="fade" onRequestClose={() => setResetUser(null)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Reset Password</Text>
+            <Text style={styles.pageSubtitle}>Enter a new password for {resetUser?.displayName} ({resetUser?.username})</Text>
+            <Text style={styles.inputLabel}>New Password</Text>
+            <TextInput style={styles.textInput} value={newPassword} onChangeText={setNewPassword} placeholder="Enter new password" secureTextEntry />
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalApproveBtn} onPress={() => {
+                if (!newPassword.trim()) { Alert.alert('Error', 'Please enter a new password.'); return; }
+                sysAdminStore.resetUserPassword(resetUser!.id, newPassword.trim());
+                Alert.alert('Success', `Password reset for ${resetUser!.username}`);
+                setResetUser(null); setNewPassword('');
+              }}>
+                <Text style={styles.modalBtnTextWhite}>Reset Password</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => { setResetUser(null); setNewPassword(''); }}>
+                <Text style={styles.modalBtnTextSecondary}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>

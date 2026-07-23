@@ -31,6 +31,13 @@ export default defineConfig({
   server: {
     port: 8082,
     host: true,
+    proxy: {
+      '/api': {
+        target: 'https://sims-backends-3.onrender.com',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
   define: {
     __DEV__: true,

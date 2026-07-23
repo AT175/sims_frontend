@@ -174,7 +174,7 @@ export interface SystemAdminState {
   updateUserStatus: (id: string, status: UserStatus) => void;
   updateUserRoles: (id: string, roles: RoleId[]) => void;
   deleteUser: (id: string) => void;
-  resetUserPassword: (id: string) => void;
+  resetUserPassword: (id: string, newPassword: string) => void;
   unlockUser: (id: string) => void;
 
   updateTenant: (config: Partial<TenantConfig>) => void;
@@ -228,7 +228,7 @@ export const useSystemAdminStore = create<SystemAdminState>((set, get) => ({
     }));
   },
 
-  resetUserPassword: (id) => {
+  resetUserPassword: (id, newPassword) => {
     const username = get().users.find((u) => u.id === id)?.username || 'unknown';
     set((st) => ({
       users: st.users.map((u) => (u.id === id ? { ...u, failedAttempts: 0, status: u.status === 'Locked' ? 'Active' : u.status } : u)),
