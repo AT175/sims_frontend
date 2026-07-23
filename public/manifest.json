@@ -5,8 +5,8 @@
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f5f5f5",
-  "theme_color": "#1B5E20",
+  "background_color": "#06283D",
+  "theme_color": "#06283D",
   "scope": "/",
   "icons": [
     {
@@ -24,5 +24,9 @@
   ],
   "categories": ["education", "productivity"],
   "lang": "en",
-  "dir": "ltr"
+  "dir": "ltr",
+  "display_override": ["standalone", "fullscreen"],
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
 }
