@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, TextInput, Alert } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid, DataTable, KitchenMenuWidget } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
@@ -11,6 +11,7 @@ import { useBursaryStore } from '@store/bursaryStore';
 import { useSystemAdminStore } from '@store/systemAdminStore';
 import type { SystemUser, UserStatus } from '@store/systemAdminStore';
 import { useAccessControlStore } from '@store/accessControlStore';
+import { registryApi } from '@shared/api/registryApi';
 import { DASHBOARD_CATALOG, DASHBOARD_MAP } from '@shared/navigation/dashboardCatalog';
 import { ROLE_LABELS } from '@shared/navigation/roleMap';
 import type { RoleId } from '@shared/types';
@@ -83,6 +84,14 @@ export function HeadmasterDashboard() {
   const feeCollectionRate = totalCollected + totalOutstanding > 0
     ? Math.round((totalCollected / (totalCollected + totalOutstanding)) * 100)
     : 0;
+
+  const [backendStudentCount, setBackendStudentCount] = useState<number | null>(null);
+  const [backendAdmissionCount, setBackendAdmissionCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    registryApi.getStudents().then((data) => setBackendStudentCount(data.length)).catch(() => {});
+    registryApi.getAdmissionApplications().then((data) => setBackendAdmissionCount(data.length)).catch(() => {});
+  }, []);
 
   // ── Modal state ──
   const [showApprovalModal, setShowApprovalModal] = useState(false);
@@ -356,12 +365,12 @@ export function HeadmasterDashboard() {
             <Text style={styles.pageTitle}>Executive Overview</Text>
             <Text style={styles.pageSubtitle}>Live snapshot of the entire school</Text>
             <CardGrid>
-              <StatCard label="Total Enrollment" value={registryStore.students.length} subtitle="Active students" accentColor={colors.primary} />
+              <StatCard label="Total Enrollment" value={backendStudentCount ?? registryStore.students.length} subtitle="Active students" accentColor={colors.primary} />
               <StatCard label="Staff Count" value={staffStore.directory.length} subtitle="Teaching + non-teaching" accentColor={colors.primaryLight} />
               <StatCard label="Fee Collection" value={`${feeCollectionRate}%`} subtitle="Collected vs. billed" accentColor={colors.accent} />
               <StatCard label="Pending Approvals" value={totalPendingApprovals} subtitle="Awaiting your action" accentColor={colors.warning} onPress={() => setActivePage('approvals')} />
               <StatCard label="Open Discipline Cases" value={hmStore.disciplineCases.filter((d) => d.status !== 'Resolved').length} subtitle="Requiring attention" accentColor={colors.danger} onPress={() => setActivePage('discipline')} />
-              <StatCard label="Pending Admissions" value={registryStore.admissions.filter((a) => a.status !== 'Approved' && a.status !== 'Rejected').length} subtitle="Under review" accentColor={colors.info} />
+              <StatCard label="Pending Admissions" value={backendAdmissionCount ?? registryStore.admissions.filter((a) => a.status !== 'Approved' && a.status !== 'Rejected').length} subtitle="Under review" accentColor={colors.info} />
             </CardGrid>
 
             <Text style={styles.sectionTitle}>Awaiting Your Approval</Text>

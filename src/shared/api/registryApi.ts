@@ -23,6 +23,7 @@ export interface AdmissionApplicationDto {
   parentPhone: string;
   parentEmail: string | null;
   csspsPlacementRef: string | null;
+  programme: string | null;
   documentsVerified: boolean;
   status: string;
   createdAt: string;

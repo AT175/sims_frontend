@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, TextInput } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid, DataTable } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
 import { useAuthStore, useRegistryStore } from '@store/index';
+import { registryApi } from '@shared/api/registryApi';
+import { apiClient } from '@shared/api/apiClient';
 import {
   CERTIFICATE_TYPES, CORRESPONDENCE_DIRECTIONS, CORRESPONDENCE_PRIORITIES,
   STAFF_STATUSES, DOCUMENT_CHECKLIST, CLASS_SECTIONS, HOUSES,
@@ -26,9 +28,69 @@ export function RegistryDashboard() {
   const store = useRegistryStore();
   const { students, placements, admissions, certificates, correspondence, staff } = store;
 
-  const activeStudents = students.filter((s) => s.status === 'Active');
-  const pendingAdmissions = admissions.filter((a) => a.status === 'Received' || a.status === 'Under Review');
-  const approvedAdmissions = admissions.filter((a) => a.status === 'Approved');
+  const [backendStudents, setBackendStudents] = useState<any[]>([]);
+  const [backendAdmissions, setBackendAdmissions] = useState<any[]>([]);
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  useEffect(() => {
+    fetchBackendData();
+  }, []);
+
+  const fetchBackendData = async () => {
+    try {
+      const [studentsData, admissionsData] = await Promise.all([
+        registryApi.getStudents().catch(() => []),
+        registryApi.getAdmissionApplications().catch(() => []),
+      ]);
+      setBackendStudents(studentsData);
+      setBackendAdmissions(admissionsData);
+      setDataLoaded(true);
+    } catch (err) {
+      console.error('Failed to fetch backend data:', err);
+      setDataLoaded(true);
+    }
+  };
+
+  const allStudents = backendStudents.length > 0 ? backendStudents.map((s: any) => ({
+    id: s.id,
+    admNo: s.admissionNumber,
+    firstName: s.firstName,
+    lastName: s.lastName,
+    dateOfBirth: s.dateOfBirth,
+    gender: s.gender,
+    class: s.classSectionId,
+    house: s.houseId,
+    guardianName: s.guardianName,
+    guardianPhone: s.guardianPhone,
+    guardianAddress: s.guardianAddress,
+    admissionDate: s.admissionDate,
+    status: s.status,
+    photoUrl: null,
+    csspsRef: null,
+  })) : students;
+
+  const allAdmissions = backendAdmissions.length > 0 ? backendAdmissions.map((a: any) => ({
+    id: a.id,
+    applicantName: a.applicantName,
+    parentName: a.parentName,
+    parentPhone: a.parentPhone,
+    parentEmail: a.parentEmail || '',
+    dateApplied: a.createdAt ? new Date(a.createdAt).toISOString().slice(0, 10) : '',
+    status: a.status === 'received' ? 'Received' : a.status === 'under_review' ? 'Under Review' : a.status === 'approved' ? 'Approved' : a.status === 'rejected' ? 'Rejected' : a.status,
+    documentsVerified: a.documentsVerified,
+    documents: DOCUMENT_CHECKLIST.map((d: any) => ({ type: d, submitted: a.documentsVerified })),
+    processedBy: undefined,
+    notes: '',
+    programme: a.programme || 'Science',
+    photoUrl: null,
+    csspsRef: a.csspsPlacementRef || null,
+    fee: { amount: 0, method: null, status: 'Unpaid', reference: null, paidAt: null, verifiedBy: null },
+    credentialsExpired: false,
+  })) : admissions;
+
+  const activeStudents = allStudents.filter((s) => s.status === 'Active');
+  const pendingAdmissions = allAdmissions.filter((a) => a.status === 'Received' || a.status === 'Under Review');
+  const approvedAdmissions = allAdmissions.filter((a) => a.status === 'Approved');
   const unmatchedPlacements = placements.filter((p) => !p.matched);
   const urgentCorrespondence = correspondence.filter((c) => c.priority === 'Urgent');
   const activeStaff = staff.filter((s) => s.status === 'Active');
@@ -142,7 +204,7 @@ export function RegistryDashboard() {
             <Text style={styles.pageTitle}>Registry Overview</Text>
             <Text style={styles.pageSubtitle}>Welcome, {userName}</Text>
             <CardGrid>
-              <StatCard label="Total Students" value={students.length} subtitle={`${activeStudents.length} active`} accentColor={colors.primary} />
+              <StatCard label="Total Students" value={allStudents.length} subtitle={`${activeStudents.length} active`} accentColor={colors.primary} />
               <StatCard label="Pending Admissions" value={pendingAdmissions.length} subtitle={`${approvedAdmissions.length} approved`} accentColor={colors.warning} />
               <StatCard label="Unmatched Placements" value={unmatchedPlacements.length} accentColor={colors.danger} />
               <StatCard label="Certificates Issued" value={certificates.length} accentColor={colors.success} />
@@ -191,10 +253,10 @@ export function RegistryDashboard() {
         );
 
       case 'students':
-        return <StudentsPage students={students} store={store} renderBadge={renderBadge} />;
+        return <StudentsPage students={allStudents} store={store} renderBadge={renderBadge} onRefresh={fetchBackendData} />;
 
       case 'admissions':
-        return <AdmissionsPage admissions={admissions} placements={placements} store={store} renderBadge={renderBadge} />;
+        return <AdmissionsPage admissions={allAdmissions} placements={placements} store={store} renderBadge={renderBadge} onRefresh={fetchBackendData} />;
 
       case 'certificates':
         return <CertificatesPage certificates={certificates} store={store} />;
@@ -223,10 +285,11 @@ export function RegistryDashboard() {
 
 // ── Students Page ──
 
-function StudentsPage({ students, store, renderBadge }: any) {
+function StudentsPage({ students, store, renderBadge, onRefresh }: any) {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
   const [showAdd, setShowAdd] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     admNo: '', firstName: '', lastName: '', dateOfBirth: '', gender: 'Male',
     programme: 'Science' as 'Science' | 'Arts' | 'Business',
@@ -236,17 +299,45 @@ function StudentsPage({ students, store, renderBadge }: any) {
 
   const statusColor = (s: string) => s === 'Active' ? colors.success : s === 'Graduated' ? colors.info : s === 'Withdrawn' ? colors.warning : colors.textLight;
 
-  const filtered = store.searchStudents(search).filter((s: any) => filterStatus === 'All' || s.status === filterStatus);
+  const filtered = students.filter((s: any) => {
+    const q = search.toLowerCase().trim();
+    if (!q) return true;
+    return `${s.firstName} ${s.lastName}`.toLowerCase().includes(q) ||
+      (s.admNo || '').toLowerCase().includes(q) ||
+      (s.class || '').toLowerCase().includes(q) ||
+      (s.house || '').toLowerCase().includes(q);
+  }).filter((s: any) => filterStatus === 'All' || s.status === filterStatus);
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!form.admNo || !form.firstName || !form.lastName) {
       Alert.alert('Error', 'Admission number and name are required.');
       return;
     }
-    store.addStudent({ ...form, photoUrl: form.photoUrl, csspsRef: form.csspsRef || null, admissionDate: new Date().toISOString().slice(0, 10), status: 'Active' });
-    setForm({ admNo: '', firstName: '', lastName: '', dateOfBirth: '', gender: 'Male', programme: 'Science', class: CLASS_SECTIONS[0], house: HOUSES[0], guardianName: '', guardianPhone: '', guardianAddress: '', photoUrl: null, csspsRef: '' });
-    setShowAdd(false);
-    Alert.alert('Success', 'Student record added.');
+    setSaving(true);
+    try {
+      await registryApi.createStudent({
+        admissionNumber: form.admNo,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        dateOfBirth: form.dateOfBirth || '2009-01-01',
+        gender: form.gender,
+        classSectionId: form.class,
+        houseId: form.house || null,
+        guardianName: form.guardianName,
+        guardianPhone: form.guardianPhone,
+        guardianAddress: form.guardianAddress,
+        admissionDate: new Date().toISOString().slice(0, 10),
+        status: 'Active',
+      } as any);
+      setSaving(false);
+      setForm({ admNo: '', firstName: '', lastName: '', dateOfBirth: '', gender: 'Male', programme: 'Science', class: CLASS_SECTIONS[0], house: HOUSES[0], guardianName: '', guardianPhone: '', guardianAddress: '', photoUrl: null, csspsRef: '' });
+      setShowAdd(false);
+      Alert.alert('Success', 'Student record added.');
+      if (onRefresh) onRefresh();
+    } catch (err: any) {
+      setSaving(false);
+      Alert.alert('Error', err.message || 'Failed to add student.');
+    }
   };
 
   return (
@@ -317,8 +408,8 @@ function StudentsPage({ students, store, renderBadge }: any) {
                 <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowAdd(false)}>
                   <Text style={styles.modalBtnTextCancel}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={handleAdd}>
-                  <Text style={styles.modalBtnTextSubmit}>Add Student</Text>
+                <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={handleAdd} disabled={saving}>
+                  <Text style={styles.modalBtnTextSubmit}>{saving ? 'Saving...' : 'Add Student'}</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -343,7 +434,7 @@ function StudentsPage({ students, store, renderBadge }: any) {
 
 // ── Admissions Page ──
 
-function AdmissionsPage({ admissions, placements, store, renderBadge }: any) {
+function AdmissionsPage({ admissions, placements, store, renderBadge, onRefresh }: any) {
   const [showAddPlacement, setShowAddPlacement] = useState(false);
   const [showDetail, setShowDetail] = useState<string | null>(null);
   const [placementForm, setPlacementForm] = useState({ fullName: '', csspsRef: '', intendedClass: CLASS_SECTIONS[0] });
@@ -363,19 +454,34 @@ function AdmissionsPage({ admissions, placements, store, renderBadge }: any) {
 
   const detailApp = admissions.find((a: any) => a.id === showDetail);
 
-  const handleApprove = (id: string) => {
-    store.updateAdmissionStatus(id, 'Approved', 'Registrar');
-    Alert.alert('Success', 'Admission approved.');
-    setShowDetail(null);
+  const handleApprove = async (id: string) => {
+    try {
+      await registryApi.updateAdmissionStatus(id, 'approved', true);
+      Alert.alert('Success', 'Admission approved.');
+      setShowDetail(null);
+      if (onRefresh) onRefresh();
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to approve admission.');
+    }
   };
-  const handleReject = (id: string) => {
-    store.updateAdmissionStatus(id, 'Rejected', 'Registrar');
-    Alert.alert('Success', 'Admission rejected.');
-    setShowDetail(null);
+  const handleReject = async (id: string) => {
+    try {
+      await registryApi.updateAdmissionStatus(id, 'rejected');
+      Alert.alert('Success', 'Admission rejected.');
+      setShowDetail(null);
+      if (onRefresh) onRefresh();
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to reject admission.');
+    }
   };
-  const handleReview = (id: string) => {
-    store.updateAdmissionStatus(id, 'Under Review', 'Registrar');
-    setShowDetail(null);
+  const handleReview = async (id: string) => {
+    try {
+      await registryApi.updateAdmissionStatus(id, 'under_review');
+      setShowDetail(null);
+      if (onRefresh) onRefresh();
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to update admission.');
+    }
   };
 
   return (
