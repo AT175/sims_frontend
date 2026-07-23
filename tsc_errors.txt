@@ -1,0 +1,289 @@
+[96msrc/dashboards/boarding/HouseDashboard.tsx[0m:[93m12[0m:[93m3[0m - [91merror[0m[90m TS6196: [0m'RollCallStatus' is declared but never used.
+
+[7m12[0m   RollCallStatus, DisciplineSeverity,
+[7m  [0m [91m  ~~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/boarding/HouseDashboard.tsx[0m:[93m43[0m:[93m5[0m - [91merror[0m[90m TS6133: [0m'students' is declared but its value is never read.
+
+[7m43[0m     students, rooms, rollCalls, discipline, welfare, houses,
+[7m  [0m [91m    ~~~~~~~~[0m
+
+[96msrc/dashboards/boarding/HouseDashboard.tsx[0m:[93m43[0m:[93m15[0m - [91merror[0m[90m TS6133: [0m'rooms' is declared but its value is never read.
+
+[7m43[0m     students, rooms, rollCalls, discipline, welfare, houses,
+[7m  [0m [91m              ~~~~~[0m
+
+[96msrc/dashboards/boarding/HouseDashboard.tsx[0m:[93m43[0m:[93m22[0m - [91merror[0m[90m TS6133: [0m'rollCalls' is declared but its value is never read.
+
+[7m43[0m     students, rooms, rollCalls, discipline, welfare, houses,
+[7m  [0m [91m                     ~~~~~~~~~[0m
+
+[96msrc/dashboards/boarding/HouseDashboard.tsx[0m:[93m43[0m:[93m33[0m - [91merror[0m[90m TS6133: [0m'discipline' is declared but its value is never read.
+
+[7m43[0m     students, rooms, rollCalls, discipline, welfare, houses,
+[7m  [0m [91m                                ~~~~~~~~~~[0m
+
+[96msrc/dashboards/boarding/HouseDashboard.tsx[0m:[93m43[0m:[93m45[0m - [91merror[0m[90m TS6133: [0m'welfare' is declared but its value is never read.
+
+[7m43[0m     students, rooms, rollCalls, discipline, welfare, houses,
+[7m  [0m [91m                                            ~~~~~~~[0m
+
+[96msrc/dashboards/boarding/HouseDashboard.tsx[0m:[93m46[0m:[93m5[0m - [91merror[0m[90m TS6133: [0m'addRollCall' is declared but its value is never read.
+
+[7m46[0m     addRollCall, updateRollCallStatus, deleteRollCall, getTodayRollCalls, startRollCall,
+[7m  [0m [91m    ~~~~~~~~~~~[0m
+
+[96msrc/dashboards/catering/CateringDashboard.tsx[0m:[93m92[0m:[93m55[0m - [91merror[0m[90m TS6133: [0m'sharedMenu' is declared but its value is never read.
+
+[7m92[0m     stock: kitchenStock, issues: kitchenIssues, menu: sharedMenu, customMenus, financialReqs,
+[7m  [0m [91m                                                      ~~~~~~~~~~[0m
+
+[96msrc/dashboards/catering/CateringDashboard.tsx[0m:[93m95[0m:[93m5[0m - [91merror[0m[90m TS6133: [0m'addMenuDay' is declared but its value is never read.
+
+[7m95[0m     addMenuDay, updateMenuDay, deleteMenuDay,
+[7m  [0m [91m    ~~~~~~~~~~[0m
+
+[96msrc/dashboards/catering/CateringDashboard.tsx[0m:[93m95[0m:[93m17[0m - [91merror[0m[90m TS6133: [0m'updateMenuDay' is declared but its value is never read.
+
+[7m95[0m     addMenuDay, updateMenuDay, deleteMenuDay,
+[7m  [0m [91m                ~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/catering/CateringDashboard.tsx[0m:[93m95[0m:[93m32[0m - [91merror[0m[90m TS6133: [0m'deleteMenuDay' is declared but its value is never read.
+
+[7m95[0m     addMenuDay, updateMenuDay, deleteMenuDay,
+[7m  [0m [91m                               ~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/catering/CateringDashboard.tsx[0m:[93m97[0m:[93m25[0m - [91merror[0m[90m TS6133: [0m'updateFinancialReqStatus' is declared but its value is never read.
+
+[7m97[0m     submitFinancialReq, updateFinancialReqStatus, deleteFinancialReq,
+[7m  [0m [91m                        ~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/cleaning/CleaningDashboard.tsx[0m:[93m97[0m:[93m19[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ area: string; inspector: string; result: any; score: number; notes: string; }' is not assignable to parameter of type 'Omit<InspectionReport, "id">'.
+  Property 'date' is missing in type '{ area: string; inspector: string; result: any; score: number; notes: string; }' but required in type 'Omit<InspectionReport, "id">'.
+
+[7m97[0m     addInspection({ area: inspectionForm.area, inspector: inspectionForm.inspector.trim(), result: inspectionForm.result as any, score, notes: inspectionForm.notes.trim() });
+[7m  [0m [91m                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  [96msrc/shared/store/cleaningStore.ts[0m:[93m29[0m:[93m3[0m
+    [7m29[0m   date: string;
+    [7m  [0m [96m  ~~~~[0m
+    'date' is declared here.
+
+[96msrc/dashboards/libraryICT/LibraryICTDashboard.tsx[0m:[93m53[0m:[93m27[0m - [91merror[0m[90m TS6133: [0m'deleteBook' is declared but its value is never read.
+
+[7m53[0m   const { books, addBook, deleteBook } = useLibraryStore();
+[7m  [0m [91m                          ~~~~~~~~~~[0m
+
+[96msrc/dashboards/libraryICT/LibraryICTDashboard.tsx[0m:[93m167[0m:[93m9[0m - [91merror[0m[90m TS6133: [0m'handleReturn' is declared but its value is never read.
+
+[7m167[0m   const handleReturn = (id: string) => {
+[7m   [0m [91m        ~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/libraryICT/LibraryICTDashboard.tsx[0m:[93m251[0m:[93m33[0m - [91merror[0m[90m TS6133: [0m'cancelBooking' is declared but its value is never read.
+
+[7m251[0m   const { bookings, addBooking, cancelBooking, completeBooking } = useLibraryStore();
+[7m   [0m [91m                                ~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/libraryICT/LibraryICTDashboard.tsx[0m:[93m251[0m:[93m48[0m - [91merror[0m[90m TS6133: [0m'completeBooking' is declared but its value is never read.
+
+[7m251[0m   const { bookings, addBooking, cancelBooking, completeBooking } = useLibraryStore();
+[7m   [0m [91m                                               ~~~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/libraryICT/LibraryICTDashboard.tsx[0m:[93m359[0m:[93m36[0m - [91merror[0m[90m TS6133: [0m'deleteEquipment' is declared but its value is never read.
+
+[7m359[0m   const { equipment, addEquipment, deleteEquipment } = useLibraryStore();
+[7m   [0m [91m                                   ~~~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/libraryICT/LibraryICTDashboard.tsx[0m:[93m464[0m:[93m49[0m - [91merror[0m[90m TS6133: [0m'deleteDigitalResource' is declared but its value is never read.
+
+[7m464[0m   const { digitalResources, addDigitalResource, deleteDigitalResource, incrementDownload } = useLibraryStore();
+[7m   [0m [91m                                                ~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/libraryICT/LibraryICTDashboard.tsx[0m:[93m464[0m:[93m72[0m - [91merror[0m[90m TS6133: [0m'incrementDownload' is declared but its value is never read.
+
+[7m464[0m   const { digitalResources, addDigitalResource, deleteDigitalResource, incrementDownload } = useLibraryStore();
+[7m   [0m [91m                                                                       ~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/libraryICT/LibraryICTDashboard.tsx[0m:[93m555[0m:[93m39[0m - [91merror[0m[90m TS6133: [0m'revokeAccess' is declared but its value is never read.
+
+[7m555[0m   const { accessRecords, grantAccess, revokeAccess } = useLibraryStore();
+[7m   [0m [91m                                      ~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/plc/PLCDashboard.tsx[0m:[93m3[0m:[93m56[0m - [91merror[0m[90m TS6133: [0m'DataTable' is declared but its value is never read.
+
+[7m3[0m import { DashboardLayout, NavItem, StatCard, CardGrid, DataTable } from '@components/index';
+[7m [0m [91m                                                       ~~~~~~~~~[0m
+
+[96msrc/dashboards/plc/PLCDashboard.tsx[0m:[93m9[0m:[93m56[0m - [91merror[0m[90m TS6133: [0m'PLC_REQ_STATUSES' is declared but its value is never read.
+
+[7m9[0m   DUTY_DAYS, OBSERVATION_RATINGS, RESOURCE_CATEGORIES, PLC_REQ_STATUSES,
+[7m [0m [91m                                                       ~~~~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/plc/PLCDashboard.tsx[0m:[93m13[0m:[93m31[0m - [91merror[0m[90m TS6196: [0m'PLCReqStatus' is declared but never used.
+
+[7m13[0m   DutyDay, ObservationRating, PLCReqStatus,
+[7m  [0m [91m                              ~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/plc/PLCDashboard.tsx[0m:[93m123[0m:[93m16[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ date: string; topic: string; facilitator: string; location: string; startTime: string; endTime: string; status: MeetingStatus; agenda: string; }' is not assignable to parameter of type 'Omit<PLCMeeting, "id" | "attendance" | "minutes">'.
+  Property 'createdBy' is missing in type '{ date: string; topic: string; facilitator: string; location: string; startTime: string; endTime: string; status: MeetingStatus; agenda: string; }' but required in type 'Omit<PLCMeeting, "id" | "attendance" | "minutes">'.
+
+[7m123[0m     addMeeting(meetingForm);
+[7m   [0m [91m               ~~~~~~~~~~~[0m
+
+  [96msrc/shared/store/plcStore.ts[0m:[93m30[0m:[93m3[0m
+    [7m30[0m   createdBy: string;
+    [7m  [0m [96m  ~~~~~~~~~[0m
+    'createdBy' is declared here.
+
+[96msrc/dashboards/pta/PTADashboard.tsx[0m:[93m7[0m:[93m27[0m - [91merror[0m[90m TS6133: [0m'FEEDBACK_STATUSES' is declared but its value is never read.
+
+[7m7[0m   usePTAStore, PTA_ROLES, FEEDBACK_STATUSES, RSVP_STATUSES,
+[7m [0m [91m                          ~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/pta/PTADashboard.tsx[0m:[93m7[0m:[93m46[0m - [91merror[0m[90m TS6133: [0m'RSVP_STATUSES' is declared but its value is never read.
+
+[7m7[0m   usePTAStore, PTA_ROLES, FEEDBACK_STATUSES, RSVP_STATUSES,
+[7m [0m [91m                                             ~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/pta/PTADashboard.tsx[0m:[93m11[0m:[93m15[0m - [91merror[0m[90m TS6196: [0m'RSVPStatus' is declared but never used.
+
+[7m11[0m import type { RSVPStatus, FeedbackStatus, AccessRole as PTAAccessRole, AccessRecord as PTAAccessRecord, TransactionType } from '@store/ptaStore';
+[7m  [0m [91m              ~~~~~~~~~~[0m
+
+[96msrc/dashboards/pta/PTADashboard.tsx[0m:[93m11[0m:[93m27[0m - [91merror[0m[90m TS6196: [0m'FeedbackStatus' is declared but never used.
+
+[7m11[0m import type { RSVPStatus, FeedbackStatus, AccessRole as PTAAccessRole, AccessRecord as PTAAccessRecord, TransactionType } from '@store/ptaStore';
+[7m  [0m [91m                          ~~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/pta/PTADashboard.tsx[0m:[93m379[0m:[93m41[0m - [91merror[0m[90m TS6133: [0m'deleteDirectoryEntry' is declared but its value is never read.
+
+[7m379[0m   const { directory, addDirectoryEntry, deleteDirectoryEntry } = usePTAStore();
+[7m   [0m [91m                                        ~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/pta/PTADashboard.tsx[0m:[93m566[0m:[93m50[0m - [91merror[0m[90m TS6133: [0m'deleteTransaction' is declared but its value is never read.
+
+[7m566[0m   const { transactions, budgets, addTransaction, deleteTransaction, addBudgetCategory, deleteBudgetCategory } = usePTAStore();
+[7m   [0m [91m                                                 ~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/pta/PTADashboard.tsx[0m:[93m803[0m:[93m37[0m - [91merror[0m[90m TS6133: [0m'respondToFeedback' is declared but its value is never read.
+
+[7m803[0m   const { feedback, submitFeedback, respondToFeedback, updateFeedbackStatus } = usePTAStore();
+[7m   [0m [91m                                    ~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/pta/PTADashboard.tsx[0m:[93m803[0m:[93m56[0m - [91merror[0m[90m TS6133: [0m'updateFeedbackStatus' is declared but its value is never read.
+
+[7m803[0m   const { feedback, submitFeedback, respondToFeedback, updateFeedbackStatus } = usePTAStore();
+[7m   [0m [91m                                                       ~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/pta/PTADashboard.tsx[0m:[93m881[0m:[93m39[0m - [91merror[0m[90m TS6133: [0m'revokeAccess' is declared but its value is never read.
+
+[7m881[0m   const { accessRecords, grantAccess, revokeAccess } = usePTAStore();
+[7m   [0m [91m                                      ~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/security/SecurityDashboard.tsx[0m:[93m40[0m:[93m13[0m - [91merror[0m[90m TS6133: [0m'gateLogs' is declared but its value is never read.
+
+[7m40[0m     guards, gateLogs, incidents, patrolShifts, visitors, checklist,
+[7m  [0m [91m            ~~~~~~~~[0m
+
+[96msrc/dashboards/seniorHouse/SeniorHousemasterDashboard.tsx[0m:[93m39[0m:[93m5[0m - [91merror[0m[90m TS6133: [0m'addRollCall' is declared but its value is never read.
+
+[7m39[0m     addRollCall, updateRollCallStatus, deleteRollCall, startRollCall,
+[7m  [0m [91m    ~~~~~~~~~~~[0m
+
+[96msrc/dashboards/seniorHouse/SeniorHousemasterDashboard.tsx[0m:[93m174[0m:[93m15[0m - [91merror[0m[90m TS6133: [0m'hPresent' is declared but its value is never read.
+
+[7m174[0m         const hPresent = hRollCalls.filter(r => r.status === 'Present').length;
+[7m   [0m [91m              ~~~~~~~~[0m
+
+[96msrc/dashboards/seniorHouse/SeniorHousemasterDashboard.tsx[0m:[93m175[0m:[93m15[0m - [91merror[0m[90m TS6133: [0m'hAbsent' is declared but its value is never read.
+
+[7m175[0m         const hAbsent = hRollCalls.filter(r => r.status === 'Absent').length;
+[7m   [0m [91m              ~~~~~~~[0m
+
+[96msrc/dashboards/sportsClubs/SportsClubsDashboard.tsx[0m:[93m8[0m:[93m44[0m - [91merror[0m[90m TS6133: [0m'FIXTURE_STATUSES' is declared but its value is never read.
+
+[7m8[0m   useSportsStore, CLUB_CATEGORIES, SPORTS, FIXTURE_STATUSES,
+[7m [0m [91m                                           ~~~~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/sportsClubs/SportsClubsDashboard.tsx[0m:[93m57[0m:[93m27[0m - [91merror[0m[90m TS6133: [0m'deleteClub' is declared but its value is never read.
+
+[7m57[0m   const { clubs, addClub, deleteClub } = useSportsStore();
+[7m  [0m [91m                          ~~~~~~~~~~[0m
+
+[96msrc/dashboards/sportsClubs/SportsClubsDashboard.tsx[0m:[93m162[0m:[93m33[0m - [91merror[0m[90m TS6133: [0m'cancelFixture' is declared but its value is never read.
+
+[7m162[0m   const { fixtures, addFixture, cancelFixture, postponeFixture, updateFixtureResult } = useSportsStore();
+[7m   [0m [91m                                ~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/sportsClubs/SportsClubsDashboard.tsx[0m:[93m162[0m:[93m48[0m - [91merror[0m[90m TS6133: [0m'postponeFixture' is declared but its value is never read.
+
+[7m162[0m   const { fixtures, addFixture, cancelFixture, postponeFixture, updateFixtureResult } = useSportsStore();
+[7m   [0m [91m                                               ~~~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/sportsClubs/SportsClubsDashboard.tsx[0m:[93m292[0m:[93m44[0m - [91merror[0m[90m TS6133: [0m'deleteParticipation' is declared but its value is never read.
+
+[7m292[0m   const { participation, addParticipation, deleteParticipation } = useSportsStore();
+[7m   [0m [91m                                           ~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/sportsClubs/SportsClubsDashboard.tsx[0m:[93m376[0m:[93m36[0m - [91merror[0m[90m TS6133: [0m'deleteEquipment' is declared but its value is never read.
+
+[7m376[0m   const { equipment, addEquipment, deleteEquipment } = useSportsStore();
+[7m   [0m [91m                                   ~~~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/sportsClubs/SportsClubsDashboard.tsx[0m:[93m471[0m:[93m41[0m - [91merror[0m[90m TS6133: [0m'deleteAchievement' is declared but its value is never read.
+
+[7m471[0m   const { achievements, addAchievement, deleteAchievement } = useSportsStore();
+[7m   [0m [91m                                        ~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/sportsClubs/SportsClubsDashboard.tsx[0m:[93m562[0m:[93m39[0m - [91merror[0m[90m TS6133: [0m'revokeAccess' is declared but its value is never read.
+
+[7m562[0m   const { accessRecords, grantAccess, revokeAccess } = useSportsStore();
+[7m   [0m [91m                                      ~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/stores/StoresDashboard.tsx[0m:[93m26[0m:[93m7[0m - [91merror[0m[90m TS6133: [0m'DEPARTMENTS' is declared but its value is never read.
+
+[7m26[0m const DEPARTMENTS = ['Kitchen', 'Cleaning', 'Academic', 'Health Centre', 'Maintenance', 'Administration', 'Boarding', 'Sports'];
+[7m  [0m [91m      ~~~~~~~~~~~[0m
+
+[96msrc/dashboards/student/StudentDashboard.tsx[0m:[93m510[0m:[93m39[0m - [91merror[0m[90m TS2554: [0mExpected 2 arguments, but got 1.
+
+[7m510[0m                     await electionApi.castVote(selectedCandidate!);
+[7m   [0m [91m                                      ~~~~~~~~[0m
+
+  [96msrc/shared/api/electionApi.ts[0m:[93m71[0m:[93m35[0m
+    [7m71[0m   async castVote(voterId: string, candidateId: string): Promise<{ success: boolean }> {
+    [7m  [0m [96m                                  ~~~~~~~~~~~~~~~~~~~[0m
+    An argument for 'candidateId' was not provided.
+
+[96msrc/dashboards/transport/TransportDashboard.tsx[0m:[93m13[0m:[93m31[0m - [91merror[0m[90m TS6196: [0m'MaintenanceStatus' is declared but never used.
+
+[7m13[0m   VehicleStatus, VehicleType, MaintenanceStatus, MaintenanceType,
+[7m  [0m [91m                              ~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/dashboards/verification/VerificationDashboard.tsx[0m:[93m5[0m:[93m7[0m - [91merror[0m[90m TS6133: [0m'NAV_ITEMS' is declared but its value is never read.
+
+[7m5[0m const NAV_ITEMS = [
+[7m [0m [91m      ~~~~~~~~~[0m
+
+[96msrc/dashboards/verification/VerificationDashboard.tsx[0m:[93m11[0m:[93m22[0m - [91merror[0m[90m TS6133: [0m'setActivePage' is declared but its value is never read.
+
+[7m11[0m   const [activePage, setActivePage] = useState('overview');
+[7m  [0m [91m                     ~~~~~~~~~~~~~[0m
+
+
+Found 51 errors in 13 files.
+
+Errors  Files
+     7  src/dashboards/boarding/HouseDashboard.tsx[90m:12[0m
+     5  src/dashboards/catering/CateringDashboard.tsx[90m:92[0m
+     1  src/dashboards/cleaning/CleaningDashboard.tsx[90m:97[0m
+     8  src/dashboards/libraryICT/LibraryICTDashboard.tsx[90m:53[0m
+     4  src/dashboards/plc/PLCDashboard.tsx[90m:3[0m
+     9  src/dashboards/pta/PTADashboard.tsx[90m:7[0m
+     1  src/dashboards/security/SecurityDashboard.tsx[90m:40[0m
+     3  src/dashboards/seniorHouse/SeniorHousemasterDashboard.tsx[90m:39[0m
+     8  src/dashboards/sportsClubs/SportsClubsDashboard.tsx[90m:8[0m
+     1  src/dashboards/stores/StoresDashboard.tsx[90m:26[0m
+     1  src/dashboards/student/StudentDashboard.tsx[90m:510[0m
+     1  src/dashboards/transport/TransportDashboard.tsx[90m:13[0m
+     2  src/dashboards/verification/VerificationDashboard.tsx[90m:5[0m

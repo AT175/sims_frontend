@@ -1,0 +1,8 @@
+[96msrc/dashboards/verification/VerificationDashboard.tsx[0m:[93m25[0m:[93m10[0m - [91merror[0m[90m TS2304: [0mCannot find name 'activePage'.
+
+[7m25[0m         {activePage === 'overview' && (
+[7m  [0m [91m         ~~~~~~~~~~[0m
+
+
+Found 1 error in src/dashboards/verification/VerificationDashboard.tsx[90m:25[0m
+
