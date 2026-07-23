@@ -59,11 +59,33 @@ self.addEventListener('fetch', (event) => {
         .then((response) => {
           if (response.ok) {
             const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+            caches.open(CACHE_NAME).then((cache) => {
+              const headers = new Headers();
+              headers.set('X-Cache-Timestamp', Date.now().toString());
+              const cachedResponse = new Response(copy.body, {
+                status: copy.status,
+                statusText: copy.statusText,
+                headers: headers,
+              });
+              cache.put(request, cachedResponse);
+            });
           }
           return response;
         })
-        .catch(() => caches.match(request))
+        .catch(() => caches.match(request).then((cached) => {
+          if (!cached) return new Response('{"error":"Offline"}', {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' },
+          });
+          const ts = cached.headers.get('X-Cache-Timestamp');
+          if (ts && Date.now() - parseInt(ts) > 300000) {
+            return new Response('{"error":"Offline - cached data expired"}', {
+              status: 503,
+              headers: { 'Content-Type': 'application/json' },
+            });
+          }
+          return cached;
+        }))
     );
     return;
   }
