@@ -314,30 +314,50 @@ function StudentsPage({ students, store, renderBadge, onRefresh }: any) {
       return;
     }
     setSaving(true);
-    try {
-      await registryApi.createStudent({
-        admissionNumber: form.admNo,
-        firstName: form.firstName,
-        lastName: form.lastName,
-        dateOfBirth: form.dateOfBirth || '2009-01-01',
-        gender: form.gender,
-        classSectionId: form.class,
-        houseId: form.house || null,
-        guardianName: form.guardianName,
-        guardianPhone: form.guardianPhone,
-        guardianAddress: form.guardianAddress,
-        admissionDate: new Date().toISOString().slice(0, 10),
-        status: 'Active',
-      } as any);
-      setSaving(false);
-      setForm({ admNo: '', firstName: '', lastName: '', dateOfBirth: '', gender: 'Male', programme: 'Science', class: CLASS_SECTIONS[0], house: HOUSES[0], guardianName: '', guardianPhone: '', guardianAddress: '', photoUrl: null, csspsRef: '' });
-      setShowAdd(false);
-      Alert.alert('Success', 'Student record added.');
+
+    const localStudent = {
+      admNo: form.admNo,
+      firstName: form.firstName,
+      lastName: form.lastName,
+      dateOfBirth: form.dateOfBirth || '2009-01-01',
+      gender: form.gender,
+      programme: form.programme,
+      class: form.class,
+      house: form.house,
+      guardianName: form.guardianName,
+      guardianPhone: form.guardianPhone,
+      guardianAddress: form.guardianAddress,
+      admissionDate: new Date().toISOString().slice(0, 10),
+      status: 'Active' as any,
+      photoUrl: form.photoUrl,
+      csspsRef: form.csspsRef,
+    };
+
+    store.addStudent(localStudent);
+
+    setSaving(false);
+    setForm({ admNo: '', firstName: '', lastName: '', dateOfBirth: '', gender: 'Male', programme: 'Science', class: CLASS_SECTIONS[0], house: HOUSES[0], guardianName: '', guardianPhone: '', guardianAddress: '', photoUrl: null, csspsRef: '' });
+    setShowAdd(false);
+    Alert.alert('Success', 'Student record added.');
+
+    registryApi.createStudent({
+      admissionNumber: form.admNo,
+      firstName: form.firstName,
+      lastName: form.lastName,
+      dateOfBirth: form.dateOfBirth || '2009-01-01',
+      gender: form.gender,
+      classSectionId: form.class,
+      houseId: form.house || null,
+      guardianName: form.guardianName,
+      guardianPhone: form.guardianPhone,
+      guardianAddress: form.guardianAddress,
+      admissionDate: new Date().toISOString().slice(0, 10),
+      status: 'Active',
+    } as any).then(() => {
       if (onRefresh) onRefresh();
-    } catch (err: any) {
-      setSaving(false);
-      Alert.alert('Error', err.message || 'Failed to add student.');
-    }
+    }).catch((err) => {
+      console.error('[Registry] Background sync failed for student create:', err);
+    });
   };
 
   return (
@@ -455,33 +475,33 @@ function AdmissionsPage({ admissions, placements, store, renderBadge, onRefresh 
   const detailApp = admissions.find((a: any) => a.id === showDetail);
 
   const handleApprove = async (id: string) => {
-    try {
-      await registryApi.updateAdmissionStatus(id, 'approved', true);
-      Alert.alert('Success', 'Admission approved.');
-      setShowDetail(null);
+    store.updateAdmissionStatus(id, 'Approved', 'Registrar');
+    setShowDetail(null);
+    Alert.alert('Success', 'Admission approved.');
+    registryApi.updateAdmissionStatus(id, 'approved', true).then(() => {
       if (onRefresh) onRefresh();
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to approve admission.');
-    }
+    }).catch((err) => {
+      console.error('[Registry] Background sync failed for approve:', err);
+    });
   };
   const handleReject = async (id: string) => {
-    try {
-      await registryApi.updateAdmissionStatus(id, 'rejected');
-      Alert.alert('Success', 'Admission rejected.');
-      setShowDetail(null);
+    store.updateAdmissionStatus(id, 'Rejected', 'Registrar');
+    setShowDetail(null);
+    Alert.alert('Success', 'Admission rejected.');
+    registryApi.updateAdmissionStatus(id, 'rejected').then(() => {
       if (onRefresh) onRefresh();
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to reject admission.');
-    }
+    }).catch((err) => {
+      console.error('[Registry] Background sync failed for reject:', err);
+    });
   };
   const handleReview = async (id: string) => {
-    try {
-      await registryApi.updateAdmissionStatus(id, 'under_review');
-      setShowDetail(null);
+    store.updateAdmissionStatus(id, 'Under Review', 'Registrar');
+    setShowDetail(null);
+    registryApi.updateAdmissionStatus(id, 'under_review').then(() => {
       if (onRefresh) onRefresh();
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to update admission.');
-    }
+    }).catch((err) => {
+      console.error('[Registry] Background sync failed for review:', err);
+    });
   };
 
   return (
