@@ -53,7 +53,7 @@ export function SystemAdminDashboard() {
     setShowUserModal(true);
   };
 
-  const handleSaveUser = () => {
+  const handleSaveUser = async () => {
     if (!userForm.username.trim() || !userForm.displayName.trim()) {
       Alert.alert('Error', 'Username and display name are required');
       return;
@@ -66,15 +66,21 @@ export function SystemAdminDashboard() {
       store.updateUserRoles(editingUser.id, userForm.roles);
       Alert.alert('Success', 'User updated successfully');
     } else {
-      store.addUser({
-        username: userForm.username.trim(),
-        displayName: userForm.displayName.trim(),
-        email: userForm.email.trim(),
-        roles: userForm.roles.length > 0 ? userForm.roles : ['staff'],
-        status: 'Active',
-        tenantId: store.tenant.id,
-      });
-      Alert.alert('Success', 'User created successfully');
+      try {
+        await store.addUser({
+          username: userForm.username.trim(),
+          displayName: userForm.displayName.trim(),
+          email: userForm.email.trim(),
+          roles: userForm.roles.length > 0 ? userForm.roles : ['staff'],
+          status: 'Active',
+          tenantId: store.tenant.id,
+          password: userForm.password,
+        } as any);
+        Alert.alert('Success', 'User created successfully');
+      } catch (err: any) {
+        Alert.alert('Error', err.message || 'Failed to create user');
+        return;
+      }
     }
     setShowUserModal(false);
   };
@@ -512,12 +518,16 @@ export function SystemAdminDashboard() {
               secureTextEntry
             />
             <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.modalApproveBtn} onPress={() => {
+              <TouchableOpacity style={styles.modalApproveBtn} onPress={async () => {
                 if (!newPassword.trim()) { Alert.alert('Error', 'Please enter a new password'); return; }
-                store.resetUserPassword(resetUser!.id, newPassword.trim());
-                Alert.alert('Success', `Password reset for ${resetUser!.username}`);
-                setResetUser(null);
-                setNewPassword('');
+                try {
+                  await store.resetUserPassword(resetUser!.id, newPassword.trim());
+                  Alert.alert('Success', `Password reset for ${resetUser!.username}`);
+                  setResetUser(null);
+                  setNewPassword('');
+                } catch (err: any) {
+                  Alert.alert('Error', err.message || 'Failed to reset password');
+                }
               }}>
                 <Text style={styles.modalBtnTextWhite}>Reset Password</Text>
               </TouchableOpacity>

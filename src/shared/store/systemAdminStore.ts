@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { RoleId } from '@shared/types';
+import { apiClient } from '@shared/api/apiClient';
 
 // ── Types ──
 
@@ -170,11 +171,11 @@ export interface SystemAdminState {
   modules: ModuleStatus[];
   dbHealth: DatabaseHealth;
 
-  addUser: (user: Omit<SystemUser, 'id' | 'createdAt' | 'lastLogin' | 'failedAttempts'>) => void;
+  addUser: (user: Omit<SystemUser, 'id' | 'createdAt' | 'lastLogin' | 'failedAttempts'>) => Promise<void>;
   updateUserStatus: (id: string, status: UserStatus) => void;
   updateUserRoles: (id: string, roles: RoleId[]) => void;
   deleteUser: (id: string) => void;
-  resetUserPassword: (id: string, newPassword: string) => void;
+  resetUserPassword: (id: string, newPassword: string) => Promise<void>;
   unlockUser: (id: string) => void;
 
   updateTenant: (config: Partial<TenantConfig>) => void;
@@ -198,15 +199,28 @@ export const useSystemAdminStore = create<SystemAdminState>((set, get) => ({
   modules: INITIAL_MODULES,
   dbHealth: INITIAL_DB_HEALTH,
 
-  addUser: (user) => {
-    const id = String(get().users.length + 1);
-    set((st) => ({
-      users: [...st.users, { ...user, id, createdAt: todayISO(), lastLogin: null, failedAttempts: 0 }],
-      logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'INFO', source: 'User Management', message: `User ${user.username} created by admin`, user: 'admin' }, ...st.logs],
-    }));
-  },
-
-  updateUserStatus: (id, status) => {
+  addUser: async (user) => {
+    try {
+      const created = await apiClient.post<any>('/auth/users', {
+        username: user.username,
+        password: (user as any).password || 'TempPass@123',
+        displayName: user.displayName,
+        email: user.email,
+        roles: user.roles,
+        tenantId: user.tenantId,
+      });
+      const id = created.id || String(get().users.length + 1);
+      set((st) => ({
+        users: [...st.users, { ...user, id, createdAt: todayISO(), lastLogin: null, failedAttempts: 0 }],
+        logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'INFO', source: 'User Management', message: `User ${user.username} created by admin`, user: 'admin' }, ...st.logs],
+      }));
+    } catch (err: any) {
+      set((st) => ({
+        logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'ERROR', source: 'User Management', message: `Failed to create user ${user.username}: ${err.message}`, user: 'admin' }, ...st.logs],
+      }));
+      throw err;
+    }
+  },  updateUserStatus: (id, status) => {
     set((st) => ({
       users: st.users.map((u) => (u.id === id ? { ...u, status } : u)),
       logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'INFO', source: 'User Management', message: `User ${st.users.find((u) => u.id === id)?.username} status changed to ${status}`, user: 'admin' }, ...st.logs],
@@ -228,12 +242,20 @@ export const useSystemAdminStore = create<SystemAdminState>((set, get) => ({
     }));
   },
 
-  resetUserPassword: (id, newPassword) => {
+  resetUserPassword: async (id, newPassword) => {
     const username = get().users.find((u) => u.id === id)?.username || 'unknown';
-    set((st) => ({
-      users: st.users.map((u) => (u.id === id ? { ...u, failedAttempts: 0, status: u.status === 'Locked' ? 'Active' : u.status } : u)),
-      logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'INFO', source: 'User Management', message: `Password reset for user ${username}`, user: 'admin' }, ...st.logs],
-    }));
+    try {
+      await apiClient.post(`/auth/users/${id}/reset-password`, { newPassword });
+      set((st) => ({
+        users: st.users.map((u) => (u.id === id ? { ...u, failedAttempts: 0, status: u.status === 'Locked' ? 'Active' : u.status } : u)),
+        logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'INFO', source: 'User Management', message: `Password reset for user ${username}`, user: 'admin' }, ...st.logs],
+      }));
+    } catch (err: any) {
+      set((st) => ({
+        logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'ERROR', source: 'User Management', message: `Failed to reset password for ${username}: ${err.message}`, user: 'admin' }, ...st.logs],
+      }));
+      throw err;
+    }
   },
 
   unlockUser: (id) => {

@@ -147,7 +147,7 @@ export function HeadmasterDashboard() {
     Alert.alert('Success', 'Discipline case logged.');
   };
 
-  const handleAddUser = () => {
+  const handleAddUser = async () => {
     if (!userForm.username.trim() || !userForm.displayName.trim()) {
       Alert.alert('Error', 'Username and display name are required.');
       return;
@@ -160,10 +160,14 @@ export function HeadmasterDashboard() {
       Alert.alert('Error', 'At least one role must be assigned.');
       return;
     }
-    sysAdminStore.addUser({ username: userForm.username.trim(), displayName: userForm.displayName.trim(), email: userForm.email.trim(), roles: userForm.roles, status: userForm.status, tenantId: userForm.tenantId });
-    setUserForm({ username: '', displayName: '', email: '', password: '', roles: [], status: 'Active', tenantId: 'tenant_001' });
-    setShowUserModal(false);
-    Alert.alert('Success', 'User account created.');
+    try {
+      await sysAdminStore.addUser({ username: userForm.username.trim(), displayName: userForm.displayName.trim(), email: userForm.email.trim(), roles: userForm.roles, status: userForm.status, tenantId: userForm.tenantId, password: userForm.password } as any);
+      setUserForm({ username: '', displayName: '', email: '', password: '', roles: [], status: 'Active', tenantId: 'tenant_001' });
+      setShowUserModal(false);
+      Alert.alert('Success', 'User account created.');
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to create user.');
+    }
   };
 
   const toggleRoleInForm = (role: RoleId) => {
@@ -1034,11 +1038,15 @@ export function HeadmasterDashboard() {
             <Text style={styles.inputLabel}>New Password</Text>
             <TextInput style={styles.textInput} value={newPassword} onChangeText={setNewPassword} placeholder="Enter new password" secureTextEntry />
             <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.modalApproveBtn} onPress={() => {
+              <TouchableOpacity style={styles.modalApproveBtn} onPress={async () => {
                 if (!newPassword.trim()) { Alert.alert('Error', 'Please enter a new password.'); return; }
-                sysAdminStore.resetUserPassword(resetUser!.id, newPassword.trim());
-                Alert.alert('Success', `Password reset for ${resetUser!.username}`);
-                setResetUser(null); setNewPassword('');
+                try {
+                  await sysAdminStore.resetUserPassword(resetUser!.id, newPassword.trim());
+                  Alert.alert('Success', `Password reset for ${resetUser!.username}`);
+                  setResetUser(null); setNewPassword('');
+                } catch (err: any) {
+                  Alert.alert('Error', err.message || 'Failed to reset password.');
+                }
               }}>
                 <Text style={styles.modalBtnTextWhite}>Reset Password</Text>
               </TouchableOpacity>
