@@ -182,27 +182,38 @@ export function LoginScreen() {
     }
   };
 
-  const handleAdmissionSubmit = () => {
+  const handleAdmissionSubmit = async () => {
     if (!parentName.trim() || !parentPhone.trim()) { Alert.alert('Error', 'Parent name and phone are required'); return; }
     setAdmissionLoading(true);
-    registryStore.addAdmission({
-      applicantName: wardName.trim(), parentName: parentName.trim(), parentPhone: parentPhone.trim(),
-      parentEmail: parentEmail.trim(), programme: selectedProgramme, photoUrl: null,
-      csspsRef: placementRef.trim() || null, notes: '',
-      fee: { amount: registryStore.applicationFeeAmount, method: paymentMethod!, status: 'Paid',
-        reference: paymentMethod === 'Mobile Money' ? mmRef.trim() : scratchSerial.trim(),
-        paidAt: new Date().toISOString().slice(0, 10), verifiedBy: null },
-    } as any);
-    setAdmissionLoading(false);
-    setAdmissionStep('submitted');
+    try {
+      await apiClient.post('/admissions/apply', {
+        applicantName: wardName.trim(),
+        parentName: parentName.trim(),
+        parentPhone: parentPhone.trim(),
+        parentEmail: parentEmail.trim() || undefined,
+        csspsPlacementRef: placementRef.trim() || undefined,
+        programme: selectedProgramme,
+      });
+      setAdmissionLoading(false);
+      setAdmissionStep('submitted');
+    } catch (err: any) {
+      setAdmissionLoading(false);
+      Alert.alert('Error', err.message || 'Failed to submit application. Please try again.');
+    }
   };
 
-  const handleStatusCheck = () => {
+  const handleStatusCheck = async () => {
     if (!statusName.trim() || !statusRef.trim()) { Alert.alert('Error', 'Please enter both name and CSSPS reference'); return; }
-    const admission = registryStore.getAdmissionByCredentials(statusName.trim(), statusRef.trim());
-    if (!admission) { Alert.alert('Not Found', 'No application found with the provided details.'); return; }
-    setStatusResult(admission);
-    setStatusStep('result');
+    try {
+      const result = await apiClient.post<any>('/admissions/check-status', {
+        applicantName: statusName.trim(),
+        csspsPlacementRef: statusRef.trim(),
+      });
+      setStatusResult(result);
+      setStatusStep('result');
+    } catch (err: any) {
+      Alert.alert('Not Found', err.message || 'No application found with the provided details.');
+    }
   };
 
   const resetAdmission = () => {
@@ -624,62 +635,31 @@ export function LoginScreen() {
                     )}
                     {statusStep === 'result' && statusResult && (
                       <View>
-                        {statusResult.credentialsExpired ? (
-                          <View style={s.resultBoxDanger}>
-                            <View style={s.resultIconWrapDanger}><Text style={s.resultIcon}>✕</Text></View>
-                            <Text style={s.resultTitleDanger}>Application Denied</Text>
-                            <Text style={s.resultTextDanger}>We're sorry, your application has been rejected. Your credentials have expired. Please contact the school's admissions office.</Text>
-                          </View>
-                        ) : statusResult.status === 'Approved' ? (
+                        {statusResult.status === 'approved' ? (
                           <View>
                             <View style={s.resultBoxSuccess}>
                               <View style={s.resultIconWrapSuccess}><Text style={s.resultIcon}>✓</Text></View>
                               <Text style={s.resultTitleSuccess}>Admission Approved!</Text>
                               <Text style={s.resultTextSuccess}>Congratulations! Your ward has been admitted.</Text>
-                              <Text style={s.resultDetailText}>Programme: {statusResult.programme}</Text>
+                              <Text style={s.resultDetailText}>Programme: {statusResult.programme || 'N/A'}</Text>
                               <Text style={s.resultDetailText}>Status: {statusResult.status}</Text>
-                              <Text style={s.resultDetailText}>Date Applied: {statusResult.dateApplied}</Text>
+                              <Text style={s.resultDetailText}>Date Applied: {statusResult.createdAt ? new Date(statusResult.createdAt).toLocaleDateString() : 'N/A'}</Text>
                             </View>
-                            {(() => { const pa = registryStore.getParentAccountByAdmission(statusResult.id); return pa ? (
-                              <View style={s.credentialsBox}>
-                                <Text style={s.credentialsTitle}>Your Parent Account</Text>
-                                <Text style={s.credentialsDetail}>Username: {pa.username}</Text>
-                                <Text style={s.credentialsDetail}>Password: {pa.password}</Text>
-                                <Text style={s.credentialsHint}>Use these credentials to sign in to the Parent Portal.</Text>
-                              </View>
-                            ) : null; })()}
-                            {(() => {
-                              const pl = registryStore.getProspectusForParent(registryStore.getParentAccountByAdmission(statusResult.id)?.username || '');
-                              if (pl.length === 0) return <Text style={s.hintText}>No prospectus published yet. Check back later.</Text>;
-                              return (
-                                <View>
-                                  <Text style={s.formSectionTitle}>Prospectus Available</Text>
-                                  {pl.map((p: any) => (
-                                    <View key={p.id} style={s.prospectusCard}>
-                                      <Text style={s.prospectusTitle}>{p.title}</Text>
-                                      <Text style={s.prospectusMeta}>{p.academicYear}</Text>
-                                      <Text style={s.prospectusPreview} numberOfLines={3}>{p.content}</Text>
-                                      <TouchableOpacity style={s.downloadBtn} onPress={() => {
-                                        const w = window.open('', '_blank');
-                                        if (w) { w.document.write(`<html><head><meta charset='utf-8'><style>body{font-family:Arial,sans-serif;margin:40px;color:#1A1A2E;}h1{color:#0F4C75;border-bottom:2px solid #0F4C75;padding-bottom:8px;}pre{white-space:pre-wrap;font-size:14px;line-height:1.6;}</style></head><body><h1>${p.title}</h1><p style='color:#5C6370;font-size:12px;'>Academic Year: ${p.academicYear} | Published: ${p.datePublished}</p><pre>${p.content}</pre></body></html>`); w.document.close(); w.focus(); setTimeout(() => w.print(), 500); }
-                                      }}>
-                                        <Text style={s.downloadBtnText}>⬇ Download / Print Prospectus</Text>
-                                      </TouchableOpacity>
-                                    </View>
-                                  ))}
-                                </View>
-                              );
-                            })()}
+                          </View>
+                        ) : statusResult.status === 'rejected' ? (
+                          <View style={s.resultBoxDanger}>
+                            <View style={s.resultIconWrapDanger}><Text style={s.resultIcon}>✕</Text></View>
+                            <Text style={s.resultTitleDanger}>Application Denied</Text>
+                            <Text style={s.resultTextDanger}>We're sorry, your application has been rejected. Please contact the school's admissions office.</Text>
                           </View>
                         ) : (
                           <View style={s.resultBoxWarning}>
                             <View style={s.resultIconWrapWarning}><Text style={s.resultIcon}>⏳</Text></View>
                             <Text style={s.resultTitleWarning}>Application {statusResult.status}</Text>
                             <Text style={s.resultTextWarning}>Applicant: {statusResult.applicantName}</Text>
-                            <Text style={s.resultTextWarning}>Programme: {statusResult.programme}</Text>
-                            <Text style={s.resultTextWarning}>Date Applied: {statusResult.dateApplied}</Text>
+                            <Text style={s.resultTextWarning}>Programme: {statusResult.programme || 'N/A'}</Text>
+                            <Text style={s.resultTextWarning}>Date Applied: {statusResult.createdAt ? new Date(statusResult.createdAt).toLocaleDateString() : 'N/A'}</Text>
                             <Text style={s.resultSubtext}>Your application is being reviewed. Please check back later for updates.</Text>
-                            {statusResult.fee && statusResult.fee.status === 'Unpaid' && <Text style={s.feeWarning}>⚠ Application fee is unpaid. Please complete payment.</Text>}
                           </View>
                         )}
                         <TouchableOpacity style={s.backBtn} onPress={() => setStatusStep('lookup')}><Text style={s.backBtnText}>← Check Another</Text></TouchableOpacity>
