@@ -1,10 +1,44 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useSyncStore } from '@store/syncStore';
+import { apiClient } from '@shared/api/apiClient';
 import { colors, spacing, fontSize, radius } from '@theme/index';
 
+const HEALTH_CHECK_INTERVAL = 30000;
+
 export function SyncStatusIndicator() {
-  const { status, lastSyncedAt, pendingCount } = useSyncStore();
+  const { status, lastSyncedAt, pendingCount, setSyncStatus, setLastSyncedAt } = useSyncStore();
+  const isSyncingRef = useRef(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const checkHealth = async () => {
+      if (isSyncingRef.current) return;
+      isSyncingRef.current = true;
+      try {
+        const result = await apiClient.healthCheck();
+        if (!mounted) return;
+        if (result.ok) {
+          setSyncStatus('synced');
+          setLastSyncedAt(new Date().toISOString());
+        } else {
+          setSyncStatus('offline');
+        }
+      } catch {
+        if (mounted) setSyncStatus('offline');
+      } finally {
+        isSyncingRef.current = false;
+      }
+    };
+
+    checkHealth();
+    const interval = setInterval(checkHealth, HEALTH_CHECK_INTERVAL);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const statusColor =
     status === 'synced'
@@ -26,7 +60,7 @@ export function SyncStatusIndicator() {
 
   const statusLabel =
     status === 'synced'
-      ? 'Synced'
+      ? 'Online'
       : status === 'syncing'
         ? 'Syncing...'
         : status === 'error'
