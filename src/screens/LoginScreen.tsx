@@ -51,21 +51,21 @@ const QUICK_STATS = [
   { label: 'Founded', value: '2011' },
 ];
 
-export function LoginScreen() {
+export function LoginScreen({ presetTenantKey, onBack }: { presetTenantKey?: string; onBack?: () => void }) {
   const { login, loginTemp, isLoading, error, clearError } = useAuthStore();
   const registryStore = useRegistryStore();
   const { width: windowWidth } = useWindowDimensions();
   const IS_NARROW = windowWidth < 768;
   const IS_VERY_NARROW = windowWidth < 480;
 
-  const [view, setView] = useState<'home' | 'portal'>('home');
+  const [view, setView] = useState<'home' | 'portal'>(presetTenantKey ? 'portal' : 'home');
   const [activeTab, setActiveTab] = useState<Tab>('signin');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   const openPortal = (tab: Tab) => { setView('portal'); setActiveTab(tab); clearError(); };
-  const goHome = () => setView('home');
+  const goHome = () => { if (onBack) { onBack(); } else { setView('home'); } };
 
   const scrollViewRef = useRef<any>(null);
   const aboutY = useRef(0);

@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Text, ScrollView } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useAuthStore } from '@store/authStore';
 import { LoginScreen } from '@screens/LoginScreen';
+import { SchoolWebsite } from '@screens/SchoolWebsite';
 import { ROLE_DASHBOARD_MAP } from '@shared/navigation/roleMap';
 import { RoleId } from '@shared/types';
 
@@ -125,6 +126,35 @@ class ErrorBoundary extends React.Component<
 
 function AppContent() {
   const { isAuthenticated, user, isTempLogin } = useAuthStore();
+  const [routeTenantKey, setRouteTenantKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    const detectRoute = () => {
+      if (typeof window !== 'undefined' && window.location) {
+        const path = window.location.pathname;
+        // Match /:tenantKey (e.g. /stmary, /achimota)
+        // Exclude known asset paths and root
+        if (path && path !== '/' && !path.startsWith('/api') && !path.includes('.')) {
+          const segments = path.split('/').filter(Boolean);
+          if (segments.length === 1) {
+            setRouteTenantKey(segments[0]);
+          } else {
+            setRouteTenantKey(null);
+          }
+        } else {
+          setRouteTenantKey(null);
+        }
+      }
+    };
+    detectRoute();
+    window.addEventListener('popstate', detectRoute);
+    return () => window.removeEventListener('popstate', detectRoute);
+  }, []);
+
+  // If URL has a tenant key and user is not authenticated, show school website
+  if (routeTenantKey && !isAuthenticated) {
+    return <SchoolWebsite tenantKey={routeTenantKey} />;
+  }
 
   if (!isAuthenticated || !user) {
     return <LoginScreen />;

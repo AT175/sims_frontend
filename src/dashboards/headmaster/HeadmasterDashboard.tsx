@@ -12,6 +12,8 @@ import { useSystemAdminStore } from '@store/systemAdminStore';
 import type { SystemUser, UserStatus } from '@store/systemAdminStore';
 import { useAccessControlStore } from '@store/accessControlStore';
 import { registryApi } from '@shared/api/registryApi';
+import { apiClient } from '@shared/api/apiClient';
+import type { SchoolBranding } from '@shared/api/apiClient';
 import { DASHBOARD_CATALOG, DASHBOARD_MAP } from '@shared/navigation/dashboardCatalog';
 import { ROLE_LABELS } from '@shared/navigation/roleMap';
 import type { RoleId } from '@shared/types';
@@ -27,6 +29,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'users', label: 'User Management' },
   { key: 'access', label: 'Access Control' },
   { key: 'menu', label: "Today's Menu" },
+  { key: 'website', label: 'Website Settings' },
   { key: 'sync', label: 'Sync & Data Health' },
 ];
 
@@ -117,6 +120,48 @@ export function HeadmasterDashboard() {
   const [roleDraft, setRoleDraft] = useState<RoleId[]>([]);
   const [resetUser, setResetUser] = useState<SystemUser | null>(null);
   const [newPassword, setNewPassword] = useState('');
+
+  // ── Website Settings state ──
+  const [websiteForm, setWebsiteForm] = useState<Partial<SchoolBranding> & { tenantId?: string }>({
+    schoolName: '', motto: '', primaryColor: '#0F4C75', secondaryColor: '#FFFFFF',
+    bannerImage: '', logoUrl: '', aboutText: '', mission: '', vision: '',
+    principalsMessage: '', admissionsInfo: '', facebookUrl: '', instagramUrl: '', twitterUrl: '',
+    newsItems: [], galleryImages: [],
+  });
+  const [websiteTenantId, setWebsiteTenantId] = useState<string>('');
+  const [isSavingWebsite, setIsSavingWebsite] = useState(false);
+  const [websiteError, setWebsiteError] = useState<string | null>(null);
+  const [websiteLoaded, setWebsiteLoaded] = useState(false);
+
+  useEffect(() => {
+    if (user?.tenantId && !websiteLoaded) {
+      apiClient.getTenants().then(async (allTenants: any[]) => {
+        const bt = allTenants.find((t) => t.tenantKey === user.tenantId);
+        if (bt) {
+          setWebsiteTenantId(bt.id);
+          setWebsiteForm({
+            schoolName: bt.schoolName || '',
+            motto: bt.motto || '',
+            primaryColor: bt.primaryColor || '#0F4C75',
+            secondaryColor: bt.secondaryColor || '#FFFFFF',
+            bannerImage: bt.bannerImage || '',
+            logoUrl: bt.logoUrl || '',
+            aboutText: bt.aboutText || '',
+            mission: bt.mission || '',
+            vision: bt.vision || '',
+            principalsMessage: bt.principalsMessage || '',
+            admissionsInfo: bt.admissionsInfo || '',
+            facebookUrl: bt.facebookUrl || '',
+            instagramUrl: bt.instagramUrl || '',
+            twitterUrl: bt.twitterUrl || '',
+            newsItems: bt.newsItems || [],
+            galleryImages: bt.galleryImages || [],
+          });
+        }
+        setWebsiteLoaded(true);
+      }).catch(() => setWebsiteLoaded(true));
+    }
+  }, [user?.tenantId, websiteLoaded]);
 
   const [showAccessModal, setShowAccessModal] = useState(false);
   const [accessForm, setAccessForm] = useState({ userId: '', dashboardKey: '', allowedPages: [] as string[], fullAccess: false });
@@ -794,6 +839,102 @@ export function HeadmasterDashboard() {
             <KitchenMenuWidget role="Headmaster" />
           </View>
         );
+      case 'website':
+        return (
+          <ScrollView>
+            <Text style={styles.pageTitle}>Website Settings</Text>
+            <Text style={styles.pageSubtitle}>Customize your school's public website — branding, colors, content</Text>
+
+            <Text style={styles.sectionTitle}>Branding</Text>
+            <Text style={styles.inputLabel}>School Name</Text>
+            <TextInput style={styles.textInput} value={websiteForm.schoolName || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, schoolName: v })} />
+
+            <Text style={styles.inputLabel}>School Motto</Text>
+            <TextInput style={styles.textInput} value={websiteForm.motto || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, motto: v })} placeholder="e.g. Knowledge, Discipline, Integrity" />
+
+            <Text style={styles.inputLabel}>Logo URL</Text>
+            <TextInput style={styles.textInput} value={websiteForm.logoUrl || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, logoUrl: v })} placeholder="https://..." autoCapitalize="none" />
+
+            <Text style={styles.inputLabel}>Banner Image URL</Text>
+            <TextInput style={styles.textInput} value={websiteForm.bannerImage || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, bannerImage: v })} placeholder="https://..." autoCapitalize="none" />
+
+            <Text style={styles.sectionTitle}>Theme Colors</Text>
+            <Text style={styles.inputLabel}>Primary Color</Text>
+            <TextInput style={styles.textInput} value={websiteForm.primaryColor || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, primaryColor: v })} placeholder="#0F4C75" autoCapitalize="none" />
+            <Text style={styles.inputLabel}>Secondary Color</Text>
+            <TextInput style={styles.textInput} value={websiteForm.secondaryColor || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, secondaryColor: v })} placeholder="#FFFFFF" autoCapitalize="none" />
+
+            <Text style={styles.sectionTitle}>About the School</Text>
+            <Text style={styles.inputLabel}>About Text</Text>
+            <TextInput style={[styles.textInput, { height: 100 }]} multiline value={websiteForm.aboutText || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, aboutText: v })} placeholder="Write a brief description of the school..." />
+
+            <Text style={styles.inputLabel}>Mission</Text>
+            <TextInput style={[styles.textInput, { height: 80 }]} multiline value={websiteForm.mission || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, mission: v })} />
+
+            <Text style={styles.inputLabel}>Vision</Text>
+            <TextInput style={[styles.textInput, { height: 80 }]} multiline value={websiteForm.vision || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, vision: v })} />
+
+            <Text style={styles.inputLabel}>Principal's Message</Text>
+            <TextInput style={[styles.textInput, { height: 100 }]} multiline value={websiteForm.principalsMessage || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, principalsMessage: v })} placeholder="A welcome message from the headmaster..." />
+
+            <Text style={styles.sectionTitle}>Admissions</Text>
+            <Text style={styles.inputLabel}>Admissions Information</Text>
+            <TextInput style={[styles.textInput, { height: 100 }]} multiline value={websiteForm.admissionsInfo || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, admissionsInfo: v })} placeholder="Admission requirements, process, deadlines..." />
+
+            <Text style={styles.sectionTitle}>Social Media Links</Text>
+            <Text style={styles.inputLabel}>Facebook URL</Text>
+            <TextInput style={styles.textInput} value={websiteForm.facebookUrl || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, facebookUrl: v })} placeholder="https://facebook.com/..." autoCapitalize="none" />
+            <Text style={styles.inputLabel}>Instagram URL</Text>
+            <TextInput style={styles.textInput} value={websiteForm.instagramUrl || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, instagramUrl: v })} placeholder="https://instagram.com/..." autoCapitalize="none" />
+            <Text style={styles.inputLabel}>Twitter URL</Text>
+            <TextInput style={styles.textInput} value={websiteForm.twitterUrl || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, twitterUrl: v })} placeholder="https://twitter.com/..." autoCapitalize="none" />
+
+            {websiteError && (
+              <View style={styles.errorBanner}>
+                <Text style={styles.errorBannerText}>{websiteError}</Text>
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={[styles.saveBtn, isSavingWebsite && styles.modalApproveBtnDisabled]}
+              disabled={isSavingWebsite}
+              onPress={async () => {
+                if (!websiteTenantId) {
+                  setWebsiteError('Could not identify tenant. Please reload.');
+                  return;
+                }
+                setIsSavingWebsite(true);
+                setWebsiteError(null);
+                try {
+                  await apiClient.updateTenantBranding(websiteTenantId, {
+                    schoolName: websiteForm.schoolName,
+                    motto: websiteForm.motto,
+                    logoUrl: websiteForm.logoUrl,
+                    bannerImage: websiteForm.bannerImage,
+                    primaryColor: websiteForm.primaryColor,
+                    secondaryColor: websiteForm.secondaryColor,
+                    aboutText: websiteForm.aboutText,
+                    mission: websiteForm.mission,
+                    vision: websiteForm.vision,
+                    principalsMessage: websiteForm.principalsMessage,
+                    admissionsInfo: websiteForm.admissionsInfo,
+                    facebookUrl: websiteForm.facebookUrl,
+                    instagramUrl: websiteForm.instagramUrl,
+                    twitterUrl: websiteForm.twitterUrl,
+                  } as any);
+                  Alert.alert('Saved', 'Website settings saved successfully.');
+                } catch (err: any) {
+                  setWebsiteError(err.message || 'Failed to save website settings.');
+                } finally {
+                  setIsSavingWebsite(false);
+                }
+              }}
+            >
+              <Text style={styles.saveBtnText}>{isSavingWebsite ? 'Saving...' : 'Save Website Settings'}</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        );
+
       case 'sync':
         return (
           <ScrollView>
@@ -1511,6 +1652,33 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.text,
     marginBottom: spacing.sm,
+  },
+  saveBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  saveBtnText: {
+    color: '#fff',
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+  },
+  errorBanner: {
+    backgroundColor: colors.dangerBg,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginTop: spacing.md,
+  },
+  errorBannerText: {
+    color: colors.danger,
+    fontSize: fontSize.sm,
+  },
+  modalApproveBtnDisabled: {
+    opacity: 0.5,
   },
   chipRow: {
     flexDirection: 'row',

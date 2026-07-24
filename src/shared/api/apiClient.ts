@@ -172,6 +172,40 @@ class ApiClient {
   async deleteTenant(id: string): Promise<{ message: string }> {
     return this.delete<{ message: string }>(`/tenants/${id}`);
   }
+
+  async getPublicBranding(tenantKey: string): Promise<SchoolBranding> {
+    return this.get<SchoolBranding>(`/public/tenants/${tenantKey}`);
+  }
+
+  async updateTenantBranding(id: string, data: Partial<SchoolBranding>): Promise<any> {
+    return this.put<any>(`/tenants/${id}`, data as any);
+  }
+}
+
+export interface SchoolBranding {
+  tenantKey: string;
+  schoolName: string;
+  schoolCode: string | null;
+  logoUrl: string | null;
+  motto: string | null;
+  primaryColor: string;
+  secondaryColor: string;
+  bannerImage: string | null;
+  aboutText: string | null;
+  mission: string | null;
+  vision: string | null;
+  principalsMessage: string | null;
+  admissionsInfo: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  region: string | null;
+  district: string | null;
+  facebookUrl: string | null;
+  instagramUrl: string | null;
+  twitterUrl: string | null;
+  newsItems: { title: string; body: string; date: string }[];
+  galleryImages: string[];
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);
