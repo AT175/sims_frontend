@@ -109,7 +109,7 @@ const INITIAL_LOGS: SystemLog[] = [
 ];
 
 const INITIAL_TENANT: TenantConfig = {
-  id: 'tenant_001',
+  id: 'tenant-001',
   schoolName: 'Ghana Senior High School',
   schoolCode: 'GSHS-001',
   region: 'Greater Accra',
@@ -201,14 +201,17 @@ export const useSystemAdminStore = create<SystemAdminState>((set, get) => ({
 
   addUser: async (user) => {
     try {
-      const created = await apiClient.post<any>('/auth/users', {
+      const payload: Record<string, unknown> = {
         username: user.username,
         password: (user as any).password || 'TempPass@123',
         displayName: user.displayName,
-        email: user.email,
         roles: user.roles,
         tenantId: user.tenantId,
-      });
+      };
+      if (user.email && user.email.trim()) {
+        payload.email = user.email.trim();
+      }
+      const created = await apiClient.post<any>('/auth/users', payload);
       const id = created.id || String(get().users.length + 1);
       set((st) => ({
         users: [...st.users, { ...user, id, createdAt: todayISO(), lastLogin: null, failedAttempts: 0 }],

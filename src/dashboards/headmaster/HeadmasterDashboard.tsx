@@ -110,7 +110,7 @@ export function HeadmasterDashboard() {
   const [resolutionNotes, setResolutionNotes] = useState('');
 
   const [showUserModal, setShowUserModal] = useState(false);
-  const [userForm, setUserForm] = useState({ username: '', displayName: '', email: '', password: '', roles: [] as RoleId[], status: 'Active' as UserStatus, tenantId: 'tenant_001' });
+  const [userForm, setUserForm] = useState({ username: '', displayName: '', email: '', password: '', roles: [] as RoleId[], status: 'Active' as UserStatus, tenantId: 'tenant-001' });
   const [showRoleModal, setShowRoleModal] = useState<SystemUser | null>(null);
   const [roleDraft, setRoleDraft] = useState<RoleId[]>([]);
   const [resetUser, setResetUser] = useState<SystemUser | null>(null);

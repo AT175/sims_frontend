@@ -99,7 +99,8 @@ class ApiClient {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: response.statusText }));
-      throw new Error(error.message || `API error: ${response.status}`);
+      const message = Array.isArray(error.message) ? error.message.join(', ') : (error.message || `API error: ${response.status}`);
+      throw new Error(message);
     }
 
     if (response.status === 204) {
