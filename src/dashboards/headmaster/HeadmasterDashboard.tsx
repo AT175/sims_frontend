@@ -110,7 +110,7 @@ export function HeadmasterDashboard() {
   const [resolutionNotes, setResolutionNotes] = useState('');
 
   const [showUserModal, setShowUserModal] = useState(false);
-  const [userForm, setUserForm] = useState({ username: '', displayName: '', email: '', password: '', roles: [] as RoleId[], status: 'Active' as UserStatus, tenantId: 'tenant-001' });
+  const [userForm, setUserForm] = useState({ username: '', displayName: '', email: '', password: '', roles: [] as RoleId[], status: 'Active' as UserStatus, tenantId: user?.tenantId || 'tenant-001' });
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [createUserError, setCreateUserError] = useState<string | null>(null);
   const [showRoleModal, setShowRoleModal] = useState<SystemUser | null>(null);
@@ -175,7 +175,7 @@ export function HeadmasterDashboard() {
     setCreateUserError(null);
     try {
       await sysAdminStore.addUser({ username: userForm.username.trim(), displayName: userForm.displayName.trim(), email: userForm.email.trim(), roles: userForm.roles, status: userForm.status, tenantId: userForm.tenantId, password: userForm.password } as any);
-      setUserForm({ username: '', displayName: '', email: '', password: '', roles: [], status: 'Active', tenantId: 'tenant-001' });
+      setUserForm({ username: '', displayName: '', email: '', password: '', roles: [], status: 'Active', tenantId: user?.tenantId || 'tenant-001' });
       setShowUserModal(false);
       Alert.alert('Success', 'User account created.');
     } catch (err: any) {

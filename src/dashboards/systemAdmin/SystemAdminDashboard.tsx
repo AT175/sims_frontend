@@ -30,7 +30,7 @@ const STATUS_COLORS: Record<UserStatus, string> = {
 
 export function SystemAdminDashboard() {
   const [activePage, setActivePage] = useState('overview');
-  const { logout } = useAuthStore();
+  const { logout, user } = useAuthStore();
   const store = useSystemAdminStore();
 
   const [connStatus, setConnStatus] = useState<{ ok: boolean | null; message: string }>({ ok: null, message: 'Checking...' });
@@ -87,7 +87,7 @@ export function SystemAdminDashboard() {
           email: userForm.email.trim(),
           roles: userForm.roles.length > 0 ? userForm.roles : ['staff'],
           status: 'Active',
-          tenantId: store.tenant.id,
+          tenantId: user?.tenantId || store.tenant.id,
           password: userForm.password,
         } as any);
         setShowUserModal(false);
