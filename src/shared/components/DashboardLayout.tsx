@@ -179,7 +179,7 @@ export function DashboardLayout({
         </View>
       </View>
 
-      <ScrollView style={styles.content} contentContainerStyle={{ padding: spacing.lg }}>
+      <ScrollView style={styles.content} contentContainerStyle={{ padding: spacing.md }}>
         {activeKey === 'assigned-roles'
           ? <AssignedRolesPage currentDashboardTitle={title} />
           : children

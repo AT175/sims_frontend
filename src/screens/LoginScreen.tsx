@@ -8,6 +8,7 @@ import {
   Alert,
   Image,
   Dimensions,
+  useWindowDimensions,
   Animated,
   Easing,
   ScrollView,
@@ -24,7 +25,6 @@ type AdmissionStep = 'search' | 'payment' | 'form' | 'submitted';
 type StatusStep = 'lookup' | 'result';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const IS_NARROW = SCREEN_WIDTH < 900;
 
 const HERO_SLIDES = [
   { image: '/b1.jpg', caption: 'Terchire Senior High School' },
@@ -54,6 +54,9 @@ const QUICK_STATS = [
 export function LoginScreen() {
   const { login, loginTemp, isLoading, error, clearError } = useAuthStore();
   const registryStore = useRegistryStore();
+  const { width: windowWidth } = useWindowDimensions();
+  const IS_NARROW = windowWidth < 768;
+  const IS_VERY_NARROW = windowWidth < 480;
 
   const [view, setView] = useState<'home' | 'portal'>('home');
   const [activeTab, setActiveTab] = useState<Tab>('signin');
@@ -233,7 +236,7 @@ export function LoginScreen() {
           <View style={s.header}>
             <TouchableOpacity style={s.headerLogoRow} onPress={goHome}>
               <View style={s.headerLogoBox}><Text style={s.headerLogoText}>TSHS</Text></View>
-              <View><Text style={s.headerSchoolName}>Terchire SHS</Text><Text style={s.headerSchoolSub}>Nimdɛɛ Firi Onyame</Text></View>
+              {!IS_VERY_NARROW && <View><Text style={s.headerSchoolName}>Terchire SHS</Text><Text style={s.headerSchoolSub}>Nimdɛɛ Firi Onyame</Text></View>}
             </TouchableOpacity>
             <View style={s.headerNav}>
               {!IS_NARROW && <>
@@ -408,18 +411,22 @@ export function LoginScreen() {
           <View style={s.portalCloseBar}>
             <TouchableOpacity style={s.portalCloseLogo} onPress={goHome}>
               <View style={s.portalCloseLogoBox}><Text style={s.portalCloseLogoText}>TSHS</Text></View>
-              <Text style={s.portalCloseSchool}>Terchire SHS</Text>
+              {!IS_VERY_NARROW && <Text style={s.portalCloseSchool}>Terchire SHS</Text>}
             </TouchableOpacity>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-              <TouchableOpacity onPress={() => { setActiveTab('signin'); clearError(); }} style={[s.portalCloseBtn, activeTab === 'signin' && { backgroundColor: 'rgba(255,201,60,0.15)' }]}>
-                <Text style={[s.portalCloseText, activeTab === 'signin' && { color: colors.accent }]}>Login</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => { setActiveTab('apply'); clearError(); }} style={[s.portalCloseBtn, activeTab === 'apply' && { backgroundColor: 'rgba(255,201,60,0.15)' }]}>
-                <Text style={[s.portalCloseText, activeTab === 'apply' && { color: colors.accent }]}>Apply</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => { setActiveTab('status'); clearError(); }} style={[s.portalCloseBtn, activeTab === 'status' && { backgroundColor: 'rgba(255,201,60,0.15)' }]}>
-                <Text style={[s.portalCloseText, activeTab === 'status' && { color: colors.accent }]}>Status</Text>
-              </TouchableOpacity>
+            <View style={s.portalCloseBtnRow}>
+              {!IS_VERY_NARROW && (
+                <>
+                  <TouchableOpacity onPress={() => { setActiveTab('signin'); clearError(); }} style={[s.portalCloseBtn, activeTab === 'signin' && { backgroundColor: 'rgba(255,201,60,0.15)' }]}>
+                    <Text style={[s.portalCloseText, activeTab === 'signin' && { color: colors.accent }]}>Login</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => { setActiveTab('apply'); clearError(); }} style={[s.portalCloseBtn, activeTab === 'apply' && { backgroundColor: 'rgba(255,201,60,0.15)' }]}>
+                    <Text style={[s.portalCloseText, activeTab === 'apply' && { color: colors.accent }]}>Apply</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => { setActiveTab('status'); clearError(); }} style={[s.portalCloseBtn, activeTab === 'status' && { backgroundColor: 'rgba(255,201,60,0.15)' }]}>
+                    <Text style={[s.portalCloseText, activeTab === 'status' && { color: colors.accent }]}>Status</Text>
+                  </TouchableOpacity>
+                </>
+              )}
               <TouchableOpacity style={s.portalCloseBtn} onPress={goHome}>
                 <Text style={s.portalCloseText}>← Home</Text>
               </TouchableOpacity>
