@@ -93,10 +93,9 @@ export type SHSLevel = 'SHS1' | 'SHS2' | 'SHS3';
 
 /** Programme of study */
 export type Programme =
-  | 'Science'
-  | 'Arts'
+  | 'General Science'
+  | 'General Arts'
   | 'Business'
-  | 'Technical'
   | 'Agriculture'
-  | 'Visual Arts'
-  | 'Home Economics';
+  | 'Home Economics'
+  | 'Visual Art';

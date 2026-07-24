@@ -9,7 +9,7 @@ export type CorrespondenceDirection = 'Incoming' | 'Outgoing';
 export type CorrespondencePriority = 'Normal' | 'Important' | 'Urgent';
 export type StaffStatus = 'Active' | 'On Leave' | 'Retired' | 'Resigned';
 export type DocumentChecklistItem = 'Birth Certificate' | 'JHS Result' | 'CSSPS Placement' | 'Medical Form' | 'Passport Photo' | 'Previous Report Card';
-export type Programme = 'Science' | 'Arts' | 'Business';
+export type Programme = 'General Science' | 'General Arts' | 'Business' | 'Agriculture' | 'Home Economics' | 'Visual Art';
 export type FormFieldType = 'text' | 'date' | 'gender' | 'programme' | 'phone' | 'email' | 'address' | 'photo' | 'cssps_ref';
 
 export interface AdmissionFormField {
@@ -170,18 +170,21 @@ export const STAFF_STATUSES: StaffStatus[] = ['Active', 'On Leave', 'Retired', '
 export const DOCUMENT_CHECKLIST: DocumentChecklistItem[] = ['Birth Certificate', 'JHS Result', 'CSSPS Placement', 'Medical Form', 'Passport Photo', 'Previous Report Card'];
 
 export const CLASS_SECTIONS = [
-  'SHS1 Sci A', 'SHS1 Sci B', 'SHS1 Arts A', 'SHS1 Arts B', 'SHS1 Bus A',
-  'SHS2 Sci A', 'SHS2 Sci B', 'SHS2 Arts A', 'SHS2 Arts B', 'SHS2 Bus A',
-  'SHS3 Sci A', 'SHS3 Sci B', 'SHS3 Arts A', 'SHS3 Arts B', 'SHS3 Bus A',
+  'SHS1 Sci A', 'SHS1 Sci B', 'SHS1 Arts A', 'SHS1 Arts B', 'SHS1 Bus A', 'SHS1 Agr A', 'SHS1 HE A', 'SHS1 VA A',
+  'SHS2 Sci A', 'SHS2 Sci B', 'SHS2 Arts A', 'SHS2 Arts B', 'SHS2 Bus A', 'SHS2 Agr A', 'SHS2 HE A', 'SHS2 VA A',
+  'SHS3 Sci A', 'SHS3 Sci B', 'SHS3 Arts A', 'SHS3 Arts B', 'SHS3 Bus A', 'SHS3 Agr A', 'SHS3 HE A', 'SHS3 VA A',
 ];
 
 export const HOUSES = ['Aggrey', 'Mensah', 'Sarbah', 'Barton'];
-export const PROGRAMMES: Programme[] = ['Science', 'Arts', 'Business'];
+export const PROGRAMMES: Programme[] = ['General Science', 'General Arts', 'Business', 'Agriculture', 'Home Economics', 'Visual Art'];
 
 export const PROGRAMME_CLASS_MAP: Record<Programme, string[]> = {
-  Science: ['SHS1 Sci A', 'SHS1 Sci B', 'SHS2 Sci A', 'SHS2 Sci B', 'SHS3 Sci A', 'SHS3 Sci B'],
-  Arts: ['SHS1 Arts A', 'SHS1 Arts B', 'SHS2 Arts A', 'SHS2 Arts B', 'SHS3 Arts A', 'SHS3 Arts B'],
-  Business: ['SHS1 Bus A', 'SHS2 Bus A', 'SHS3 Bus A'],
+  'General Science': ['SHS1 Sci A', 'SHS1 Sci B', 'SHS2 Sci A', 'SHS2 Sci B', 'SHS3 Sci A', 'SHS3 Sci B'],
+  'General Arts': ['SHS1 Arts A', 'SHS1 Arts B', 'SHS2 Arts A', 'SHS2 Arts B', 'SHS3 Arts A', 'SHS3 Arts B'],
+  'Business': ['SHS1 Bus A', 'SHS2 Bus A', 'SHS3 Bus A'],
+  'Agriculture': ['SHS1 Agr A', 'SHS2 Agr A', 'SHS3 Agr A'],
+  'Home Economics': ['SHS1 HE A', 'SHS2 HE A', 'SHS3 HE A'],
+  'Visual Art': ['SHS1 VA A', 'SHS2 VA A', 'SHS3 VA A'],
 };
 
 export const DEFAULT_ADMISSION_FORM_CONFIG: AdmissionFormConfig = {
@@ -229,20 +232,20 @@ const todayISO = () => new Date().toISOString().slice(0, 10);
 // ── Initial Data ──
 
 const INITIAL_STUDENTS: StudentRecord[] = [
-  { id: '1', admNo: '2026/001', firstName: 'Kwame', lastName: 'Asante', dateOfBirth: '2008-05-14', gender: 'Male', programme: 'Science', class: 'SHS2 Sci A', house: 'Aggrey', guardianName: 'Mr. Kofi Asante', guardianPhone: '024-555-1001', guardianAddress: 'Kumasi, Ashanti Region', admissionDate: '2025-09-10', status: 'Active', photoUrl: null, csspsRef: 'CSSPS/2025/0123' },
-  { id: '2', admNo: '2026/002', firstName: 'Ama', lastName: 'Owusu', dateOfBirth: '2009-03-22', gender: 'Female', programme: 'Arts', class: 'SHS1 Arts B', house: 'Mensah', guardianName: 'Mrs. Akosua Owusu', guardianPhone: '027-555-1002', guardianAddress: 'Accra, Greater Accra', admissionDate: '2026-09-10', status: 'Active', photoUrl: null, csspsRef: 'CSSPS/2026/0456' },
+  { id: '1', admNo: '2026/001', firstName: 'Kwame', lastName: 'Asante', dateOfBirth: '2008-05-14', gender: 'Male', programme: 'General Science', class: 'SHS2 Sci A', house: 'Aggrey', guardianName: 'Mr. Kofi Asante', guardianPhone: '024-555-1001', guardianAddress: 'Kumasi, Ashanti Region', admissionDate: '2025-09-10', status: 'Active', photoUrl: null, csspsRef: 'CSSPS/2025/0123' },
+  { id: '2', admNo: '2026/002', firstName: 'Ama', lastName: 'Owusu', dateOfBirth: '2009-03-22', gender: 'Female', programme: 'General Arts', class: 'SHS1 Arts B', house: 'Mensah', guardianName: 'Mrs. Akosua Owusu', guardianPhone: '027-555-1002', guardianAddress: 'Accra, Greater Accra', admissionDate: '2026-09-10', status: 'Active', photoUrl: null, csspsRef: 'CSSPS/2026/0456' },
   { id: '3', admNo: '2026/003', firstName: 'Yao', lastName: 'Mensah', dateOfBirth: '2007-11-08', gender: 'Male', programme: 'Business', class: 'SHS3 Bus A', house: 'Aggrey', guardianName: 'Mr. Daniel Mensah', guardianPhone: '020-555-1003', guardianAddress: 'Tema, Greater Accra', admissionDate: '2024-09-10', status: 'Active', photoUrl: null, csspsRef: 'CSSPS/2024/0789' },
-  { id: '4', admNo: '2025/145', firstName: 'Efua', lastName: 'Darko', dateOfBirth: '2008-07-19', gender: 'Female', programme: 'Science', class: 'SHS2 Sci B', house: 'Mensah', guardianName: 'Mrs. Grace Darko', guardianPhone: '055-555-1004', guardianAddress: 'Cape Coast, Central', admissionDate: '2025-09-10', status: 'Active', photoUrl: null, csspsRef: 'CSSPS/2025/0234' },
-  { id: '5', admNo: '2025/146', firstName: 'Kofi', lastName: 'Boateng', dateOfBirth: '2007-09-03', gender: 'Male', programme: 'Science', class: 'SHS3 Sci A', house: 'Sarbah', guardianName: 'Mr. Samuel Boateng', guardianPhone: '024-555-1005', guardianAddress: 'Sekondi, Western', admissionDate: '2024-09-10', status: 'Active', photoUrl: null, csspsRef: 'CSSPS/2024/0567' },
-  { id: '6', admNo: '2025/147', firstName: 'Adwoa', lastName: 'Frimpong', dateOfBirth: '2009-01-15', gender: 'Female', programme: 'Science', class: 'SHS1 Sci A', house: 'Barton', guardianName: 'Mr. Yaw Frimpong', guardianPhone: '027-555-1006', guardianAddress: 'Koforidua, Eastern', admissionDate: '2026-09-10', status: 'Active', photoUrl: null, csspsRef: 'CSSPS/2026/0382' },
-  { id: '7', admNo: '2024/098', firstName: 'Kojo', lastName: 'Addo', dateOfBirth: '2006-12-01', gender: 'Male', programme: 'Arts', class: 'SHS3 Arts A', house: 'Sarbah', guardianName: 'Mr. Peter Addo', guardianPhone: '020-555-1007', guardianAddress: 'Accra, Greater Accra', admissionDate: '2024-09-10', status: 'Active', photoUrl: null, csspsRef: 'CSSPS/2024/0901' },
+  { id: '4', admNo: '2025/145', firstName: 'Efua', lastName: 'Darko', dateOfBirth: '2008-07-19', gender: 'Female', programme: 'General Science', class: 'SHS2 Sci B', house: 'Mensah', guardianName: 'Mrs. Grace Darko', guardianPhone: '055-555-1004', guardianAddress: 'Cape Coast, Central', admissionDate: '2025-09-10', status: 'Active', photoUrl: null, csspsRef: 'CSSPS/2025/0234' },
+  { id: '5', admNo: '2025/146', firstName: 'Kofi', lastName: 'Boateng', dateOfBirth: '2007-09-03', gender: 'Male', programme: 'General Science', class: 'SHS3 Sci A', house: 'Sarbah', guardianName: 'Mr. Samuel Boateng', guardianPhone: '024-555-1005', guardianAddress: 'Sekondi, Western', admissionDate: '2024-09-10', status: 'Active', photoUrl: null, csspsRef: 'CSSPS/2024/0567' },
+  { id: '6', admNo: '2025/147', firstName: 'Adwoa', lastName: 'Frimpong', dateOfBirth: '2009-01-15', gender: 'Female', programme: 'General Science', class: 'SHS1 Sci A', house: 'Barton', guardianName: 'Mr. Yaw Frimpong', guardianPhone: '027-555-1006', guardianAddress: 'Koforidua, Eastern', admissionDate: '2026-09-10', status: 'Active', photoUrl: null, csspsRef: 'CSSPS/2026/0382' },
+  { id: '7', admNo: '2024/098', firstName: 'Kojo', lastName: 'Addo', dateOfBirth: '2006-12-01', gender: 'Male', programme: 'General Arts', class: 'SHS3 Arts A', house: 'Sarbah', guardianName: 'Mr. Peter Addo', guardianPhone: '020-555-1007', guardianAddress: 'Accra, Greater Accra', admissionDate: '2024-09-10', status: 'Active', photoUrl: null, csspsRef: 'CSSPS/2024/0901' },
   { id: '8', admNo: '2024/099', firstName: 'Grace', lastName: 'Opoku', dateOfBirth: '2006-08-25', gender: 'Female', programme: 'Business', class: 'SHS3 Bus A', house: 'Barton', guardianName: 'Mrs. Linda Opoku', guardianPhone: '055-555-1008', guardianAddress: 'Sunyani, Bono', admissionDate: '2024-09-10', status: 'Graduated', photoUrl: null, csspsRef: 'CSSPS/2024/0678' },
 ];
 
 const INITIAL_PLACEMENTS: PlacementRecord[] = [
-  { id: '1', fullName: 'Kofi Asante', csspsRef: 'CSSPS/2026/0451', intendedClass: 'SHS1 Sci A', programme: 'Science', preloadedBy: 'Registry Clerk', datePreloaded: '2026-07-01', matched: true },
-  { id: '2', fullName: 'Adwoa Frimpong', csspsRef: 'CSSPS/2026/0382', intendedClass: 'SHS1 Sci A', programme: 'Science', preloadedBy: 'Registry Clerk', datePreloaded: '2026-07-01', matched: true },
-  { id: '3', fullName: 'Selina Adjei', csspsRef: 'CSSPS/2026/0519', intendedClass: 'SHS1 Arts B', programme: 'Arts', preloadedBy: 'Registry Clerk', datePreloaded: '2026-07-02', matched: false },
+  { id: '1', fullName: 'Kofi Asante', csspsRef: 'CSSPS/2026/0451', intendedClass: 'SHS1 Sci A', programme: 'General Science', preloadedBy: 'Registry Clerk', datePreloaded: '2026-07-01', matched: true },
+  { id: '2', fullName: 'Adwoa Frimpong', csspsRef: 'CSSPS/2026/0382', intendedClass: 'SHS1 Sci A', programme: 'General Science', preloadedBy: 'Registry Clerk', datePreloaded: '2026-07-01', matched: true },
+  { id: '3', fullName: 'Selina Adjei', csspsRef: 'CSSPS/2026/0519', intendedClass: 'SHS1 Arts B', programme: 'General Arts', preloadedBy: 'Registry Clerk', datePreloaded: '2026-07-02', matched: false },
   { id: '4', fullName: 'Daniel Osei', csspsRef: 'CSSPS/2026/0633', intendedClass: 'SHS1 Bus A', programme: 'Business', preloadedBy: 'Registry Clerk', datePreloaded: '2026-07-03', matched: false },
 ];
 
@@ -251,16 +254,16 @@ const DEFAULT_FEE: ApplicationFee = { amount: 50, method: null, status: 'Unpaid'
 const INITIAL_ADMISSIONS: AdmissionApplication[] = [
   { id: '1', applicantName: 'Kofi Asante', parentName: 'Mr. Kofi Asante Sr.', parentPhone: '024-555-2001', parentEmail: 'kofi.asante@email.com', dateApplied: '2026-07-06', status: 'Received', documentsVerified: false, documents: [
     { type: 'Birth Certificate', submitted: true }, { type: 'JHS Result', submitted: true }, { type: 'CSSPS Placement', submitted: true }, { type: 'Medical Form', submitted: false }, { type: 'Passport Photo', submitted: true }, { type: 'Previous Report Card', submitted: false },
-  ], notes: 'Awaiting medical form and previous report card.', programme: 'Science', photoUrl: null, csspsRef: 'CSSPS/2026/0451', fee: { ...DEFAULT_FEE, status: 'Paid', method: 'Mobile Money', reference: 'MM-REF-001', paidAt: '2026-07-06' }, credentialsExpired: false },
+  ], notes: 'Awaiting medical form and previous report card.', programme: 'General Science', photoUrl: null, csspsRef: 'CSSPS/2026/0451', fee: { ...DEFAULT_FEE, status: 'Paid', method: 'Mobile Money', reference: 'MM-REF-001', paidAt: '2026-07-06' }, credentialsExpired: false },
   { id: '2', applicantName: 'Adwoa Frimpong', parentName: 'Mrs. Frimpong', parentPhone: '027-555-2002', parentEmail: 'frimpong@email.com', dateApplied: '2026-07-05', status: 'Under Review', documentsVerified: false, documents: [
     { type: 'Birth Certificate', submitted: true }, { type: 'JHS Result', submitted: true }, { type: 'CSSPS Placement', submitted: true }, { type: 'Medical Form', submitted: true }, { type: 'Passport Photo', submitted: true }, { type: 'Previous Report Card', submitted: false },
-  ], notes: 'All docs except report card received. Reviewing.', programme: 'Science', photoUrl: null, csspsRef: 'CSSPS/2026/0382', fee: { ...DEFAULT_FEE, status: 'Paid', method: 'Scratch Card', reference: 'SC-001', paidAt: '2026-07-05' }, credentialsExpired: false },
+  ], notes: 'All docs except report card received. Reviewing.', programme: 'General Science', photoUrl: null, csspsRef: 'CSSPS/2026/0382', fee: { ...DEFAULT_FEE, status: 'Paid', method: 'Scratch Card', reference: 'SC-001', paidAt: '2026-07-05' }, credentialsExpired: false },
   { id: '3', applicantName: 'Kojo Addo', parentName: 'Mr. Addo', parentPhone: '020-555-2003', parentEmail: 'addo@email.com', dateApplied: '2026-07-04', status: 'Approved', documentsVerified: true, documents: [
     { type: 'Birth Certificate', submitted: true }, { type: 'JHS Result', submitted: true }, { type: 'CSSPS Placement', submitted: true }, { type: 'Medical Form', submitted: true }, { type: 'Passport Photo', submitted: true }, { type: 'Previous Report Card', submitted: true },
-  ], processedBy: 'Registrar', notes: 'All documents verified. Admission approved.', programme: 'Arts', photoUrl: null, csspsRef: 'CSSPS/2024/0901', fee: { ...DEFAULT_FEE, status: 'Verified', method: 'Mobile Money', reference: 'MM-REF-002', paidAt: '2026-07-04', verifiedBy: 'Registrar' }, credentialsExpired: false },
+  ], processedBy: 'Registrar', notes: 'All documents verified. Admission approved.', programme: 'General Arts', photoUrl: null, csspsRef: 'CSSPS/2024/0901', fee: { ...DEFAULT_FEE, status: 'Verified', method: 'Mobile Money', reference: 'MM-REF-002', paidAt: '2026-07-04', verifiedBy: 'Registrar' }, credentialsExpired: false },
   { id: '4', applicantName: 'Selina Adjei', parentName: 'Mrs. Adjei', parentPhone: '055-555-2004', parentEmail: 'adjei@email.com', dateApplied: '2026-07-08', status: 'Received', documentsVerified: false, documents: [
     { type: 'Birth Certificate', submitted: true }, { type: 'JHS Result', submitted: false }, { type: 'CSSPS Placement', submitted: false }, { type: 'Medical Form', submitted: false }, { type: 'Passport Photo', submitted: true }, { type: 'Previous Report Card', submitted: false },
-  ], notes: 'Only birth certificate and photo submitted. Placement not yet matched.', programme: 'Arts', photoUrl: null, csspsRef: 'CSSPS/2026/0519', fee: { ...DEFAULT_FEE, status: 'Unpaid' }, credentialsExpired: false },
+  ], notes: 'Only birth certificate and photo submitted. Placement not yet matched.', programme: 'General Arts', photoUrl: null, csspsRef: 'CSSPS/2026/0519', fee: { ...DEFAULT_FEE, status: 'Unpaid' }, credentialsExpired: false },
 ];
 
 const INITIAL_SCRATCH_CARDS: ScratchCard[] = [
@@ -272,7 +275,7 @@ const INITIAL_SCRATCH_CARDS: ScratchCard[] = [
 ];
 
 const INITIAL_PARENT_ACCOUNTS: ParentAccount[] = [
-  { id: '1', username: 'parent_addo', password: 'parent123', parentName: 'Mr. Addo', parentPhone: '020-555-2003', parentEmail: 'addo@email.com', wardName: 'Kojo Addo', wardAdmNo: '2024/098', wardClass: 'SHS3 Arts A', wardHouse: 'Sarbah', wardProgramme: 'Arts', createdAt: '2024-09-12', admissionId: '3' },
+  { id: '1', username: 'parent_addo', password: 'parent123', parentName: 'Mr. Addo', parentPhone: '020-555-2003', parentEmail: 'addo@email.com', wardName: 'Kojo Addo', wardAdmNo: '2024/098', wardClass: 'SHS3 Arts A', wardHouse: 'Sarbah', wardProgramme: 'General Arts', createdAt: '2024-09-12', admissionId: '3' },
 ];
 
 const INITIAL_PROSPECTUS: Prospectus[] = [

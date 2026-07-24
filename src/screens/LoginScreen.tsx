@@ -39,14 +39,14 @@ const HERO_SLIDES = [
 const INFO_SLIDES = [
   { image: '/slide1.jpg', title: 'Quality Education', text: 'Dedicated to training learners to high education standards through collaborative stakeholder efforts.', accent: colors.primaryLight },
   { image: '/slide2.jpg', title: 'Discipline & Character', text: 'Instilling moral integrity and discipline in every student, creating responsible citizens.', accent: colors.accent },
-  { image: '/slide3.jpg', title: 'Our Programmes', text: 'General Arts, Business, and Agriculture programmes designed to prepare students for the future.', accent: colors.success },
+  { image: '/slide3.jpg', title: 'Our Programmes', text: 'General Science, General Arts, Business, Agriculture, Home Economics, and Visual Art programmes designed to prepare students for the future.', accent: colors.success },
   { image: '/slide4.jpg', title: 'Ahafo Region', text: 'Serving the Tano North District since 2011, providing accessible secondary education to the community.', accent: colors.info },
   { image: '/slide5.jpg', title: 'Our Community', text: 'A growing school community of students, teachers, and stakeholders working together for excellence.', accent: colors.purple },
 ];
 
 const QUICK_STATS = [
   { label: 'Students', value: '164+' },
-  { label: 'Programmes', value: '3' },
+  { label: 'Programmes', value: '6' },
   { label: 'Region', value: 'Ahafo' },
   { label: 'Founded', value: '2011' },
 ];
@@ -329,13 +329,28 @@ export function LoginScreen() {
                   <Text style={s.featureText}>We instill discipline and moral integrity in every student, creating responsible citizens ready to serve their community.</Text>
                 </View>
                 <View style={[s.featureCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
-                  <View style={s.featureIconWrap}><Text style={s.featureIcon}>💻</Text></View>
+                  <View style={s.featureIconWrap}><Text style={s.featureIcon}>🔬</Text></View>
+                  <Text style={s.featureTitle}>General Science</Text>
+                  <Text style={s.featureText}>Comprehensive science programme with well-equipped laboratories, preparing students for careers in medicine, engineering, and technology.</Text>
+                </View>
+                <View style={[s.featureCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
+                  <View style={s.featureIconWrap}><Text style={s.featureIcon}>�</Text></View>
                   <Text style={s.featureTitle}>Agriculture Programme</Text>
                   <Text style={s.featureText}>Hands-on agricultural training that equips students with practical skills for food production and agribusiness.</Text>
                 </View>
                 <View style={[s.featureCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
-                  <View style={s.featureIconWrap}><Text style={s.featureIcon}>🏡</Text></View>
-                  <Text style={s.featureTitle}>Business & Arts</Text>
+                  <View style={s.featureIconWrap}><Text style={s.featureIcon}>�🍳</Text></View>
+                  <Text style={s.featureTitle}>Home Economics</Text>
+                  <Text style={s.featureText}>Practical training in food and nutrition, clothing, and family management, equipping students with essential life skills.</Text>
+                </View>
+                <View style={[s.featureCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
+                  <View style={s.featureIconWrap}><Text style={s.featureIcon}>🎨</Text></View>
+                  <Text style={s.featureTitle}>Visual Art</Text>
+                  <Text style={s.featureText}>Creative programme developing artistic talents in drawing, painting, sculpture, and design, fostering self-expression and creativity.</Text>
+                </View>
+                <View style={[s.featureCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
+                  <View style={s.featureIconWrap}><Text style={s.featureIcon}>📊</Text></View>
+                  <Text style={s.featureTitle}>Business & General Arts</Text>
                   <Text style={s.featureText}>Comprehensive Business and General Arts programmes that prepare students for university and professional careers.</Text>
                 </View>
               </View>
@@ -389,9 +404,12 @@ export function LoginScreen() {
               </View>
               <View style={[s.footerCol, IS_NARROW && { minWidth: 140 }]}>
                 <Text style={s.footerColTitle}>Programmes</Text>
+                <Text style={s.footerLink}>General Science</Text>
                 <Text style={s.footerLink}>General Arts</Text>
                 <Text style={s.footerLink}>Business</Text>
                 <Text style={s.footerLink}>Agriculture</Text>
+                <Text style={s.footerLink}>Home Economics</Text>
+                <Text style={s.footerLink}>Visual Art</Text>
               </View>
               <View style={[s.footerCol, IS_NARROW && { minWidth: 140 }]}>
                 <Text style={s.footerColTitle}>Contact Us</Text>
