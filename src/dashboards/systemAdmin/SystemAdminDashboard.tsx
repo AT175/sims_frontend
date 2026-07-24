@@ -49,8 +49,10 @@ export function SystemAdminDashboard() {
         if (bt) {
           try {
             const hm = await apiClient.get<any>(`/auth/users/${bt.id}/headmaster`);
-            if (hm) {
+            if (hm && hm.id) {
               setHeadmasterForm({ headmasterId: hm.id, username: hm.username, displayName: hm.displayName, password: '' });
+            } else {
+              setHeadmasterForm({ headmasterId: '', username: '', displayName: '', password: '' });
             }
           } catch {
             // No headmaster found — leave form empty
