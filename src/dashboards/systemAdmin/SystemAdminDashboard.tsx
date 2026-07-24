@@ -12,6 +12,7 @@ import type { RoleId } from '@shared/types';
 const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'System Overview' },
   { key: 'users', label: 'User Management' },
+  { key: 'tenants', label: 'Tenants (Schools)' },
   { key: 'tenant', label: 'School Configuration' },
   { key: 'modules', label: 'Modules' },
   { key: 'database', label: 'Database & Sync' },
@@ -42,7 +43,40 @@ export function SystemAdminDashboard() {
   // User modal state
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<SystemUser | null>(null);
-  const [userForm, setUserForm] = useState({ username: '', displayName: '', email: '', password: '', roles: [] as RoleId[] });
+  const [userForm, setUserForm] = useState({ username: '', displayName: '', email: '', password: '', roles: [] as RoleId[], tenantId: '' });
+
+  // Tenant management state
+  const [tenants, setTenants] = useState<any[]>([]);
+  const [showTenantModal, setShowTenantModal] = useState(false);
+  const [isSavingTenant, setIsSavingTenant] = useState(false);
+  const [tenantError, setTenantError] = useState<string | null>(null);
+  const [tenantForm, setTenantForm] = useState({
+    tenantKey: '',
+    schoolName: '',
+    schoolCode: '',
+    region: '',
+    district: '',
+    address: '',
+    phone: '',
+    email: '',
+    maxStudents: '2000',
+    maxStaff: '150',
+    subscriptionPlan: 'Standard',
+    subscriptionExpiry: '',
+  });
+
+  const fetchTenants = async () => {
+    try {
+      const data = await apiClient.getTenants();
+      setTenants(data);
+    } catch (err: any) {
+      console.error('[SystemAdmin] Failed to fetch tenants:', err.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchTenants();
+  }, []);
 
   // Reset password modal state
   const [resetUser, setResetUser] = useState<SystemUser | null>(null);
@@ -52,14 +86,14 @@ export function SystemAdminDashboard() {
 
   const handleAddUser = () => {
     setEditingUser(null);
-    setUserForm({ username: '', displayName: '', email: '', password: '', roles: [] });
+    setUserForm({ username: '', displayName: '', email: '', password: '', roles: [], tenantId: tenants[0]?.tenantKey || user?.tenantId || '' });
     setUserError(null);
     setShowUserModal(true);
   };
 
   const handleEditUser = (user: SystemUser) => {
     setEditingUser(user);
-    setUserForm({ username: user.username, displayName: user.displayName, email: user.email, password: '', roles: [...user.roles] });
+    setUserForm({ username: user.username, displayName: user.displayName, email: user.email, password: '', roles: [...user.roles], tenantId: user.tenantId || '' });
     setUserError(null);
     setShowUserModal(true);
   };
@@ -87,7 +121,7 @@ export function SystemAdminDashboard() {
           email: userForm.email.trim(),
           roles: userForm.roles.length > 0 ? userForm.roles : ['staff'],
           status: 'Active',
-          tenantId: user?.tenantId || store.tenant.id,
+          tenantId: userForm.tenantId || user?.tenantId || store.tenant.id,
           password: userForm.password,
         } as any);
         setShowUserModal(false);
@@ -230,6 +264,58 @@ export function SystemAdminDashboard() {
                       <Text style={styles.miniDeleteBtnText}>Delete</Text>
                     </TouchableOpacity>
                   )}
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        );
+
+      case 'tenants':
+        return (
+          <ScrollView>
+            <Text style={styles.pageTitle}>Tenants (Schools)</Text>
+            <Text style={styles.pageSubtitle}>Create and manage school tenants in the system</Text>
+
+            <TouchableOpacity style={styles.addBtn} onPress={() => {
+              setTenantForm({ tenantKey: '', schoolName: '', schoolCode: '', region: '', district: '', address: '', phone: '', email: '', maxStudents: '2000', maxStaff: '150', subscriptionPlan: 'Standard', subscriptionExpiry: '' });
+              setTenantError(null);
+              setShowTenantModal(true);
+            }}>
+              <Text style={styles.addBtnText}>+ Add New Tenant</Text>
+            </TouchableOpacity>
+
+            {tenants.length === 0 && (
+              <Text style={styles.emptyText}>No tenants found. Create one to get started.</Text>
+            )}
+
+            {tenants.map((t) => (
+              <View key={t.id} style={styles.userActionRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.userActionName}>{t.schoolName}</Text>
+                  <Text style={styles.userActionStatus}>{t.tenantKey} · {t.region ?? 'N/A'} · {t.subscriptionPlan}</Text>
+                  <Text style={styles.logMeta}>{t.active ? 'Active' : 'Inactive'} · {t.maxStudents} students max · {t.maxStaff} staff max</Text>
+                </View>
+                <View style={styles.userActionBtns}>
+                  <TouchableOpacity style={styles.miniBtn} onPress={() => {
+                    Alert.alert('Tenant Info', `School: ${t.schoolName}\nKey: ${t.tenantKey}\nCode: ${t.schoolCode ?? 'N/A'}\nRegion: ${t.region ?? 'N/A'}\nPlan: ${t.subscriptionPlan}\nExpiry: ${t.subscriptionExpiry ?? 'N/A'}\nModules: ${(t.enabledModules ?? []).join(', ') || 'None'}`);
+                  }}>
+                    <Text style={styles.miniBtnText}>View</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.miniApproveBtn} onPress={() => {
+                    apiClient.updateTenant(t.id, { active: !t.active }).then(() => fetchTenants()).catch((err) => Alert.alert('Error', err.message));
+                  }}>
+                    <Text style={styles.miniApproveBtnText}>{t.active ? 'Deactivate' : 'Activate'}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.miniDeleteBtn} onPress={() => {
+                    Alert.alert('Confirm Delete', `Delete tenant "${t.schoolName}"? This will NOT delete associated users.`, [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Delete', style: 'destructive', onPress: () => {
+                        apiClient.deleteTenant(t.id).then(() => fetchTenants()).catch((err) => Alert.alert('Error', err.message));
+                      }},
+                    ]);
+                  }}>
+                    <Text style={styles.miniDeleteBtnText}>Delete</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             ))}
@@ -493,6 +579,27 @@ export function SystemAdminDashboard() {
                 secureTextEntry
               />
 
+              {!editingUser && (
+                <>
+                  <Text style={styles.inputLabel}>Tenant (School)</Text>
+                  <Text style={styles.autoAssignHint}>Select the school this user belongs to</Text>
+                  <View style={styles.rolePickerRow}>
+                    {tenants.map((t) => (
+                      <TouchableOpacity
+                        key={t.id}
+                        style={[styles.roleChip, userForm.tenantId === t.tenantKey && styles.roleChipActive]}
+                        onPress={() => setUserForm((f) => ({ ...f, tenantId: t.tenantKey }))}
+                      >
+                        <Text style={[styles.roleChipText, userForm.tenantId === t.tenantKey && styles.roleChipTextActive]}>{t.schoolName}</Text>
+                      </TouchableOpacity>
+                    ))}
+                    {tenants.length === 0 && (
+                      <Text style={styles.emptyText}>No tenants available. Create a tenant first.</Text>
+                    )}
+                  </View>
+                </>
+              )}
+
               <Text style={styles.inputLabel}>Roles</Text>
               <Text style={styles.autoAssignHint}>Select one or more roles for this user</Text>
               <View style={styles.rolePickerRow}>
@@ -563,6 +670,102 @@ export function SystemAdminDashboard() {
                 <Text style={styles.modalBtnTextSecondary}>Cancel</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Create Tenant Modal ── */}
+      <Modal visible={showTenantModal} transparent animationType="fade" onRequestClose={() => setShowTenantModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <ScrollView>
+              <Text style={styles.modalTitle}>Create New Tenant (School)</Text>
+
+              <Text style={styles.inputLabel}>Tenant Key (unique identifier)</Text>
+              <TextInput style={styles.textInput} value={tenantForm.tenantKey} onChangeText={(v) => setTenantForm({ ...tenantForm, tenantKey: v })} placeholder="e.g. tenant-002" autoCapitalize="none" />
+
+              <Text style={styles.inputLabel}>School Name</Text>
+              <TextInput style={styles.textInput} value={tenantForm.schoolName} onChangeText={(v) => setTenantForm({ ...tenantForm, schoolName: v })} placeholder="e.g. Tema Senior High School" />
+
+              <Text style={styles.inputLabel}>School Code</Text>
+              <TextInput style={styles.textInput} value={tenantForm.schoolCode} onChangeText={(v) => setTenantForm({ ...tenantForm, schoolCode: v })} placeholder="e.g. TSHS-001" />
+
+              <Text style={styles.inputLabel}>Region</Text>
+              <TextInput style={styles.textInput} value={tenantForm.region} onChangeText={(v) => setTenantForm({ ...tenantForm, region: v })} placeholder="e.g. Greater Accra" />
+
+              <Text style={styles.inputLabel}>District</Text>
+              <TextInput style={styles.textInput} value={tenantForm.district} onChangeText={(v) => setTenantForm({ ...tenantForm, district: v })} placeholder="e.g. Tema Metropolitan" />
+
+              <Text style={styles.inputLabel}>Address</Text>
+              <TextInput style={styles.textInput} value={tenantForm.address} onChangeText={(v) => setTenantForm({ ...tenantForm, address: v })} placeholder="P.O. Box ..." />
+
+              <Text style={styles.inputLabel}>Phone</Text>
+              <TextInput style={styles.textInput} value={tenantForm.phone} onChangeText={(v) => setTenantForm({ ...tenantForm, phone: v })} placeholder="+233 ..." keyboardType="phone-pad" />
+
+              <Text style={styles.inputLabel}>Email</Text>
+              <TextInput style={styles.textInput} value={tenantForm.email} onChangeText={(v) => setTenantForm({ ...tenantForm, email: v })} placeholder="info@school.edu.gh" keyboardType="email-address" autoCapitalize="none" />
+
+              <Text style={styles.inputLabel}>Max Students</Text>
+              <TextInput style={styles.textInput} value={tenantForm.maxStudents} onChangeText={(v) => setTenantForm({ ...tenantForm, maxStudents: v })} keyboardType="numeric" />
+
+              <Text style={styles.inputLabel}>Max Staff</Text>
+              <TextInput style={styles.textInput} value={tenantForm.maxStaff} onChangeText={(v) => setTenantForm({ ...tenantForm, maxStaff: v })} keyboardType="numeric" />
+
+              <Text style={styles.inputLabel}>Subscription Plan</Text>
+              <TextInput style={styles.textInput} value={tenantForm.subscriptionPlan} onChangeText={(v) => setTenantForm({ ...tenantForm, subscriptionPlan: v })} placeholder="Standard / Premium" />
+
+              <Text style={styles.inputLabel}>Subscription Expiry</Text>
+              <TextInput style={styles.textInput} value={tenantForm.subscriptionExpiry} onChangeText={(v) => setTenantForm({ ...tenantForm, subscriptionExpiry: v })} placeholder="2027-12-31" />
+
+              {tenantError && (
+                <View style={styles.errorBanner}>
+                  <Text style={styles.errorBannerText}>{tenantError}</Text>
+                </View>
+              )}
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={[styles.modalApproveBtn, isSavingTenant && styles.modalApproveBtnDisabled]}
+                  disabled={isSavingTenant}
+                  onPress={async () => {
+                    if (!tenantForm.tenantKey.trim() || !tenantForm.schoolName.trim()) {
+                      setTenantError('Tenant Key and School Name are required.');
+                      return;
+                    }
+                    setIsSavingTenant(true);
+                    setTenantError(null);
+                    try {
+                      await apiClient.createTenant({
+                        tenantKey: tenantForm.tenantKey.trim(),
+                        schoolName: tenantForm.schoolName.trim(),
+                        schoolCode: tenantForm.schoolCode.trim() || undefined,
+                        region: tenantForm.region.trim() || undefined,
+                        district: tenantForm.district.trim() || undefined,
+                        address: tenantForm.address.trim() || undefined,
+                        phone: tenantForm.phone.trim() || undefined,
+                        email: tenantForm.email.trim() || undefined,
+                        maxStudents: parseInt(tenantForm.maxStudents) || 2000,
+                        maxStaff: parseInt(tenantForm.maxStaff) || 150,
+                        subscriptionPlan: tenantForm.subscriptionPlan.trim() || 'Standard',
+                        subscriptionExpiry: tenantForm.subscriptionExpiry.trim() || undefined,
+                      });
+                      await fetchTenants();
+                      setShowTenantModal(false);
+                      Alert.alert('Success', 'Tenant created successfully. You can now create a headmaster for this tenant.');
+                    } catch (err: any) {
+                      setTenantError(err.message || 'Failed to create tenant.');
+                    } finally {
+                      setIsSavingTenant(false);
+                    }
+                  }}
+                >
+                  <Text style={styles.modalBtnTextWhite}>{isSavingTenant ? 'Creating...' : 'Create Tenant'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowTenantModal(false)} disabled={isSavingTenant}>
+                  <Text style={styles.modalBtnTextSecondary}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>

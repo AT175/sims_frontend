@@ -137,6 +137,41 @@ class ApiClient {
       return { ok: false, message: `Cannot reach backend: ${err.message}` };
     }
   }
+
+  // Tenant management
+  async getTenants(): Promise<any[]> {
+    return this.get<any[]>('/tenants');
+  }
+
+  async getTenant(id: string): Promise<any> {
+    return this.get<any>(`/tenants/${id}`);
+  }
+
+  async createTenant(data: {
+    tenantKey: string;
+    schoolName: string;
+    schoolCode?: string;
+    region?: string;
+    district?: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+    maxStudents?: number;
+    maxStaff?: number;
+    subscriptionPlan?: string;
+    subscriptionExpiry?: string;
+    enabledModules?: string[];
+  }): Promise<any> {
+    return this.post<any>('/tenants', data as any);
+  }
+
+  async updateTenant(id: string, data: Record<string, unknown>): Promise<any> {
+    return this.put<any>(`/tenants/${id}`, data);
+  }
+
+  async deleteTenant(id: string): Promise<{ message: string }> {
+    return this.delete<{ message: string }>(`/tenants/${id}`);
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);
