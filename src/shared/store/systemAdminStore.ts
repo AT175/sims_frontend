@@ -299,7 +299,7 @@ export const useSystemAdminStore = create<SystemAdminState>((set, get) => ({
 
   saveTenantConfig: async () => {
     const t = get().tenant;
-    if (get()._isSavingTenant) return; // Prevent concurrent saves
+    if (get()._isSavingTenant) throw new Error('Already saving. Please wait...');
     set({ _isSavingTenant: true });
     try {
       // Find the tenant in the backend by its key (stored as id in the local config)

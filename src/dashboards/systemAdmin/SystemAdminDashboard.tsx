@@ -71,6 +71,9 @@ export function SystemAdminDashboard() {
   const [showTenantModal, setShowTenantModal] = useState(false);
   const [isSavingTenant, setIsSavingTenant] = useState(false);
   const [tenantError, setTenantError] = useState<string | null>(null);
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const [configSaveError, setConfigSaveError] = useState<string | null>(null);
+  const [configSaved, setConfigSaved] = useState(false);
   const [tenantForm, setTenantForm] = useState({
     tenantKey: '',
     schoolName: '',
@@ -461,16 +464,38 @@ export function SystemAdminDashboard() {
               <Text style={styles.saveBtnText}>{isSavingHeadmaster ? 'Saving...' : 'Update Headmaster'}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.saveBtn} onPress={async () => {
-              try {
-                await store.saveTenantConfig();
-                Alert.alert('Saved', 'School configuration saved successfully.');
-              } catch (err: any) {
-                Alert.alert('Error', err.message || 'Failed to save configuration.');
-              }
-            }}>
-              <Text style={styles.saveBtnText}>Save Configuration</Text>
+            <TouchableOpacity
+              style={[styles.saveBtn, isSavingConfig && styles.saveBtnDisabled]}
+              disabled={isSavingConfig}
+              onPress={async () => {
+                setIsSavingConfig(true);
+                setConfigSaveError(null);
+                setConfigSaved(false);
+                try {
+                  await store.saveTenantConfig();
+                  setConfigSaved(true);
+                  setTimeout(() => setConfigSaved(false), 4000);
+                } catch (err: any) {
+                  setConfigSaveError(err.message || 'Failed to save configuration. Please try again.');
+                } finally {
+                  setIsSavingConfig(false);
+                }
+              }}
+            >
+              <Text style={styles.saveBtnText}>{isSavingConfig ? 'Saving...' : 'Save Configuration'}</Text>
             </TouchableOpacity>
+
+            {configSaved && (
+              <View style={styles.successBanner}>
+                <Text style={styles.successBannerText}>✓ Configuration saved successfully!</Text>
+              </View>
+            )}
+
+            {configSaveError && (
+              <View style={styles.errorBanner}>
+                <Text style={styles.errorBannerText}>✕ {configSaveError}</Text>
+              </View>
+            )}
           </ScrollView>
         );
 
@@ -948,6 +973,11 @@ const styles = StyleSheet.create({
   autoAssignHint: { fontSize: fontSize.xs, color: colors.info, marginBottom: spacing.xs, fontStyle: 'italic' },
   saveBtn: { backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: spacing.md, alignItems: 'center', marginTop: spacing.lg, marginBottom: spacing.lg },
   saveBtnText: { color: colors.white, fontSize: fontSize.md, fontWeight: fontWeight.semibold },
+  saveBtnDisabled: { opacity: 0.5 },
+  successBanner: { backgroundColor: 'rgba(11, 163, 122, 0.12)', borderRadius: radius.md, padding: spacing.md, marginTop: spacing.sm, marginBottom: spacing.lg, borderWidth: 1, borderColor: 'rgba(11, 163, 122, 0.3)' },
+  successBannerText: { color: colors.success, fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
+  errorBanner: { backgroundColor: 'rgba(229, 72, 77, 0.12)', borderRadius: radius.md, padding: spacing.md, marginTop: spacing.sm, marginBottom: spacing.lg, borderWidth: 1, borderColor: 'rgba(229, 72, 77, 0.3)' },
+  errorBannerText: { color: colors.danger, fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
   logoutBtn: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   logoutText: { color: colors.danger, fontSize: fontSize.sm, fontWeight: fontWeight.medium },
   // Log styles
