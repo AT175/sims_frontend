@@ -17,7 +17,7 @@ import { useAuthStore } from '@store/authStore';
 import { useRegistryStore } from '@store/registryStore';
 import type { Programme, PaymentMethod } from '@store/registryStore';
 import { PROGRAMMES } from '@store/registryStore';
-import { colors, spacing } from '@theme/index';
+import { colors, spacing, fontSize } from '@theme/index';
 import { loginStyles as s } from './loginStyles';
 
 type Tab = 'signin' | 'apply' | 'status';
@@ -233,23 +233,23 @@ export function LoginScreen() {
       {view === 'home' ? (
         <ScrollView ref={scrollViewRef} style={s.homeScroll} contentContainerStyle={s.homeScrollContent} showsVerticalScrollIndicator={false}>
           {/* Header */}
-          <View style={s.header}>
+          <View style={[s.header, IS_NARROW && { paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 }]}>
             <TouchableOpacity style={s.headerLogoRow} onPress={goHome}>
               <View style={s.headerLogoBox}><Text style={s.headerLogoText}>TSHS</Text></View>
               {!IS_VERY_NARROW && <View><Text style={s.headerSchoolName}>Terchire SHS</Text><Text style={s.headerSchoolSub}>Nimdɛɛ Firi Onyame</Text></View>}
             </TouchableOpacity>
-            <View style={s.headerNav}>
+            <View style={[s.headerNav, IS_NARROW && { gap: spacing.sm }]}>
               {!IS_NARROW && <>
                 <TouchableOpacity onPress={goHome}><Text style={s.headerNavLink}>Home</Text></TouchableOpacity>
                 <TouchableOpacity onPress={scrollToAbout}><Text style={s.headerNavLink}>About Us</Text></TouchableOpacity>
               </>}
-              <TouchableOpacity style={s.headerGhostBtn} onPress={() => openPortal('signin')}><Text style={s.headerGhostText}>Login</Text></TouchableOpacity>
-              <TouchableOpacity style={s.headerCtaBtn} onPress={() => openPortal('apply')}><Text style={s.headerCtaText}>Apply</Text></TouchableOpacity>
+              <TouchableOpacity style={[s.headerGhostBtn, IS_NARROW && { paddingVertical: spacing.sm, paddingHorizontal: spacing.md }]} onPress={() => openPortal('signin')}><Text style={s.headerGhostText}>Login</Text></TouchableOpacity>
+              <TouchableOpacity style={[s.headerCtaBtn, IS_NARROW && { paddingVertical: spacing.sm, paddingHorizontal: spacing.md + 4 }]} onPress={() => openPortal('apply')}><Text style={s.headerCtaText}>Apply</Text></TouchableOpacity>
             </View>
           </View>
 
           {/* Hero with flash animation carousel */}
-          <View style={s.hero}>
+          <View style={[s.hero, IS_NARROW && { minHeight: 500 }]}>
             {HERO_SLIDES.map((slide, i) => (
               <Animated.Image
                 key={i}
@@ -265,17 +265,17 @@ export function LoginScreen() {
               />
             ))}
             <View style={s.heroOverlay} />
-            <View style={s.heroContent}>
+            <View style={[s.heroContent, IS_NARROW && { paddingHorizontal: spacing.md, width: '100%' }]}>
               <View style={s.heroBadge}><Text style={s.heroBadgeText}>★ EST. 2011 · AHAFO REGION · GES ACCREDITED</Text></View>
-              <Text style={s.heroTitle}>Welcome to{'\n'}<Text style={s.heroTitleAccent}>Terchire Senior High School</Text></Text>
-              <Text style={s.heroSubtitle}>A center for quality education and discipline in the Ahafo Region. "Nimdɛɛ Firi Onyame" — Knowledge comes from God.</Text>
+              <Text style={[s.heroTitle, IS_NARROW && { fontSize: 30, lineHeight: 38 }]}>Welcome to{'\n'}<Text style={s.heroTitleAccent}>Terchire Senior High School</Text></Text>
+              <Text style={[s.heroSubtitle, IS_NARROW && { fontSize: fontSize.md, lineHeight: fontSize.md * 1.5 }]}>A center for quality education and discipline in the Ahafo Region. "Nimdɛɛ Firi Onyame" — Knowledge comes from God.</Text>
               <View style={s.heroBtnRow}>
-                <TouchableOpacity style={s.heroBtnPrimary} onPress={() => openPortal('apply')} activeOpacity={0.85}>
-                  <Text style={s.heroBtnPrimaryText}>Apply for Admission</Text>
-                  <Text style={s.heroBtnPrimaryText}>→</Text>
+                <TouchableOpacity style={[s.heroBtnPrimary, IS_NARROW && { paddingVertical: spacing.sm + 4, paddingHorizontal: spacing.lg }]} onPress={() => openPortal('apply')} activeOpacity={0.85}>
+                  <Text style={[s.heroBtnPrimaryText, IS_NARROW && { fontSize: fontSize.sm }]}>Apply for Admission</Text>
+                  <Text style={[s.heroBtnPrimaryText, IS_NARROW && { fontSize: fontSize.sm }]}>→</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={s.heroBtnSecondary} onPress={() => openPortal('signin')} activeOpacity={0.85}>
-                  <Text style={s.heroBtnSecondaryText}>Staff / Student Login</Text>
+                <TouchableOpacity style={[s.heroBtnSecondary, IS_NARROW && { paddingVertical: spacing.sm + 4, paddingHorizontal: spacing.lg }]} onPress={() => openPortal('signin')} activeOpacity={0.85}>
+                  <Text style={[s.heroBtnSecondaryText, IS_NARROW && { fontSize: fontSize.sm }]}>Staff / Student Login</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -288,22 +288,22 @@ export function LoginScreen() {
           </View>
 
           {/* About Section */}
-          <View style={[s.section, s.aboutBg]} onLayout={(e) => { aboutY.current = e.nativeEvent.layout.y; }}>
+          <View style={[s.section, s.aboutBg, IS_NARROW && { paddingVertical: spacing.xl + 8, paddingHorizontal: spacing.md }]} onLayout={(e) => { aboutY.current = e.nativeEvent.layout.y; }}>
             <View style={s.sectionNarrow}>
               <Text style={s.sectionTitle}>About <Text style={s.sectionTitleAccent}>Our School</Text></Text>
               <Text style={s.sectionSubtitle}>Established in 2011 in Terchire, Tano North District of the Ahafo Region, Terchire Senior High School is dedicated to providing high-quality education and discipline to its learners.</Text>
               <View style={s.aboutGrid}>
-                <View style={s.aboutCard}>
+                <View style={[s.aboutCard, IS_NARROW && { minWidth: 0, padding: spacing.lg }]}>
                   <View style={s.aboutCardIconWrap}><Text style={s.aboutCardIcon}>🎯</Text></View>
                   <Text style={s.aboutCardTitle}>Our Mission</Text>
                   <Text style={s.aboutCardText}>To train learners to high levels of education standards through the collaborative effort of all relevant stakeholders.</Text>
                 </View>
-                <View style={s.aboutCard}>
+                <View style={[s.aboutCard, IS_NARROW && { minWidth: 0, padding: spacing.lg }]}>
                   <View style={s.aboutCardIconWrap}><Text style={s.aboutCardIcon}>🌟</Text></View>
                   <Text style={s.aboutCardTitle}>Our Vision</Text>
                   <Text style={s.aboutCardText}>A center for quality education and discipline, serving the Tano North District and the Ahafo Region with dedication and excellence.</Text>
                 </View>
-                <View style={s.aboutCard}>
+                <View style={[s.aboutCard, IS_NARROW && { minWidth: 0, padding: spacing.lg }]}>
                   <View style={s.aboutCardIconWrap}><Text style={s.aboutCardIcon}>🤝</Text></View>
                   <Text style={s.aboutCardTitle}>Our Motto</Text>
                   <Text style={s.aboutCardText}>"Nimdɛɛ Firi Onyame" — Knowledge comes from God. We believe in nurturing both the intellect and character of every student through collaborative effort and discipline.</Text>
@@ -313,27 +313,27 @@ export function LoginScreen() {
           </View>
 
           {/* Features Section */}
-          <View style={[s.section, s.featuresBg]}>
+          <View style={[s.section, s.featuresBg, IS_NARROW && { paddingVertical: spacing.xl + 8, paddingHorizontal: spacing.md }]}>
             <View style={s.sectionNarrow}>
               <Text style={s.sectionTitle}>Why Choose <Text style={s.sectionTitleAccent}>Terchire SHS?</Text></Text>
               <Text style={s.sectionSubtitle}>A single-track public senior high school committed to collaborative learning and discipline in the Ahafo Region.</Text>
               <View style={s.featuresGrid}>
-                <View style={s.featureCard}>
+                <View style={[s.featureCard, IS_NARROW && { minWidth: 0, padding: spacing.lg }]}>
                   <View style={s.featureIconWrap}><Text style={s.featureIcon}>📚</Text></View>
                   <Text style={s.featureTitle}>Quality Education</Text>
                   <Text style={s.featureText}>Dedicated teachers committed to training learners to high education standards through collaborative stakeholder efforts.</Text>
                 </View>
-                <View style={s.featureCard}>
+                <View style={[s.featureCard, IS_NARROW && { minWidth: 0, padding: spacing.lg }]}>
                   <View style={s.featureIconWrap}><Text style={s.featureIcon}>🏆</Text></View>
                   <Text style={s.featureTitle}>Discipline & Character</Text>
                   <Text style={s.featureText}>We instill discipline and moral integrity in every student, creating responsible citizens ready to serve their community.</Text>
                 </View>
-                <View style={s.featureCard}>
+                <View style={[s.featureCard, IS_NARROW && { minWidth: 0, padding: spacing.lg }]}>
                   <View style={s.featureIconWrap}><Text style={s.featureIcon}>💻</Text></View>
                   <Text style={s.featureTitle}>Agriculture Programme</Text>
                   <Text style={s.featureText}>Hands-on agricultural training that equips students with practical skills for food production and agribusiness.</Text>
                 </View>
-                <View style={s.featureCard}>
+                <View style={[s.featureCard, IS_NARROW && { minWidth: 0, padding: spacing.lg }]}>
                   <View style={s.featureIconWrap}><Text style={s.featureIcon}>🏡</Text></View>
                   <Text style={s.featureTitle}>Business & Arts</Text>
                   <Text style={s.featureText}>Comprehensive Business and General Arts programmes that prepare students for university and professional careers.</Text>
@@ -343,11 +343,11 @@ export function LoginScreen() {
           </View>
 
           {/* Stats Band */}
-          <View style={s.statsBand}>
-            <View style={s.statsBandGrid}>
+          <View style={[s.statsBand, IS_NARROW && { paddingHorizontal: spacing.md }]}>
+            <View style={[s.statsBandGrid, IS_NARROW && { gap: spacing.lg }]}>
               {QUICK_STATS.map((st) => (
                 <View key={st.label} style={s.statsBandItem}>
-                  <Text style={s.statsBandValue}>{st.value}</Text>
+                  <Text style={[s.statsBandValue, IS_NARROW && { fontSize: 28 }]}>{st.value}</Text>
                   <Text style={s.statsBandLabel}>{st.label.toUpperCase()}</Text>
                 </View>
               ))}
@@ -355,46 +355,43 @@ export function LoginScreen() {
           </View>
 
           {/* CTA Section */}
-          <View style={s.ctaSection}>
+          <View style={[s.ctaSection, IS_NARROW && { paddingVertical: spacing.xl + 8, paddingHorizontal: spacing.md }]}>
             <Text style={s.ctaTitle}>Ready to Join Our Community?</Text>
             <Text style={s.ctaText}>Apply for admission today or check your application status. Our admissions team is here to help you every step of the way.</Text>
             <View style={s.heroBtnRow}>
-              <TouchableOpacity style={s.heroBtnPrimary} onPress={() => openPortal('apply')} activeOpacity={0.85}>
-                <Text style={s.heroBtnPrimaryText}>Apply Now</Text>
-                <Text style={s.heroBtnPrimaryText}>→</Text>
+              <TouchableOpacity style={[s.heroBtnPrimary, IS_NARROW && { paddingVertical: spacing.sm + 4, paddingHorizontal: spacing.lg }]} onPress={() => openPortal('apply')} activeOpacity={0.85}>
+                <Text style={[s.heroBtnPrimaryText, IS_NARROW && { fontSize: fontSize.sm }]}>Apply Now</Text>
+                <Text style={[s.heroBtnPrimaryText, IS_NARROW && { fontSize: fontSize.sm }]}>→</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={s.heroBtnSecondary} onPress={() => openPortal('status')} activeOpacity={0.85}>
-                <Text style={s.heroBtnSecondaryText}>Check Status</Text>
+              <TouchableOpacity style={[s.heroBtnSecondary, IS_NARROW && { paddingVertical: spacing.sm + 4, paddingHorizontal: spacing.lg }]} onPress={() => openPortal('status')} activeOpacity={0.85}>
+                <Text style={[s.heroBtnSecondaryText, IS_NARROW && { fontSize: fontSize.sm }]}>Check Status</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           {/* Footer */}
-          <View style={s.footer}>
+          <View style={[s.footer, IS_NARROW && { paddingHorizontal: spacing.md }]}>
             <View style={s.footerGrid}>
-              <View style={s.footerColWide}>
+              <View style={[s.footerColWide, IS_NARROW && { minWidth: 200 }]}>
                 <View style={s.footerBrandRow}>
                   <View style={s.footerBrandBox}><Text style={s.footerBrandText}>TSHS</Text></View>
                   <Text style={s.footerBrandName}>Terchire Senior High School</Text>
                 </View>
                 <Text style={s.footerAbout}>A public senior high school in Terchire, Ahafo Region, dedicated to quality education and discipline since 2011. "Nimdɛɛ Firi Onyame" — Knowledge comes from God.</Text>
               </View>
-              <View style={s.footerCol}>
-                <Text style={s.footerColTitle}>Quick Links</Text>
+              <View style={[s.footerCol, IS_NARROW && { minWidth: 140 }]}>
                 <TouchableOpacity onPress={goHome}><Text style={s.footerLink}>Home</Text></TouchableOpacity>
                 <TouchableOpacity onPress={scrollToAbout}><Text style={s.footerLink}>About Us</Text></TouchableOpacity>
                 <TouchableOpacity onPress={() => openPortal('apply')}><Text style={s.footerLink}>Apply for Admission</Text></TouchableOpacity>
                 <TouchableOpacity onPress={() => openPortal('status')}><Text style={s.footerLink}>Check Status</Text></TouchableOpacity>
                 <TouchableOpacity onPress={() => openPortal('signin')}><Text style={s.footerLink}>Staff Login</Text></TouchableOpacity>
               </View>
-              <View style={s.footerCol}>
-                <Text style={s.footerColTitle}>Programmes</Text>
+              <View style={[s.footerCol, IS_NARROW && { minWidth: 140 }]}>
                 <Text style={s.footerLink}>General Arts</Text>
                 <Text style={s.footerLink}>Business</Text>
                 <Text style={s.footerLink}>Agriculture</Text>
               </View>
-              <View style={s.footerCol}>
-                <Text style={s.footerColTitle}>Contact Us</Text>
+              <View style={[s.footerCol, IS_NARROW && { minWidth: 140 }]}>
                 <View style={s.footerContactRow}><Text style={s.footerContactIcon}>📍</Text><Text style={s.footerContactText}>P.O. Box 1, Terchire, Ahafo Region</Text></View>
                 <View style={s.footerContactRow}><Text style={s.footerContactIcon}>📞</Text><Text style={s.footerContactText}>+233 24 471 3468</Text></View>
                 <View style={s.footerContactRow}><Text style={s.footerContactIcon}>✉</Text><Text style={s.footerContactText}>terchireshs@ges.gov.gh</Text></View>
