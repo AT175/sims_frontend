@@ -15,6 +15,8 @@ class ApiClient {
   private tenantId: string | null = null;
   private authChangeCallback: AuthChangeCallback | null = null;
   private isRefreshing = false;
+  private retryCount = 0;
+  private static MAX_RETRIES = 1;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -75,20 +77,25 @@ class ApiClient {
       body: options.body ? JSON.stringify(options.body) : undefined,
     });
 
-    if (response.status === 401 && token && !this.isRefreshing) {
+    if (response.status === 401 && token && this.retryCount < ApiClient.MAX_RETRIES) {
+      this.retryCount++;
       this.isRefreshing = true;
       const refreshed = await this.tryRefresh();
       this.isRefreshing = false;
       if (refreshed) {
-        return this.request<T>(path, options);
+        const result = this.request<T>(path, options);
+        this.retryCount = 0;
+        return result;
       }
       this.token = null;
       this.refreshToken = null;
+      this.retryCount = 0;
       if (this.authChangeCallback) {
         this.authChangeCallback(null, null, null);
       }
       throw new Error('Session expired. Please log in again.');
     }
+    this.retryCount = 0;
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: response.statusText }));
