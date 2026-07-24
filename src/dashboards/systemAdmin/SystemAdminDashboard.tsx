@@ -445,6 +445,7 @@ export function SystemAdminDashboard() {
                 if (headmasterForm.headmasterId) {
                   // Update existing headmaster
                   await apiClient.put(`/auth/users/${headmasterForm.headmasterId}`, {
+                    username: headmasterForm.username.trim(),
                     displayName: headmasterForm.displayName.trim(),
                     roles: ['headmaster'],
                   });
