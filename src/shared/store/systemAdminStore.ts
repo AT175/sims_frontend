@@ -181,6 +181,10 @@ export interface SystemAdminState {
   updateTenant: (config: Partial<TenantConfig>) => void;
   saveTenantConfig: () => Promise<void>;
   loadTenantFromBackend: (tenantKey: string) => Promise<void>;
+  _tenantsCache: any[] | null;
+  _tenantsCacheTime: number;
+  _isSavingTenant: boolean;
+  _getTenantsCached: () => Promise<any[]>;
 
   addLog: (log: Omit<SystemLog, 'id' | 'timestamp'>) => void;
   clearLogs: () => void;
@@ -200,6 +204,9 @@ export const useSystemAdminStore = create<SystemAdminState>((set, get) => ({
   backups: INITIAL_BACKUPS,
   modules: INITIAL_MODULES,
   dbHealth: INITIAL_DB_HEALTH,
+  _tenantsCache: null,
+  _tenantsCacheTime: 0,
+  _isSavingTenant: false,
 
   addUser: async (user) => {
     try {
@@ -277,11 +284,26 @@ export const useSystemAdminStore = create<SystemAdminState>((set, get) => ({
     }));
   },
 
+  _getTenantsCached: async () => {
+    const now = Date.now();
+    const cache = get()._tenantsCache;
+    const cacheTime = get()._tenantsCacheTime;
+    // Use cache if it's less than 60 seconds old
+    if (cache && (now - cacheTime) < 60000) {
+      return cache;
+    }
+    const tenants = await apiClient.getTenants();
+    set({ _tenantsCache: tenants, _tenantsCacheTime: now });
+    return tenants;
+  },
+
   saveTenantConfig: async () => {
     const t = get().tenant;
+    if (get()._isSavingTenant) return; // Prevent concurrent saves
+    set({ _isSavingTenant: true });
     try {
       // Find the tenant in the backend by its key (stored as id in the local config)
-      const tenants = await apiClient.getTenants();
+      const tenants = await get()._getTenantsCached();
       const backendTenant = tenants.find((bt: any) => bt.tenantKey === t.id);
       if (backendTenant) {
         await apiClient.updateTenant(backendTenant.id, {
@@ -300,6 +322,8 @@ export const useSystemAdminStore = create<SystemAdminState>((set, get) => ({
           subscriptionExpiry: t.subscriptionExpiry,
         });
       }
+      // Invalidate cache after update
+      set({ _tenantsCache: null, _tenantsCacheTime: 0 });
       set((st) => ({
         logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'INFO', source: 'System Config', message: `Tenant configuration saved to backend`, user: 'admin' }, ...st.logs],
       }));
@@ -308,12 +332,14 @@ export const useSystemAdminStore = create<SystemAdminState>((set, get) => ({
         logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'ERROR', source: 'System Config', message: `Failed to save tenant config: ${err.message}`, user: 'admin' }, ...st.logs],
       }));
       throw err;
+    } finally {
+      set({ _isSavingTenant: false });
     }
   },
 
   loadTenantFromBackend: async (tenantKey: string) => {
     try {
-      const tenants = await apiClient.getTenants();
+      const tenants = await get()._getTenantsCached();
       const bt = tenants.find((t: any) => t.tenantKey === tenantKey);
       if (bt) {
         set({

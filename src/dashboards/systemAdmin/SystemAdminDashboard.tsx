@@ -43,8 +43,8 @@ export function SystemAdminDashboard() {
   useEffect(() => {
     if (user?.tenantId) {
       store.loadTenantFromBackend(user.tenantId);
-      // Also fetch the headmaster for this tenant
-      apiClient.getTenants().then(async (allTenants: any[]) => {
+      // Also fetch the headmaster for this tenant using cached tenants
+      store._getTenantsCached().then(async (allTenants: any[]) => {
         const bt = allTenants.find((t) => t.tenantKey === user.tenantId);
         if (bt) {
           try {

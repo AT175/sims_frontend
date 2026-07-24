@@ -135,7 +135,7 @@ export function HeadmasterDashboard() {
 
   useEffect(() => {
     if (user?.tenantId && !websiteLoaded) {
-      apiClient.getTenants().then(async (allTenants: any[]) => {
+      sysAdminStore._getTenantsCached().then(async (allTenants: any[]) => {
         const bt = allTenants.find((t) => t.tenantKey === user.tenantId);
         if (bt) {
           setWebsiteTenantId(bt.id);
