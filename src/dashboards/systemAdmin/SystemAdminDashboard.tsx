@@ -43,6 +43,21 @@ export function SystemAdminDashboard() {
   useEffect(() => {
     if (user?.tenantId) {
       store.loadTenantFromBackend(user.tenantId);
+      // Also fetch the headmaster for this tenant
+      apiClient.getTenants().then(async (allTenants: any[]) => {
+        const bt = allTenants.find((t) => t.tenantKey === user.tenantId);
+        if (bt) {
+          try {
+            const hm = await apiClient.get<any>(`/auth/users/${bt.id}/headmaster`);
+            if (hm) {
+              setHeadmasterForm({ headmasterId: hm.id, username: hm.username, displayName: hm.displayName, password: '' });
+            }
+          } catch {
+            // No headmaster found — leave form empty
+            setHeadmasterForm({ headmasterId: '', username: '', displayName: '', password: '' });
+          }
+        }
+      }).catch(() => {});
     }
   }, [user?.tenantId]);
 
@@ -92,6 +107,14 @@ export function SystemAdminDashboard() {
   const [newPassword, setNewPassword] = useState('');
   const [isSavingUser, setIsSavingUser] = useState(false);
   const [userError, setUserError] = useState<string | null>(null);
+
+  // Headmaster edit state (for School Configuration page)
+  const [headmasterForm, setHeadmasterForm] = useState({ headmasterId: '', username: '', displayName: '', password: '' });
+  const [isSavingHeadmaster, setIsSavingHeadmaster] = useState(false);
+  const [headmasterError, setHeadmasterError] = useState<string | null>(null);
+
+  // Tenant filter for user management
+  const [tenantFilter, setTenantFilter] = useState<string>('all');
 
   const handleAddUser = () => {
     setEditingUser(null);
@@ -223,24 +246,48 @@ export function SystemAdminDashboard() {
               <StatCard label="Suspended" value={store.users.filter((u) => u.status === 'Suspended').length} accentColor={colors.warning} />
             </CardGrid>
 
-            <Text style={styles.sectionTitle}>All Users</Text>
+            <Text style={styles.sectionTitle}>Filter by Tenant</Text>
+            <View style={styles.rolePickerRow}>
+              <TouchableOpacity
+                style={[styles.roleChip, tenantFilter === 'all' && styles.roleChipActive]}
+                onPress={() => setTenantFilter('all')}
+              >
+                <Text style={[styles.roleChipText, tenantFilter === 'all' && styles.roleChipTextActive]}>All ({store.users.length})</Text>
+              </TouchableOpacity>
+              {tenants.map((t) => {
+                const count = store.users.filter((u) => u.tenantId === t.tenantKey).length;
+                return (
+                  <TouchableOpacity
+                    key={t.id}
+                    style={[styles.roleChip, tenantFilter === t.tenantKey && styles.roleChipActive]}
+                    onPress={() => setTenantFilter(t.tenantKey)}
+                  >
+                    <Text style={[styles.roleChipText, tenantFilter === t.tenantKey && styles.roleChipTextActive]}>{t.schoolName} ({count})</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <Text style={styles.sectionTitle}>All Users{tenantFilter !== 'all' ? ` — ${tenants.find((t) => t.tenantKey === tenantFilter)?.schoolName || tenantFilter}` : ''}</Text>
             <DataTable
               columns={[
                 { key: 'username', label: 'Username', render: (u: any) => u.username },
                 { key: 'displayName', label: 'Name', render: (u: any) => u.displayName },
+                { key: 'tenantId', label: 'Tenant', render: (u: any) => tenants.find((t) => t.tenantKey === u.tenantId)?.schoolName || u.tenantId },
                 { key: 'roles', label: 'Roles', render: (u: any) => u.roles.map((r: RoleId) => ROLE_LABELS[r]).join(', ') },
                 { key: 'status', label: 'Status', render: (u: any) => u.status },
                 { key: 'lastLogin', label: 'Last Login', render: (u: any) => u.lastLogin || 'Never' },
               ]}
-              data={store.users as any}
+              data={(tenantFilter === 'all' ? store.users : store.users.filter((u) => u.tenantId === tenantFilter)) as any}
             />
 
             <Text style={styles.sectionTitle}>User Actions</Text>
-            {store.users.map((user) => (
+            {(tenantFilter === 'all' ? store.users : store.users.filter((u) => u.tenantId === tenantFilter)).map((user) => (
               <View key={user.id} style={styles.userActionRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.userActionName}>{user.displayName} ({user.username})</Text>
                   <Text style={[styles.userActionStatus, { color: STATUS_COLORS[user.status] }]}>{user.status}{user.failedAttempts > 0 ? ` · ${user.failedAttempts} failed attempts` : ''}</Text>
+                  <Text style={styles.logMeta}>{tenants.find((t) => t.tenantKey === user.tenantId)?.schoolName || user.tenantId}</Text>
                 </View>
                 <View style={styles.userActionBtns}>
                   <TouchableOpacity style={styles.miniBtn} onPress={() => handleEditUser(user)}>
@@ -335,7 +382,7 @@ export function SystemAdminDashboard() {
         return (
           <ScrollView>
             <Text style={styles.pageTitle}>School Configuration</Text>
-            <Text style={styles.pageSubtitle}>Manage tenant/school settings and subscription</Text>
+            <Text style={styles.pageSubtitle}>Manage tenant/school settings, subscription and headmaster</Text>
 
             <Text style={styles.sectionTitle}>School Information</Text>
             <Text style={styles.inputLabel}>School Name</Text>
@@ -359,17 +406,60 @@ export function SystemAdminDashboard() {
             <Text style={styles.inputLabel}>Current Term</Text>
             <TextInput style={styles.textInput} value={store.tenant.term} onChangeText={(v) => store.updateTenant({ term: v })} />
 
-            <Text style={styles.sectionTitle}>Subscription</Text>
-            <View style={styles.infoCard}>
-              <View style={styles.rowBetween}>
-                <Text style={styles.infoText}>Plan: <Text style={{ fontWeight: fontWeight.bold, color: colors.primary }}>{store.tenant.subscriptionPlan}</Text></Text>
-                <Text style={styles.infoText}>Expires: {store.tenant.subscriptionExpiry}</Text>
+            <Text style={styles.sectionTitle}>Subscription & Limits</Text>
+            <Text style={styles.inputLabel}>Subscription Plan</Text>
+            <TextInput style={styles.textInput} value={store.tenant.subscriptionPlan} onChangeText={(v) => store.updateTenant({ subscriptionPlan: v as any })} placeholder="Basic / Standard / Premium" />
+            <Text style={styles.inputLabel}>Subscription Expiry</Text>
+            <TextInput style={styles.textInput} value={store.tenant.subscriptionExpiry} onChangeText={(v) => store.updateTenant({ subscriptionExpiry: v })} placeholder="2027-12-31" />
+            <Text style={styles.inputLabel}>Max Students</Text>
+            <TextInput style={styles.textInput} value={String(store.tenant.maxStudents)} onChangeText={(v) => store.updateTenant({ maxStudents: parseInt(v) || 0 })} keyboardType="numeric" />
+            <Text style={styles.inputLabel}>Max Staff</Text>
+            <TextInput style={styles.textInput} value={String(store.tenant.maxStaff)} onChangeText={(v) => store.updateTenant({ maxStaff: parseInt(v) || 0 })} keyboardType="numeric" />
+
+            <Text style={styles.sectionTitle}>Headmaster Credentials</Text>
+            <Text style={styles.autoAssignHint}>Update the headmaster account for this tenant</Text>
+            <Text style={styles.inputLabel}>Headmaster Display Name</Text>
+            <TextInput style={styles.textInput} value={headmasterForm.displayName} onChangeText={(v) => setHeadmasterForm({ ...headmasterForm, displayName: v })} placeholder="e.g. Mr. John Mensah" />
+            <Text style={styles.inputLabel}>Headmaster Username</Text>
+            <TextInput style={styles.textInput} value={headmasterForm.username} onChangeText={(v) => setHeadmasterForm({ ...headmasterForm, username: v })} placeholder="e.g. headmaster" autoCapitalize="none" />
+            <Text style={styles.inputLabel}>New Password (leave blank to keep current)</Text>
+            <TextInput style={styles.textInput} value={headmasterForm.password} onChangeText={(v) => setHeadmasterForm({ ...headmasterForm, password: v })} placeholder="Enter new password" secureTextEntry />
+
+            {headmasterError && (
+              <View style={styles.errorBanner}>
+                <Text style={styles.errorBannerText}>{headmasterError}</Text>
               </View>
-              <View style={styles.rowBetween}>
-                <Text style={styles.infoText}>Max Students: {store.tenant.maxStudents}</Text>
-                <Text style={styles.infoText}>Max Staff: {store.tenant.maxStaff}</Text>
-              </View>
-            </View>
+            )}
+
+            <TouchableOpacity style={[styles.saveBtn, isSavingHeadmaster && styles.modalApproveBtnDisabled]} disabled={isSavingHeadmaster} onPress={async () => {
+              if (!headmasterForm.username.trim() || !headmasterForm.displayName.trim()) {
+                setHeadmasterError('Username and display name are required.');
+                return;
+              }
+              setIsSavingHeadmaster(true);
+              setHeadmasterError(null);
+              try {
+                if (headmasterForm.headmasterId) {
+                  // Update existing headmaster
+                  await apiClient.put(`/auth/users/${headmasterForm.headmasterId}`, {
+                    displayName: headmasterForm.displayName.trim(),
+                    roles: ['headmaster'],
+                  });
+                  if (headmasterForm.password.trim()) {
+                    await apiClient.post(`/auth/users/${headmasterForm.headmasterId}/reset-password`, { newPassword: headmasterForm.password.trim() });
+                  }
+                  Alert.alert('Success', 'Headmaster credentials updated.');
+                } else {
+                  Alert.alert('Info', 'No headmaster found for this tenant. Please create one from the Tenants page.');
+                }
+              } catch (err: any) {
+                setHeadmasterError(err.message || 'Failed to update headmaster.');
+              } finally {
+                setIsSavingHeadmaster(false);
+              }
+            }}>
+              <Text style={styles.saveBtnText}>{isSavingHeadmaster ? 'Saving...' : 'Update Headmaster'}</Text>
+            </TouchableOpacity>
 
             <TouchableOpacity style={styles.saveBtn} onPress={async () => {
               try {
