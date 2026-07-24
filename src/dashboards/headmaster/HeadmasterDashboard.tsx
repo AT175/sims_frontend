@@ -1031,12 +1031,12 @@ export function HeadmasterDashboard() {
                   </TouchableOpacity>
                 ))}
               </View>
+              {createUserError && (
+                <View style={styles.errorBanner}>
+                  <Text style={styles.errorBannerText}>{createUserError}</Text>
+                </View>
+              )}
               <View style={styles.modalActions}>
-                {createUserError && (
-                  <View style={styles.errorBanner}>
-                    <Text style={styles.errorBannerText}>{createUserError}</Text>
-                  </View>
-                )}
                 <TouchableOpacity style={[styles.modalApproveBtn, isCreatingUser && styles.modalApproveBtnDisabled]} onPress={handleAddUser} disabled={isCreatingUser}>
                   <Text style={styles.modalBtnTextWhite}>{isCreatingUser ? 'Creating...' : 'Create User'}</Text>
                 </TouchableOpacity>

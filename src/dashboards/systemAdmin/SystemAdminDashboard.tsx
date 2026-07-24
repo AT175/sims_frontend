@@ -512,12 +512,13 @@ export function SystemAdminDashboard() {
                 })}
               </View>
 
+              {userError && (
+                <View style={styles.errorBanner}>
+                  <Text style={styles.errorBannerText}>{userError}</Text>
+                </View>
+              )}
+
               <View style={styles.modalActions}>
-                {userError && (
-                  <View style={styles.errorBanner}>
-                    <Text style={styles.errorBannerText}>{userError}</Text>
-                  </View>
-                )}
                 <TouchableOpacity style={[styles.modalApproveBtn, isSavingUser && styles.modalApproveBtnDisabled]} onPress={handleSaveUser} disabled={isSavingUser}>
                   <Text style={styles.modalBtnTextWhite}>{isSavingUser ? 'Creating...' : editingUser ? 'Update' : 'Create'}</Text>
                 </TouchableOpacity>
