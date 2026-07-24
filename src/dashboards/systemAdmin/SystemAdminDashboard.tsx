@@ -69,6 +69,9 @@ export function SystemAdminDashboard() {
     maxStaff: '150',
     subscriptionPlan: 'Standard',
     subscriptionExpiry: '',
+    headmasterUsername: '',
+    headmasterPassword: '',
+    headmasterDisplayName: '',
   });
 
   const fetchTenants = async () => {
@@ -283,7 +286,7 @@ export function SystemAdminDashboard() {
             <Text style={styles.pageSubtitle}>Create and manage school tenants in the system</Text>
 
             <TouchableOpacity style={styles.addBtn} onPress={() => {
-              setTenantForm({ tenantKey: '', schoolName: '', schoolCode: '', region: '', district: '', address: '', phone: '', email: '', maxStudents: '2000', maxStaff: '150', subscriptionPlan: 'Standard', subscriptionExpiry: '' });
+              setTenantForm({ tenantKey: '', schoolName: '', schoolCode: '', region: '', district: '', address: '', phone: '', email: '', maxStudents: '2000', maxStaff: '150', subscriptionPlan: 'Standard', subscriptionExpiry: '', headmasterUsername: '', headmasterPassword: '', headmasterDisplayName: '' });
               setTenantError(null);
               setShowTenantModal(true);
             }}>
@@ -737,6 +740,18 @@ export function SystemAdminDashboard() {
               <Text style={styles.inputLabel}>Subscription Expiry</Text>
               <TextInput style={styles.textInput} value={tenantForm.subscriptionExpiry} onChangeText={(v) => setTenantForm({ ...tenantForm, subscriptionExpiry: v })} placeholder="2027-12-31" />
 
+              <Text style={styles.sectionTitle}>Headmaster Setup</Text>
+              <Text style={styles.autoAssignHint}>A headmaster account will be created for this tenant so they can manage the school.</Text>
+
+              <Text style={styles.inputLabel}>Headmaster Display Name</Text>
+              <TextInput style={styles.textInput} value={tenantForm.headmasterDisplayName} onChangeText={(v) => setTenantForm({ ...tenantForm, headmasterDisplayName: v })} placeholder="e.g. Mr. John Mensah" />
+
+              <Text style={styles.inputLabel}>Headmaster Username</Text>
+              <TextInput style={styles.textInput} value={tenantForm.headmasterUsername} onChangeText={(v) => setTenantForm({ ...tenantForm, headmasterUsername: v })} placeholder="e.g. headmaster.tema" autoCapitalize="none" />
+
+              <Text style={styles.inputLabel}>Headmaster Password</Text>
+              <TextInput style={styles.textInput} value={tenantForm.headmasterPassword} onChangeText={(v) => setTenantForm({ ...tenantForm, headmasterPassword: v })} placeholder="Enter a temporary password" secureTextEntry />
+
               {tenantError && (
                 <View style={styles.errorBanner}>
                   <Text style={styles.errorBannerText}>{tenantError}</Text>
@@ -756,9 +771,18 @@ export function SystemAdminDashboard() {
                       setTenantError('Could not generate tenant key. Please enter a valid school name.');
                       return;
                     }
+                    if (!tenantForm.headmasterUsername.trim() || !tenantForm.headmasterDisplayName.trim()) {
+                      setTenantError('Headmaster username and display name are required.');
+                      return;
+                    }
+                    if (!tenantForm.headmasterPassword.trim() || tenantForm.headmasterPassword.length < 6) {
+                      setTenantError('Headmaster password must be at least 6 characters.');
+                      return;
+                    }
                     setIsSavingTenant(true);
                     setTenantError(null);
                     try {
+                      // 1. Create the tenant
                       await apiClient.createTenant({
                         tenantKey: tenantForm.tenantKey.trim(),
                         schoolName: tenantForm.schoolName.trim(),
@@ -773,11 +797,24 @@ export function SystemAdminDashboard() {
                         subscriptionPlan: tenantForm.subscriptionPlan.trim() || 'Standard',
                         subscriptionExpiry: tenantForm.subscriptionExpiry.trim() || undefined,
                       });
+
+                      // 2. Create the headmaster user for this tenant
+                      await apiClient.post('/auth/users', {
+                        username: tenantForm.headmasterUsername.trim(),
+                        password: tenantForm.headmasterPassword.trim(),
+                        displayName: tenantForm.headmasterDisplayName.trim(),
+                        roles: ['headmaster'],
+                        tenantId: tenantForm.tenantKey.trim(),
+                      });
+
                       await fetchTenants();
                       setShowTenantModal(false);
-                      Alert.alert('Success', 'Tenant created successfully. You can now create a headmaster for this tenant.');
+                      Alert.alert(
+                        'Success',
+                        `Tenant "${tenantForm.schoolName}" created.\nHeadmaster "${tenantForm.headmasterUsername}" can now log in.`
+                      );
                     } catch (err: any) {
-                      setTenantError(err.message || 'Failed to create tenant.');
+                      setTenantError(err.message || 'Failed to create tenant and headmaster.');
                     } finally {
                       setIsSavingTenant(false);
                     }
