@@ -40,6 +40,12 @@ export function SystemAdminDashboard() {
     apiClient.healthCheck().then(setConnStatus);
   }, []);
 
+  useEffect(() => {
+    if (user?.tenantId) {
+      store.loadTenantFromBackend(user.tenantId);
+    }
+  }, [user?.tenantId]);
+
   // User modal state
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<SystemUser | null>(null);
@@ -362,7 +368,14 @@ export function SystemAdminDashboard() {
               </View>
             </View>
 
-            <TouchableOpacity style={styles.saveBtn} onPress={() => Alert.alert('Saved', 'School configuration saved successfully.')}>
+            <TouchableOpacity style={styles.saveBtn} onPress={async () => {
+              try {
+                await store.saveTenantConfig();
+                Alert.alert('Saved', 'School configuration saved successfully.');
+              } catch (err: any) {
+                Alert.alert('Error', err.message || 'Failed to save configuration.');
+              }
+            }}>
               <Text style={styles.saveBtnText}>Save Configuration</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -681,11 +694,18 @@ export function SystemAdminDashboard() {
             <ScrollView>
               <Text style={styles.modalTitle}>Create New Tenant (School)</Text>
 
-              <Text style={styles.inputLabel}>Tenant Key (unique identifier)</Text>
-              <TextInput style={styles.textInput} value={tenantForm.tenantKey} onChangeText={(v) => setTenantForm({ ...tenantForm, tenantKey: v })} placeholder="e.g. tenant-002" autoCapitalize="none" />
+              <Text style={styles.inputLabel}>Tenant Key (auto-generated)</Text>
+              <Text style={styles.autoAssignHint}>A unique key will be generated automatically from the school name</Text>
+              <TextInput style={[styles.textInput, { backgroundColor: colors.surfaceAlt }]} value={tenantForm.tenantKey} editable={false} placeholder="Auto-generated from school name" />
 
               <Text style={styles.inputLabel}>School Name</Text>
-              <TextInput style={styles.textInput} value={tenantForm.schoolName} onChangeText={(v) => setTenantForm({ ...tenantForm, schoolName: v })} placeholder="e.g. Tema Senior High School" />
+              <TextInput style={styles.textInput} value={tenantForm.schoolName} onChangeText={(v) => {
+                const slug = v.trim().toLowerCase()
+                  .replace(/[^a-z0-9]+/g, '-')
+                  .replace(/^-+|-+$/g, '');
+                const autoKey = slug ? `tenant-${slug}` : '';
+                setTenantForm({ ...tenantForm, schoolName: v, tenantKey: autoKey });
+              }} placeholder="e.g. Tema Senior High School" />
 
               <Text style={styles.inputLabel}>School Code</Text>
               <TextInput style={styles.textInput} value={tenantForm.schoolCode} onChangeText={(v) => setTenantForm({ ...tenantForm, schoolCode: v })} placeholder="e.g. TSHS-001" />
@@ -728,8 +748,12 @@ export function SystemAdminDashboard() {
                   style={[styles.modalApproveBtn, isSavingTenant && styles.modalApproveBtnDisabled]}
                   disabled={isSavingTenant}
                   onPress={async () => {
-                    if (!tenantForm.tenantKey.trim() || !tenantForm.schoolName.trim()) {
-                      setTenantError('Tenant Key and School Name are required.');
+                    if (!tenantForm.schoolName.trim()) {
+                      setTenantError('School Name is required.');
+                      return;
+                    }
+                    if (!tenantForm.tenantKey) {
+                      setTenantError('Could not generate tenant key. Please enter a valid school name.');
                       return;
                     }
                     setIsSavingTenant(true);

@@ -179,6 +179,8 @@ export interface SystemAdminState {
   unlockUser: (id: string) => void;
 
   updateTenant: (config: Partial<TenantConfig>) => void;
+  saveTenantConfig: () => Promise<void>;
+  loadTenantFromBackend: (tenantKey: string) => Promise<void>;
 
   addLog: (log: Omit<SystemLog, 'id' | 'timestamp'>) => void;
   clearLogs: () => void;
@@ -272,8 +274,72 @@ export const useSystemAdminStore = create<SystemAdminState>((set, get) => ({
   updateTenant: (config) => {
     set((st) => ({
       tenant: { ...st.tenant, ...config },
-      logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'INFO', source: 'System Config', message: `Tenant configuration updated`, user: 'admin' }, ...st.logs],
     }));
+  },
+
+  saveTenantConfig: async () => {
+    const t = get().tenant;
+    try {
+      // Find the tenant in the backend by its key (stored as id in the local config)
+      const tenants = await apiClient.getTenants();
+      const backendTenant = tenants.find((bt: any) => bt.tenantKey === t.id);
+      if (backendTenant) {
+        await apiClient.updateTenant(backendTenant.id, {
+          schoolName: t.schoolName,
+          schoolCode: t.schoolCode,
+          region: t.region,
+          district: t.district,
+          address: t.address,
+          phone: t.phone,
+          email: t.email,
+          academicYear: t.academicYear,
+          term: t.term,
+          maxStudents: t.maxStudents,
+          maxStaff: t.maxStaff,
+          subscriptionPlan: t.subscriptionPlan,
+          subscriptionExpiry: t.subscriptionExpiry,
+        });
+      }
+      set((st) => ({
+        logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'INFO', source: 'System Config', message: `Tenant configuration saved to backend`, user: 'admin' }, ...st.logs],
+      }));
+    } catch (err: any) {
+      set((st) => ({
+        logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'ERROR', source: 'System Config', message: `Failed to save tenant config: ${err.message}`, user: 'admin' }, ...st.logs],
+      }));
+      throw err;
+    }
+  },
+
+  loadTenantFromBackend: async (tenantKey: string) => {
+    try {
+      const tenants = await apiClient.getTenants();
+      const bt = tenants.find((t: any) => t.tenantKey === tenantKey);
+      if (bt) {
+        set({
+          tenant: {
+            id: bt.tenantKey,
+            schoolName: bt.schoolName || '',
+            schoolCode: bt.schoolCode || '',
+            region: bt.region || '',
+            district: bt.district || '',
+            address: bt.address || '',
+            phone: bt.phone || '',
+            email: bt.email || '',
+            logoUrl: bt.logoUrl || null,
+            academicYear: bt.academicYear || '',
+            term: bt.term || '',
+            maxStudents: bt.maxStudents || 2000,
+            maxStaff: bt.maxStaff || 150,
+            subscriptionPlan: bt.subscriptionPlan || 'Standard',
+            subscriptionExpiry: bt.subscriptionExpiry || '',
+            enabledModules: bt.enabledModules || [],
+          },
+        });
+      }
+    } catch (err: any) {
+      console.error('[SystemAdminStore] Failed to load tenant from backend:', err.message);
+    }
   },
 
   addLog: (log) => {
