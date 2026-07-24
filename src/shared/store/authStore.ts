@@ -49,7 +49,7 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: response.refreshToken,
       };
 
-      apiClient.setAuth(user.token, user.tenantId);
+      apiClient.setAuth(user.token, user.tenantId, user.refreshToken);
       set({ user, isAuthenticated: true, isLoading: false, isTempLogin: false });
       useNotificationStore.getState().addNotification({
         title: 'Welcome back',
@@ -83,7 +83,7 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: response.refreshToken,
       };
 
-      apiClient.setAuth(user.token, user.tenantId);
+      apiClient.setAuth(user.token, user.tenantId, user.refreshToken);
       set({ user, isAuthenticated: true, isLoading: false, isTempLogin: true });
     } catch (err) {
       set({
@@ -127,7 +127,7 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: response.refreshToken,
       };
 
-      apiClient.setAuth(user.token, user.tenantId);
+      apiClient.setAuth(user.token, user.tenantId, user.refreshToken);
       set({ user, isLoading: false });
       useNotificationStore.getState().addNotification({
         title: 'Role switched',
@@ -193,9 +193,21 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated, isTempLogin: state.isTempLogin }),
       onRehydrateStorage: () => (state) => {
         if (state?.user?.token) {
-          apiClient.setAuth(state.user.token, state.user.tenantId);
+          apiClient.setAuth(state.user.token, state.user.tenantId, state.user.refreshToken);
         }
       },
     },
   ),
 );
+
+apiClient.onAuthChange((token, refreshToken, tenantId) => {
+  const state = useAuthStore.getState();
+  if (token && state.user) {
+    useAuthStore.setState({
+      user: { ...state.user, token, refreshToken: refreshToken ?? state.user.refreshToken },
+    });
+  } else if (!token) {
+    apiClient.setAuth(null, null, null);
+    useAuthStore.setState({ user: null, isAuthenticated: false, isTempLogin: false });
+  }
+});
