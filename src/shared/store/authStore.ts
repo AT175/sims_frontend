@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { AuthUser, RoleId } from '@shared/types';
 import { authApi } from '@shared/api/authApi';
 import { apiClient } from '@shared/api/apiClient';
@@ -20,12 +21,14 @@ interface AuthState {
   clearError: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
-  isAuthenticated: false,
-  isLoading: false,
-  error: null,
-  isTempLogin: false,
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      error: null,
+      isTempLogin: false,
 
   login: async (username: string, password: string) => {
     set({ isLoading: true, error: null });
@@ -183,5 +186,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  clearError: () => set({ error: null }),
-}));
+      clearError: () => set({ error: null }),
+    }),
+    {
+      name: 'sims-auth',
+      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated, isTempLogin: state.isTempLogin }),
+      onRehydrateStorage: () => (state) => {
+        if (state?.user?.token) {
+          apiClient.setAuth(state.user.token, state.user.tenantId);
+        }
+      },
+    },
+  ),
+);
