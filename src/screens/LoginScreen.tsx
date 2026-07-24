@@ -433,7 +433,7 @@ export function LoginScreen() {
             </View>
           </View>
           <View style={s.portalBody}>
-            <View style={s.splitContainer}>
+            <View style={[s.splitContainer, IS_NARROW && { flexDirection: 'column' }]}>
         {!IS_NARROW && (
           <View style={s.brandPanel}>
             <Image source={{ uri: '/banner3.png' }} style={s.brandBgImage} resizeMode="cover" />
@@ -471,7 +471,7 @@ export function LoginScreen() {
             </View>
           </View>
         )}
-        <View style={s.formPanel}>
+        <View style={[s.formPanel, IS_NARROW && { flex: 1 }]}>
           <Image source={{ uri: '/bg6.jpg' }} style={s.formPanelBg} resizeMode="cover" />
           <View style={s.formPanelBgOverlay} />
           <View style={s.formPanelInner}>
