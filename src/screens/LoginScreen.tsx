@@ -293,17 +293,17 @@ export function LoginScreen() {
               <Text style={s.sectionTitle}>About <Text style={s.sectionTitleAccent}>Our School</Text></Text>
               <Text style={s.sectionSubtitle}>Established in 2011 in Terchire, Tano North District of the Ahafo Region, Terchire Senior High School is dedicated to providing high-quality education and discipline to its learners.</Text>
               <View style={s.aboutGrid}>
-                <View style={[s.aboutCard, IS_NARROW && { minWidth: 0, padding: spacing.lg }]}>
+                <View style={[s.aboutCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
                   <View style={s.aboutCardIconWrap}><Text style={s.aboutCardIcon}>🎯</Text></View>
                   <Text style={s.aboutCardTitle}>Our Mission</Text>
                   <Text style={s.aboutCardText}>To train learners to high levels of education standards through the collaborative effort of all relevant stakeholders.</Text>
                 </View>
-                <View style={[s.aboutCard, IS_NARROW && { minWidth: 0, padding: spacing.lg }]}>
+                <View style={[s.aboutCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
                   <View style={s.aboutCardIconWrap}><Text style={s.aboutCardIcon}>🌟</Text></View>
                   <Text style={s.aboutCardTitle}>Our Vision</Text>
                   <Text style={s.aboutCardText}>A center for quality education and discipline, serving the Tano North District and the Ahafo Region with dedication and excellence.</Text>
                 </View>
-                <View style={[s.aboutCard, IS_NARROW && { minWidth: 0, padding: spacing.lg }]}>
+                <View style={[s.aboutCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
                   <View style={s.aboutCardIconWrap}><Text style={s.aboutCardIcon}>🤝</Text></View>
                   <Text style={s.aboutCardTitle}>Our Motto</Text>
                   <Text style={s.aboutCardText}>"Nimdɛɛ Firi Onyame" — Knowledge comes from God. We believe in nurturing both the intellect and character of every student through collaborative effort and discipline.</Text>
@@ -318,22 +318,22 @@ export function LoginScreen() {
               <Text style={s.sectionTitle}>Why Choose <Text style={s.sectionTitleAccent}>Terchire SHS?</Text></Text>
               <Text style={s.sectionSubtitle}>A single-track public senior high school committed to collaborative learning and discipline in the Ahafo Region.</Text>
               <View style={s.featuresGrid}>
-                <View style={[s.featureCard, IS_NARROW && { minWidth: 0, padding: spacing.lg }]}>
+                <View style={[s.featureCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
                   <View style={s.featureIconWrap}><Text style={s.featureIcon}>📚</Text></View>
                   <Text style={s.featureTitle}>Quality Education</Text>
                   <Text style={s.featureText}>Dedicated teachers committed to training learners to high education standards through collaborative stakeholder efforts.</Text>
                 </View>
-                <View style={[s.featureCard, IS_NARROW && { minWidth: 0, padding: spacing.lg }]}>
+                <View style={[s.featureCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
                   <View style={s.featureIconWrap}><Text style={s.featureIcon}>🏆</Text></View>
                   <Text style={s.featureTitle}>Discipline & Character</Text>
                   <Text style={s.featureText}>We instill discipline and moral integrity in every student, creating responsible citizens ready to serve their community.</Text>
                 </View>
-                <View style={[s.featureCard, IS_NARROW && { minWidth: 0, padding: spacing.lg }]}>
+                <View style={[s.featureCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
                   <View style={s.featureIconWrap}><Text style={s.featureIcon}>💻</Text></View>
                   <Text style={s.featureTitle}>Agriculture Programme</Text>
                   <Text style={s.featureText}>Hands-on agricultural training that equips students with practical skills for food production and agribusiness.</Text>
                 </View>
-                <View style={[s.featureCard, IS_NARROW && { minWidth: 0, padding: spacing.lg }]}>
+                <View style={[s.featureCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
                   <View style={s.featureIconWrap}><Text style={s.featureIcon}>🏡</Text></View>
                   <Text style={s.featureTitle}>Business & Arts</Text>
                   <Text style={s.featureText}>Comprehensive Business and General Arts programmes that prepare students for university and professional careers.</Text>
@@ -380,6 +380,7 @@ export function LoginScreen() {
                 <Text style={s.footerAbout}>A public senior high school in Terchire, Ahafo Region, dedicated to quality education and discipline since 2011. "Nimdɛɛ Firi Onyame" — Knowledge comes from God.</Text>
               </View>
               <View style={[s.footerCol, IS_NARROW && { minWidth: 140 }]}>
+                <Text style={s.footerColTitle}>Quick Links</Text>
                 <TouchableOpacity onPress={goHome}><Text style={s.footerLink}>Home</Text></TouchableOpacity>
                 <TouchableOpacity onPress={scrollToAbout}><Text style={s.footerLink}>About Us</Text></TouchableOpacity>
                 <TouchableOpacity onPress={() => openPortal('apply')}><Text style={s.footerLink}>Apply for Admission</Text></TouchableOpacity>
@@ -387,11 +388,13 @@ export function LoginScreen() {
                 <TouchableOpacity onPress={() => openPortal('signin')}><Text style={s.footerLink}>Staff Login</Text></TouchableOpacity>
               </View>
               <View style={[s.footerCol, IS_NARROW && { minWidth: 140 }]}>
+                <Text style={s.footerColTitle}>Programmes</Text>
                 <Text style={s.footerLink}>General Arts</Text>
                 <Text style={s.footerLink}>Business</Text>
                 <Text style={s.footerLink}>Agriculture</Text>
               </View>
               <View style={[s.footerCol, IS_NARROW && { minWidth: 140 }]}>
+                <Text style={s.footerColTitle}>Contact Us</Text>
                 <View style={s.footerContactRow}><Text style={s.footerContactIcon}>📍</Text><Text style={s.footerContactText}>P.O. Box 1, Terchire, Ahafo Region</Text></View>
                 <View style={s.footerContactRow}><Text style={s.footerContactIcon}>📞</Text><Text style={s.footerContactText}>+233 24 471 3468</Text></View>
                 <View style={s.footerContactRow}><Text style={s.footerContactIcon}>✉</Text><Text style={s.footerContactText}>terchireshs@ges.gov.gh</Text></View>
