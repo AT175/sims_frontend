@@ -125,6 +125,18 @@ class ApiClient {
   delete<T>(path: string): Promise<T> {
     return this.request<T>(path, { method: 'DELETE' });
   }
+
+  async healthCheck(): Promise<{ ok: boolean; message: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/auth/health`, { method: 'GET' });
+      if (response.ok) {
+        return { ok: true, message: 'Backend is reachable' };
+      }
+      return { ok: false, message: `Backend responded with status ${response.status}` };
+    } catch (err: any) {
+      return { ok: false, message: `Cannot reach backend: ${err.message}` };
+    }
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

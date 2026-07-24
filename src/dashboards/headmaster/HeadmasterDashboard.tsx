@@ -111,6 +111,8 @@ export function HeadmasterDashboard() {
 
   const [showUserModal, setShowUserModal] = useState(false);
   const [userForm, setUserForm] = useState({ username: '', displayName: '', email: '', password: '', roles: [] as RoleId[], status: 'Active' as UserStatus, tenantId: 'tenant-001' });
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [createUserError, setCreateUserError] = useState<string | null>(null);
   const [showRoleModal, setShowRoleModal] = useState<SystemUser | null>(null);
   const [roleDraft, setRoleDraft] = useState<RoleId[]>([]);
   const [resetUser, setResetUser] = useState<SystemUser | null>(null);
@@ -158,24 +160,28 @@ export function HeadmasterDashboard() {
 
   const handleAddUser = async () => {
     if (!userForm.username.trim() || !userForm.displayName.trim()) {
-      Alert.alert('Error', 'Username and display name are required.');
+      setCreateUserError('Username and display name are required.');
       return;
     }
     if (!userForm.password.trim()) {
-      Alert.alert('Error', 'Password is required for new users.');
+      setCreateUserError('Password is required for new users.');
       return;
     }
     if (userForm.roles.length === 0) {
-      Alert.alert('Error', 'At least one role must be assigned.');
+      setCreateUserError('At least one role must be assigned.');
       return;
     }
+    setIsCreatingUser(true);
+    setCreateUserError(null);
     try {
       await sysAdminStore.addUser({ username: userForm.username.trim(), displayName: userForm.displayName.trim(), email: userForm.email.trim(), roles: userForm.roles, status: userForm.status, tenantId: userForm.tenantId, password: userForm.password } as any);
-      setUserForm({ username: '', displayName: '', email: '', password: '', roles: [], status: 'Active', tenantId: 'tenant_001' });
+      setUserForm({ username: '', displayName: '', email: '', password: '', roles: [], status: 'Active', tenantId: 'tenant-001' });
       setShowUserModal(false);
       Alert.alert('Success', 'User account created.');
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to create user.');
+      setCreateUserError(err.message || 'Failed to create user.');
+    } finally {
+      setIsCreatingUser(false);
     }
   };
 
@@ -1026,10 +1032,15 @@ export function HeadmasterDashboard() {
                 ))}
               </View>
               <View style={styles.modalActions}>
-                <TouchableOpacity style={styles.modalApproveBtn} onPress={handleAddUser}>
-                  <Text style={styles.modalBtnTextWhite}>Create User</Text>
+                {createUserError && (
+                  <View style={styles.errorBanner}>
+                    <Text style={styles.errorBannerText}>{createUserError}</Text>
+                  </View>
+                )}
+                <TouchableOpacity style={[styles.modalApproveBtn, isCreatingUser && styles.modalApproveBtnDisabled]} onPress={handleAddUser} disabled={isCreatingUser}>
+                  <Text style={styles.modalBtnTextWhite}>{isCreatingUser ? 'Creating...' : 'Create User'}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowUserModal(false)}>
+                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowUserModal(false)} disabled={isCreatingUser}>
                   <Text style={styles.modalBtnTextSecondary}>Cancel</Text>
                 </TouchableOpacity>
               </View>
@@ -2153,5 +2164,20 @@ const styles = StyleSheet.create({
   accessSummaryLabel: {
     fontWeight: fontWeight.semibold,
     color: colors.textSecondary,
+  },
+  errorBanner: {
+    backgroundColor: colors.danger + '15',
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+    width: '100%',
+  },
+  errorBannerText: {
+    color: colors.danger,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+  },
+  modalApproveBtnDisabled: {
+    opacity: 0.5,
   },
 });

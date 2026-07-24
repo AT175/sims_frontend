@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, TextInput, Alert } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid, DataTable } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
 import { useAuthStore } from '@store/authStore';
+import { apiClient } from '@shared/api/apiClient';
 import { useSystemAdminStore } from '@store/systemAdminStore';
 import type { SystemUser, UserStatus } from '@store/systemAdminStore';
 import { ROLE_LABELS } from '@shared/navigation/roleMap';
@@ -32,6 +33,12 @@ export function SystemAdminDashboard() {
   const { logout } = useAuthStore();
   const store = useSystemAdminStore();
 
+  const [connStatus, setConnStatus] = useState<{ ok: boolean | null; message: string }>({ ok: null, message: 'Checking...' });
+
+  useEffect(() => {
+    apiClient.healthCheck().then(setConnStatus);
+  }, []);
+
   // User modal state
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<SystemUser | null>(null);
@@ -40,32 +47,39 @@ export function SystemAdminDashboard() {
   // Reset password modal state
   const [resetUser, setResetUser] = useState<SystemUser | null>(null);
   const [newPassword, setNewPassword] = useState('');
+  const [isSavingUser, setIsSavingUser] = useState(false);
+  const [userError, setUserError] = useState<string | null>(null);
 
   const handleAddUser = () => {
     setEditingUser(null);
     setUserForm({ username: '', displayName: '', email: '', password: '', roles: [] });
+    setUserError(null);
     setShowUserModal(true);
   };
 
   const handleEditUser = (user: SystemUser) => {
     setEditingUser(user);
     setUserForm({ username: user.username, displayName: user.displayName, email: user.email, password: '', roles: [...user.roles] });
+    setUserError(null);
     setShowUserModal(true);
   };
 
   const handleSaveUser = async () => {
     if (!userForm.username.trim() || !userForm.displayName.trim()) {
-      Alert.alert('Error', 'Username and display name are required');
+      setUserError('Username and display name are required');
       return;
     }
     if (!editingUser && !userForm.password.trim()) {
-      Alert.alert('Error', 'Password is required for new users');
+      setUserError('Password is required for new users');
       return;
     }
     if (editingUser) {
       store.updateUserRoles(editingUser.id, userForm.roles);
       Alert.alert('Success', 'User updated successfully');
+      setShowUserModal(false);
     } else {
+      setIsSavingUser(true);
+      setUserError(null);
       try {
         await store.addUser({
           username: userForm.username.trim(),
@@ -76,13 +90,14 @@ export function SystemAdminDashboard() {
           tenantId: store.tenant.id,
           password: userForm.password,
         } as any);
+        setShowUserModal(false);
         Alert.alert('Success', 'User created successfully');
       } catch (err: any) {
-        Alert.alert('Error', err.message || 'Failed to create user');
-        return;
+        setUserError(err.message || 'Failed to create user');
+      } finally {
+        setIsSavingUser(false);
       }
     }
-    setShowUserModal(false);
   };
 
   const handleToggleRole = (role: RoleId) => {
@@ -99,6 +114,13 @@ export function SystemAdminDashboard() {
           <ScrollView>
             <Text style={styles.pageTitle}>System Overview</Text>
             <Text style={styles.pageSubtitle}>Monitor system health and key metrics</Text>
+
+            <View style={[styles.connBanner, { backgroundColor: (connStatus.ok === null ? colors.info : connStatus.ok ? colors.success : colors.danger) + '15' }]}>
+              <Text style={[styles.connBannerText, { color: connStatus.ok === null ? colors.info : connStatus.ok ? colors.success : colors.danger }]}>
+                {connStatus.ok === null ? '⏳ Checking backend...' : connStatus.ok ? '✓ Backend connected' : '✗ Backend unreachable'}
+              </Text>
+              <Text style={styles.connBannerSub}>{connStatus.message}</Text>
+            </View>
 
             <CardGrid>
               <StatCard label="Total Users" value={store.users.length} accentColor={colors.primary} icon="👤" />
@@ -491,10 +513,15 @@ export function SystemAdminDashboard() {
               </View>
 
               <View style={styles.modalActions}>
-                <TouchableOpacity style={styles.modalApproveBtn} onPress={handleSaveUser}>
-                  <Text style={styles.modalBtnTextWhite}>{editingUser ? 'Update' : 'Create'}</Text>
+                {userError && (
+                  <View style={styles.errorBanner}>
+                    <Text style={styles.errorBannerText}>{userError}</Text>
+                  </View>
+                )}
+                <TouchableOpacity style={[styles.modalApproveBtn, isSavingUser && styles.modalApproveBtnDisabled]} onPress={handleSaveUser} disabled={isSavingUser}>
+                  <Text style={styles.modalBtnTextWhite}>{isSavingUser ? 'Creating...' : editingUser ? 'Update' : 'Create'}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowUserModal(false)}>
+                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowUserModal(false)} disabled={isSavingUser}>
                   <Text style={styles.modalBtnTextSecondary}>Cancel</Text>
                 </TouchableOpacity>
               </View>
@@ -608,4 +635,10 @@ const styles = StyleSheet.create({
   roleChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   roleChipText: { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: fontWeight.medium },
   roleChipTextActive: { color: colors.white, fontWeight: fontWeight.semibold },
+  errorBanner: { backgroundColor: colors.danger + '15', borderRadius: radius.md, padding: spacing.sm, marginBottom: spacing.sm, width: '100%' },
+  errorBannerText: { color: colors.danger, fontSize: fontSize.sm, fontWeight: fontWeight.medium },
+  modalApproveBtnDisabled: { opacity: 0.5 },
+  connBanner: { borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md },
+  connBannerText: { fontSize: fontSize.md, fontWeight: fontWeight.bold },
+  connBannerSub: { fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 4 },
 });
