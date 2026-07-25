@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid, DataTable } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
 import { useAuthStore } from '@store/authStore';
+import { useDynamicDashboardStore } from '@store/dynamicDashboardStore';
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'Overview' },
@@ -15,6 +16,12 @@ const NAV_ITEMS: NavItem[] = [
 export function GoverningBoardDashboard() {
   const [activePage, setActivePage] = useState('overview');
   const { logout } = useAuthStore();
+
+  useEffect(() => {
+    useDynamicDashboardStore.getState().loadBoardPolicies();
+    useDynamicDashboardStore.getState().loadBoardBudgets();
+    useDynamicDashboardStore.getState().loadBoardMinutes();
+  }, []);
 
   const renderPage = () => {
     switch (activePage) {

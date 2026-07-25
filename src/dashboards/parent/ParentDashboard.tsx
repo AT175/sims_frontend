@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, ScrollView, Alert } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid, DataTable } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
@@ -29,6 +29,14 @@ export function ParentDashboard() {
   const [activePage, setActivePage] = useState('wards');
   const { user, logout } = useAuthStore();
   const parentName = user?.displayName ?? 'Parent';
+
+  useEffect(() => {
+    usePTAStore.getState().loadAnnouncements();
+    usePTAStore.getState().loadMeetings();
+    useBoardingStore.getState().loadRollCalls();
+    useBoardingStore.getState().loadDiscipline();
+    useExeatStore.getState().loadExeats();
+  }, []);
 
   return (
     <DashboardLayout

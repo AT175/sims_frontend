@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@shared/api/apiClient';
 
 // ── Types ──
 
@@ -96,20 +97,9 @@ const todayISO = () => new Date().toISOString().slice(0, 10);
 
 // ── Initial Data ──
 
-const INITIAL_CLUBS: Club[] = [
-  { id: '1', name: 'Debate Society', category: 'Academic', patron: 'Mrs. Boateng', memberCount: 45, meetingDay: 'Friday' },
-  { id: '2', name: 'Science Club', category: 'Academic', patron: 'Mr. Adjei', memberCount: 62, meetingDay: 'Wednesday' },
-  { id: '3', name: 'Drama Club', category: 'Arts & Culture', patron: 'Mrs. Mensah', memberCount: 38, meetingDay: 'Tuesday' },
-  { id: '4', name: 'Math Club', category: 'Academic', patron: 'Mr. Mensah', memberCount: 52, meetingDay: 'Thursday' },
-  { id: '5', name: 'Red Cross', category: 'Service', patron: 'Mr. Tetteh', memberCount: 40, meetingDay: 'Saturday' },
-];
+const INITIAL_CLUBS: Club[] = [];
 
-const INITIAL_FIXTURES: Fixture[] = [
-  { id: '1', date: '2026-07-12', sport: 'Football', match: 'Aggrey vs Danquah', venue: 'School field', status: 'Upcoming' },
-  { id: '2', date: '2026-07-12', sport: 'Volleyball', match: 'Mensah vs Yaa Asantewaa', venue: 'Court A', status: 'Upcoming' },
-  { id: '3', date: '2026-07-20', sport: 'Athletics', match: 'Inter-school Relay', venue: 'Kumasi Stadium', status: 'Upcoming' },
-  { id: '4', date: '2026-06-15', sport: 'Football', match: 'School vs KNUST SHS', venue: 'School field', status: 'Completed', scoreHome: '3', scoreAway: '1', result: 'Won 3-1' },
-];
+const INITIAL_FIXTURES: Fixture[] = [];
 
 const INITIAL_PARTICIPATION: ParticipationRecord[] = [
   { id: '1', date: '2026-07-05', activity: 'Science Club meeting', participantCount: 58 },
@@ -170,6 +160,10 @@ interface SportsState {
 
   grantAccess: (record: Omit<AccessRecord, 'id' | 'grantedDate'>) => void;
   revokeAccess: (id: string) => void;
+
+  // API
+  loadClubs: () => Promise<void>;
+  loadFixtures: () => Promise<void>;
 }
 
 export const useSportsStore = create<SportsState>((set) => ({
@@ -180,9 +174,13 @@ export const useSportsStore = create<SportsState>((set) => ({
   achievements: INITIAL_ACHIEVEMENTS,
   accessRecords: INITIAL_ACCESS,
 
-  addClub: (club) => {
-    const newClub: Club = { ...club, id: nextId() };
-    set((s) => ({ clubs: [newClub, ...s.clubs] }));
+  addClub: async (club) => {
+    try {
+      const created = await apiClient.post<any>('/sports/clubs', club);
+      set((s) => ({ clubs: [{ ...club, id: created.id || nextId() }, ...s.clubs] }));
+    } catch {
+      set((s) => ({ clubs: [{ ...club, id: nextId() }, ...s.clubs] }));
+    }
   },
 
   updateClub: (id, updates) => {
@@ -193,9 +191,13 @@ export const useSportsStore = create<SportsState>((set) => ({
     set((s) => ({ clubs: s.clubs.filter((c) => c.id !== id) }));
   },
 
-  addFixture: (fixture) => {
-    const newFixture: Fixture = { ...fixture, id: nextId(), status: 'Upcoming' };
-    set((s) => ({ fixtures: [newFixture, ...s.fixtures] }));
+  addFixture: async (fixture) => {
+    try {
+      const created = await apiClient.post<any>('/sports/fixtures', fixture);
+      set((s) => ({ fixtures: [{ ...fixture, id: created.id || nextId(), status: 'Upcoming' }, ...s.fixtures] }));
+    } catch {
+      set((s) => ({ fixtures: [{ ...fixture, id: nextId(), status: 'Upcoming' }, ...s.fixtures] }));
+    }
   },
 
   updateFixtureResult: (id, scoreHome, scoreAway, result) => {
@@ -256,5 +258,18 @@ export const useSportsStore = create<SportsState>((set) => ({
 
   revokeAccess: (id) => {
     set((s) => ({ accessRecords: s.accessRecords.filter((a) => a.id !== id) }));
+  },
+
+  loadClubs: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/sports/clubs');
+      set({ clubs: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadFixtures: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/sports/fixtures');
+      set({ fixtures: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
   },
 }));

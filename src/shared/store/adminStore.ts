@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@shared/api/apiClient';
 
 // ── Types ──
 
@@ -185,6 +186,11 @@ interface AdminState {
     activeStudents: number;
     openIncidents: number;
   };
+
+  // Backend load methods
+  loadCompliance: () => Promise<void>;
+  loadFacilities: () => Promise<void>;
+  loadTasks: () => Promise<void>;
 }
 
 export const useAdminStore = create<AdminState>((set, get) => ({
@@ -285,5 +291,24 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       activeStudents: 0,
       openIncidents: 0,
     };
+  },
+
+  loadCompliance: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/admin/compliance');
+      set({ compliance: (data || []).map((d) => ({ ...d, id: d.id || `adm-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` })) });
+    } catch {}
+  },
+  loadFacilities: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/admin/facilities');
+      set({ facilities: (data || []).map((d) => ({ ...d, id: d.id || `adm-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` })) });
+    } catch {}
+  },
+  loadTasks: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/admin/tasks');
+      set({ tasks: (data || []).map((d) => ({ ...d, id: d.id || `adm-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` })) });
+    } catch {}
   },
 }));

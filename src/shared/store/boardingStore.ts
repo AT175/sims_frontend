@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@shared/api/apiClient';
 
 // ── Types ──
 
@@ -104,20 +105,9 @@ const initialRooms: Room[] = [
   { id: 'r6', house: 'Danquah', room: 'D-11', beds: 4, occupied: 2, studentNames: ['B. Asiedu', 'A. Boateng'] },
 ];
 
-const initialRollCalls: RollCallEntry[] = [
-  { id: 'rc1', date: today, house: 'Aggrey', studentName: 'Kwame Asante', room: 'A-12', status: 'Present', recordedBy: 'Mr. Owusu' },
-  { id: 'rc2', date: today, house: 'Aggrey', studentName: 'Yao Mensah', room: 'B-05', status: 'Present', recordedBy: 'Mr. Owusu' },
-  { id: 'rc3', date: today, house: 'Aggrey', studentName: 'Daniel Osei', room: 'C-08', status: 'Absent', recordedBy: 'Mr. Owusu' },
-  { id: 'rc4', date: today, house: 'Aggrey', studentName: 'Patrick Agyei', room: 'A-14', status: 'Excused', notes: 'Medical appointment', recordedBy: 'Mr. Owusu' },
-  { id: 'rc5', date: today, house: 'Aggrey', studentName: 'Kofi Baah', room: 'B-05', status: 'Present', recordedBy: 'Mr. Owusu' },
-  { id: 'rc6', date: today, house: 'Aggrey', studentName: 'Samuel Tuffour', room: 'A-12', status: 'Late', notes: 'Returned 10 min late', recordedBy: 'Mr. Owusu' },
-];
+const initialRollCalls: RollCallEntry[] = [];
 
-const initialDiscipline: DisciplineLog[] = [
-  { id: 'd1', date: '2026-07-05', house: 'Aggrey', studentName: 'Kwame Asante', incident: 'Bullying', severity: 'Serious', actionTaken: 'Escalated to Headmaster', recordedBy: 'Mr. Owusu', escalated: true },
-  { id: 'd2', date: '2026-07-01', house: 'Aggrey', studentName: 'Daniel Osei', incident: 'Late return from town', severity: 'Minor', actionTaken: 'Warning given', recordedBy: 'Mr. Owusu', escalated: false },
-  { id: 'd3', date: '2026-06-28', house: 'Danquah', studentName: 'Ekow Mensah', incident: 'Fighting in dormitory', severity: 'Moderate', actionTaken: 'Counselling referral', recordedBy: 'Mr. Tetteh', escalated: false },
-];
+const initialDiscipline: DisciplineLog[] = [];
 
 const initialWelfare: WelfareNote[] = [
   { id: 'w1', date: '2026-07-05', house: 'Aggrey', studentName: 'Patrick Agyei', note: 'Homesick, spoke with guardian. Monitoring mood.', recordedBy: 'Mr. Owusu', resolved: false },
@@ -171,6 +161,10 @@ interface BoardingState {
   // House assignment
   assignHousemaster: (houseId: string, housemasterName: string, phone: string) => void;
   getHouseByHousemaster: (housemasterName: string) => House | undefined;
+
+  // API
+  loadRollCalls: () => Promise<void>;
+  loadDiscipline: () => Promise<void>;
 }
 
 let counter = 100;
@@ -197,7 +191,14 @@ export const useBoardingStore = create<BoardingState>((set, get) => ({
   getRoomsByHouse: (house) => get().rooms.filter((r) => r.house === house),
 
   // Roll call
-  addRollCall: (rc) => set((st) => ({ rollCalls: [{ ...rc, id: genId() }, ...st.rollCalls] })),
+  addRollCall: async (rc) => {
+    try {
+      const created = await apiClient.post<any>('/boarding/roll-call', rc);
+      set((st) => ({ rollCalls: [{ ...rc, id: created.id || genId() }, ...st.rollCalls] }));
+    } catch {
+      set((st) => ({ rollCalls: [{ ...rc, id: genId() }, ...st.rollCalls] }));
+    }
+  },
   updateRollCallStatus: (id, status) => set((st) => ({ rollCalls: st.rollCalls.map((rc) => rc.id === id ? { ...rc, status } : rc) })),
   deleteRollCall: (id) => set((st) => ({ rollCalls: st.rollCalls.filter((rc) => rc.id !== id) })),
   getTodayRollCalls: (house) => get().rollCalls.filter((rc) => rc.date === today && rc.house === house),
@@ -213,7 +214,14 @@ export const useBoardingStore = create<BoardingState>((set, get) => ({
   },
 
   // Discipline
-  addDiscipline: (d) => set((st) => ({ discipline: [{ ...d, id: genId() }, ...st.discipline] })),
+  addDiscipline: async (d) => {
+    try {
+      const created = await apiClient.post<any>('/boarding/discipline', d);
+      set((st) => ({ discipline: [{ ...d, id: created.id || genId() }, ...st.discipline] }));
+    } catch {
+      set((st) => ({ discipline: [{ ...d, id: genId() }, ...st.discipline] }));
+    }
+  },
   updateDiscipline: (id, updates) => set((st) => ({ discipline: st.discipline.map((d) => d.id === id ? { ...d, ...updates } : d) })),
   deleteDiscipline: (id) => set((st) => ({ discipline: st.discipline.filter((d) => d.id !== id) })),
   getDisciplineByHouse: (house) => get().discipline.filter((d) => d.house === house),
@@ -231,4 +239,17 @@ export const useBoardingStore = create<BoardingState>((set, get) => ({
     houses: st.houses.map((h) => h.id === houseId ? { ...h, housemaster: housemasterName, phone } : h),
   })),
   getHouseByHousemaster: (housemasterName) => get().houses.find((h) => h.housemaster === housemasterName),
+
+  loadRollCalls: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/boarding/roll-call');
+      set({ rollCalls: (data || []).map((d) => ({ ...d, id: d.id || genId() })) });
+    } catch {}
+  },
+  loadDiscipline: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/boarding/discipline');
+      set({ discipline: (data || []).map((d) => ({ ...d, id: d.id || genId() })) });
+    } catch {}
+  },
 }));

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@shared/api/apiClient';
 
 // ── Types ──
 
@@ -72,24 +73,9 @@ const todayISO = () => new Date().toISOString().slice(0, 10);
 
 const AREAS = ['Assembly Hall', 'Dining Hall', 'Dormitory A', 'Dormitory B', 'Admin Block', 'Grounds', 'Toilets Block A', 'Toilets Block B', 'Library', 'Laboratory'];
 
-const INITIAL_TASKS: CleaningTask[] = [
-  { id: '1', task: 'Assembly hall swept & mopped', area: 'Assembly Hall', frequency: 'Daily', assignedTo: 'Mr. Kofi', done: true, date: todayISO(), priority: 'High' },
-  { id: '2', task: 'Dining hall cleaned after breakfast', area: 'Dining Hall', frequency: 'Daily', assignedTo: 'Ms. Esi', done: true, date: todayISO(), priority: 'High' },
-  { id: '3', task: 'Dining hall cleaned after lunch', area: 'Dining Hall', frequency: 'Daily', assignedTo: 'Ms. Esi', done: false, date: todayISO(), priority: 'High' },
-  { id: '4', task: 'Dormitory A toilets cleaned', area: 'Dormitory A', frequency: 'Daily', assignedTo: 'Mr. Yaw', done: true, date: todayISO(), priority: 'High' },
-  { id: '5', task: 'Dormitory B toilets cleaned', area: 'Dormitory B', frequency: 'Daily', assignedTo: 'Mr. Yaw', done: false, date: todayISO(), priority: 'High' },
-  { id: '6', task: 'Admin block windows cleaned', area: 'Admin Block', frequency: 'Weekly', assignedTo: 'Ms. Adjoa', done: false, date: todayISO(), priority: 'Medium' },
-  { id: '7', task: 'Waste bins emptied', area: 'Grounds', frequency: 'Daily', assignedTo: 'Mr. Samuel', done: true, date: todayISO(), priority: 'Medium' },
-  { id: '8', task: 'Library floor vacuumed', area: 'Library', frequency: 'Daily', assignedTo: 'Ms. Adjoa', done: false, date: todayISO(), priority: 'Low' },
-  { id: '9', task: 'Laboratory surfaces disinfected', area: 'Laboratory', frequency: 'Daily', assignedTo: 'Mr. Kofi', done: false, date: todayISO(), priority: 'High' },
-  { id: '10', task: 'Toilets Block A disinfected', area: 'Toilets Block A', frequency: 'Daily', assignedTo: 'Mr. Yaw', done: true, date: todayISO(), priority: 'High' },
-];
+const INITIAL_TASKS: CleaningTask[] = [];
 
-const INITIAL_ISSUES: MaintenanceIssue[] = [
-  { id: '1', date: '2026-07-05', location: 'Dorm B toilet', issue: 'Broken pipe', priority: 'High', status: 'Reported', reportedBy: 'Mr. Yaw', notes: 'Water leaking continuously, needs plumber' },
-  { id: '2', date: '2026-07-03', location: 'Dining hall', issue: 'Cracked window', priority: 'Low', status: 'Repair Scheduled', reportedBy: 'Ms. Esi', notes: 'Window pane cracked, glass dangerous' },
-  { id: '3', date: '2026-06-28', location: 'Assembly hall', issue: 'Faulty light', priority: 'Medium', status: 'Fixed', reportedBy: 'Mr. Kofi', notes: 'Light fixed by maintenance team' },
-];
+const INITIAL_ISSUES: MaintenanceIssue[] = [];
 
 const INITIAL_INSPECTIONS: InspectionReport[] = [
   { id: '1', date: '2026-07-05', area: 'Dormitories', inspector: 'Mr. Tetteh', result: 'Passed', score: 92, notes: 'Generally clean, minor issues in Block B' },
@@ -173,6 +159,10 @@ interface CleaningState {
   updateRosterStatus: (id: string, status: DutyRosterEntry['status']) => void;
   addRosterEntry: (entry: Omit<DutyRosterEntry, 'id' | 'status'>) => void;
   deleteRosterEntry: (id: string) => void;
+
+  // API
+  loadTasks: () => Promise<void>;
+  loadIssues: () => Promise<void>;
 }
 
 export const useCleaningStore = create<CleaningState>((set, get) => ({
@@ -184,8 +174,13 @@ export const useCleaningStore = create<CleaningState>((set, get) => ({
   roster: INITIAL_ROSTER,
 
   // ── Tasks ──
-  addTask: (task) => {
-    set((state) => ({ tasks: [{ ...task, id: nextId(), date: todayISO(), done: false }, ...state.tasks] }));
+  addTask: async (task) => {
+    try {
+      const created = await apiClient.post<any>('/cleaning/tasks', task);
+      set((state) => ({ tasks: [{ ...task, id: created.id || nextId(), date: todayISO(), done: false }, ...state.tasks] }));
+    } catch {
+      set((state) => ({ tasks: [{ ...task, id: nextId(), date: todayISO(), done: false }, ...state.tasks] }));
+    }
   },
 
   toggleTask: (id) => {
@@ -206,10 +201,17 @@ export const useCleaningStore = create<CleaningState>((set, get) => ({
   },
 
   // ── Issues ──
-  addIssue: (issue) => {
-    set((state) => ({
-      issues: [{ ...issue, id: nextId(), date: todayISO(), status: 'Reported' }, ...state.issues],
-    }));
+  addIssue: async (issue) => {
+    try {
+      const created = await apiClient.post<any>('/cleaning/issues', issue);
+      set((state) => ({
+        issues: [{ ...issue, id: created.id || nextId(), date: todayISO(), status: 'Reported' }, ...state.issues],
+      }));
+    } catch {
+      set((state) => ({
+        issues: [{ ...issue, id: nextId(), date: todayISO(), status: 'Reported' }, ...state.issues],
+      }));
+    }
   },
 
   updateIssueStatus: (id, status) => {
@@ -284,6 +286,19 @@ export const useCleaningStore = create<CleaningState>((set, get) => ({
 
   deleteRosterEntry: (id) => {
     set((state) => ({ roster: state.roster.filter((r) => r.id !== id) }));
+  },
+
+  loadTasks: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/cleaning/tasks');
+      set({ tasks: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadIssues: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/cleaning/issues');
+      set({ issues: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
   },
 }));
 

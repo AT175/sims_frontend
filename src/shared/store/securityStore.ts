@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@shared/api/apiClient';
 
 // ── Types ──
 
@@ -106,19 +107,9 @@ const initialGuards: Guard[] = [
   { id: 'g4', name: 'M. Boateng', phone: '024 777 8888', shift: 'Morning', zone: 'Academic block', onLeave: true },
 ];
 
-const initialGateLogs: GateLog[] = [
-  { id: 'gl1', time: '14:30', date: today, visitorName: 'Mr. Oppong', vehiclePlate: 'GE-2345-1', purpose: 'PTA meeting', host: 'Headmaster', status: 'In', checkInTime: '14:30' },
-  { id: 'gl2', time: '13:15', date: today, visitorName: 'Ms. Adjei', vehiclePlate: '-', purpose: 'Delivery', host: 'Kitchen', status: 'Out', checkInTime: '13:15', checkOutTime: '13:45' },
-  { id: 'gl3', time: '11:00', date: today, visitorName: 'Dr. Frimpong', vehiclePlate: 'GR-1122-2', purpose: 'Medical visit', host: 'Sick Bay', status: 'In', checkInTime: '11:00' },
-  { id: 'gl4', time: '09:45', date: today, visitorName: 'GES Inspector', vehiclePlate: 'GV-0099-1', purpose: 'Inspection', host: 'Headmaster', status: 'Out', checkInTime: '09:45', checkOutTime: '12:30' },
-  { id: 'gl5', time: '08:20', date: today, visitorName: 'Unknown Person', vehiclePlate: '-', purpose: 'No ID', host: '-', status: 'Denied', notes: 'Could not produce valid identification' },
-];
+const initialGateLogs: GateLog[] = [];
 
-const initialIncidents: Incident[] = [
-  { id: 'inc1', incidentId: 'INC-2026-001', date: '2026-07-05', time: '22:30', type: 'Theft', location: 'Boys dorm B', description: 'Student reported missing phone from dormitory room. Room was unattended during prep time.', severity: 'Medium', status: 'Under Investigation', reportedBy: 'K. Asante', assignedTo: 'S. Osei', witnesses: 'Roommates J. Mensah, K. Owusu' },
-  { id: 'inc2', incidentId: 'INC-2026-002', date: '2026-07-03', time: '02:15', type: 'Trespass', location: 'Back fence', description: 'Motion sensor triggered at back fence. Patrol found signs of attempted entry.', severity: 'Low', status: 'Resolved', reportedBy: 'D. Tetteh', resolution: 'Fence repaired, motion sensors recalibrated. No breach confirmed.' },
-  { id: 'inc3', incidentId: 'INC-2026-003', date: '2026-06-28', time: '19:45', type: 'Fight', location: 'Dining hall', description: 'Altercation between two students during dinner. Physical contact involved.', severity: 'High', status: 'Escalated', reportedBy: 'S. Osei', assignedTo: 'Headmaster', witnesses: 'Dining staff, several students', resolution: 'Escalated to Headmaster and parents notified. Students suspended pending investigation.' },
-];
+const initialIncidents: Incident[] = [];
 
 const initialPatrolShifts: PatrolShift[] = [
   { id: 'ps1', shift: 'Morning', startTime: '06:00', endTime: '14:00', guardName: 'K. Asante', zone: 'Main gate + perimeter', notes: 'Routine patrol', completed: true },
@@ -190,6 +181,10 @@ interface SecurityState {
   addGuard: (guard: Omit<Guard, 'id'>) => void;
   updateGuard: (id: string, updates: Partial<Guard>) => void;
   deleteGuard: (id: string) => void;
+
+  // API
+  loadIncidents: () => Promise<void>;
+  loadGateLogs: () => Promise<void>;
 }
 
 let counter = 100;
@@ -204,7 +199,14 @@ export const useSecurityStore = create<SecurityState>((set, get) => ({
   checklist: initialChecklist,
 
   // Gate log
-  addGateLog: (log) => set((s) => ({ gateLogs: [{ ...log, id: genId() }, ...s.gateLogs] })),
+  addGateLog: async (log) => {
+    try {
+      const created = await apiClient.post<any>('/security/gate-logs', log);
+      set((s) => ({ gateLogs: [{ ...log, id: created.id || genId() }, ...s.gateLogs] }));
+    } catch {
+      set((s) => ({ gateLogs: [{ ...log, id: genId() }, ...s.gateLogs] }));
+    }
+  },
   updateGateStatus: (id, status) => set((s) => ({
     gateLogs: s.gateLogs.map((g) => {
       if (g.id !== id) return g;
@@ -219,7 +221,14 @@ export const useSecurityStore = create<SecurityState>((set, get) => ({
   getCurrentlyIn: () => get().gateLogs.filter((g) => g.status === 'In'),
 
   // Incidents
-  addIncident: (incident) => set((s) => ({ incidents: [{ ...incident, id: genId() }, ...s.incidents] })),
+  addIncident: async (incident) => {
+    try {
+      const created = await apiClient.post<any>('/security/incidents', incident);
+      set((s) => ({ incidents: [{ ...incident, id: created.id || genId() }, ...s.incidents] }));
+    } catch {
+      set((s) => ({ incidents: [{ ...incident, id: genId() }, ...s.incidents] }));
+    }
+  },
   updateIncidentStatus: (id, status) => set((s) => ({
     incidents: s.incidents.map((i) => i.id === id ? { ...i, status, resolution: status === 'Resolved' ? i.resolution || 'Resolved by security team' : i.resolution } : i),
   })),
@@ -263,4 +272,17 @@ export const useSecurityStore = create<SecurityState>((set, get) => ({
   addGuard: (guard) => set((s) => ({ guards: [...s.guards, { ...guard, id: genId() }] })),
   updateGuard: (id, updates) => set((s) => ({ guards: s.guards.map((g) => g.id === id ? { ...g, ...updates } : g) })),
   deleteGuard: (id) => set((s) => ({ guards: s.guards.filter((g) => g.id !== id) })),
+
+  loadIncidents: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/security/incidents');
+      set({ incidents: (data || []).map((d) => ({ ...d, id: d.id || genId() })) });
+    } catch {}
+  },
+  loadGateLogs: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/security/gate-logs');
+      set({ gateLogs: (data || []).map((d) => ({ ...d, id: d.id || genId() })) });
+    } catch {}
+  },
 }));

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert, ScrollView } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid, DataTable, KitchenMenuWidget } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
@@ -54,6 +54,17 @@ export function TeacherDashboard() {
     addSyllabusTopic, updateSyllabusTopic, deleteSyllabusTopic, getSyllabusProgress,
     addRemedialStudent, updateRemedialProgress, deleteRemedialStudent,
   } = tStore;
+
+  useEffect(() => {
+    useTeacherStore.getState().loadLessonPlans();
+    useTeacherStore.getState().loadAssignments();
+    useTeacherStore.getState().loadGradebook();
+    useTeacherStore.getState().loadAttendance();
+    useTeacherStore.getState().loadSyllabus();
+    useTeacherStore.getState().loadMaterials();
+    usePLCStore.getState().loadMeetings();
+    usePLCStore.getState().loadResources();
+  }, []);
 
   const [showObsModal, setShowObsModal] = useState(false);
   const [showMaterialModal, setShowMaterialModal] = useState(false);

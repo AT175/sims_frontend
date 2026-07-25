@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@shared/api/apiClient';
 
 // ── Types ──
 
@@ -153,6 +154,12 @@ interface TransportState {
   updateDriver: (id: string, updates: Partial<Driver>) => void;
   deleteDriver: (id: string) => void;
   getOnDutyDrivers: () => Driver[];
+
+  // Backend load methods
+  loadVehicles: () => Promise<void>;
+  loadTrips: () => Promise<void>;
+  loadDrivers: () => Promise<void>;
+  loadMaintenance: () => Promise<void>;
 }
 
 let counter = 100;
@@ -209,4 +216,29 @@ export const useTransportStore = create<TransportState>((set, get) => ({
   updateDriver: (id, updates) => set((s) => ({ drivers: s.drivers.map((d) => d.id === id ? { ...d, ...updates } : d) })),
   deleteDriver: (id) => set((s) => ({ drivers: s.drivers.filter((d) => d.id !== id) })),
   getOnDutyDrivers: () => get().drivers.filter((d) => d.status === 'On Duty'),
+
+  loadVehicles: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/transport/vehicles');
+      set({ vehicles: (data || []).map((d) => ({ ...d, id: d.id || genId() })) });
+    } catch {}
+  },
+  loadTrips: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/transport/trips');
+      set({ trips: (data || []).map((d) => ({ ...d, id: d.id || genId() })) });
+    } catch {}
+  },
+  loadDrivers: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/transport/drivers');
+      set({ drivers: (data || []).map((d) => ({ ...d, id: d.id || genId() })) });
+    } catch {}
+  },
+  loadMaintenance: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/transport/maintenance');
+      set({ maintenance: (data || []).map((d) => ({ ...d, id: d.id || genId() })) });
+    } catch {}
+  },
 }));

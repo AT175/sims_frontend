@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@shared/api/apiClient';
 
 // ── Types ──
 
@@ -151,40 +152,13 @@ const calcFeeStatus = (paid: number, due: number): FeeStatus => paid >= due ? 'C
 
 // ── Initial Data ──
 
-const INITIAL_FEES: FeeRecord[] = [
-  { id: '1', studentName: 'Kwame Asante', admNo: '2026/001', class: 'SHS2 Sci A', term: 'Term 3 2025/2026', feeType: 'Tuition', amountDue: 1200, amountPaid: 1200, balance: 0, status: 'Cleared', guardianName: 'Mr. Kofi Asante', guardianPhone: '024-555-1001', lastPaymentDate: '2026-01-10', lastPaymentMethod: 'Bank Transfer' },
-  { id: '2', studentName: 'Ama Owusu', admNo: '2026/002', class: 'SHS1 Arts B', term: 'Term 3 2025/2026', feeType: 'Tuition', amountDue: 1200, amountPaid: 600, balance: 600, status: 'Partial', guardianName: 'Mrs. Akosua Owusu', guardianPhone: '027-555-1002', lastPaymentDate: '2026-02-15', lastPaymentMethod: 'Mobile Money' },
-  { id: '3', studentName: 'Yao Mensah', admNo: '2026/003', class: 'SHS3 Bus A', term: 'Term 3 2025/2026', feeType: 'Tuition', amountDue: 1200, amountPaid: 900, balance: 300, status: 'Partial', guardianName: 'Mr. Daniel Mensah', guardianPhone: '020-555-1003', lastPaymentDate: '2026-03-01', lastPaymentMethod: 'Cash' },
-  { id: '4', studentName: 'Efua Darko', admNo: '2025/145', class: 'SHS2 Sci B', term: 'Term 3 2025/2026', feeType: 'Tuition', amountDue: 1200, amountPaid: 1200, balance: 0, status: 'Cleared', guardianName: 'Mrs. Grace Darko', guardianPhone: '055-555-1004', lastPaymentDate: '2026-01-12', lastPaymentMethod: 'Bank Transfer' },
-  { id: '5', studentName: 'Kofi Boateng', admNo: '2025/146', class: 'SHS3 Sci A', term: 'Term 3 2025/2026', feeType: 'Tuition', amountDue: 1200, amountPaid: 0, balance: 1200, status: 'Owing', guardianName: 'Mr. Samuel Boateng', guardianPhone: '024-555-1005' },
-  { id: '6', studentName: 'Adwoa Frimpong', admNo: '2025/147', class: 'SHS1 Sci A', term: 'Term 3 2025/2026', feeType: 'Tuition', amountDue: 1200, amountPaid: 1200, balance: 0, status: 'Cleared', guardianName: 'Mr. Yaw Frimpong', guardianPhone: '027-555-1006', lastPaymentDate: '2026-01-20', lastPaymentMethod: 'Mobile Money' },
-  { id: '7', studentName: 'Kojo Addo', admNo: '2024/098', class: 'SHS3 Arts A', term: 'Term 3 2025/2026', feeType: 'Tuition', amountDue: 1200, amountPaid: 0, balance: 1200, status: 'Owing', guardianName: 'Mr. Peter Addo', guardianPhone: '020-555-1007' },
-  { id: '8', studentName: 'Ama Owusu', admNo: '2026/002', class: 'SHS1 Arts B', term: 'Term 3 2025/2026', feeType: 'Boarding', amountDue: 800, amountPaid: 800, balance: 0, status: 'Cleared', guardianName: 'Mrs. Akosua Owusu', guardianPhone: '027-555-1002', lastPaymentDate: '2026-01-15', lastPaymentMethod: 'Mobile Money' },
-];
+const INITIAL_FEES: FeeRecord[] = [];
 
-const INITIAL_RECEIPTS: PaymentReceipt[] = [
-  { id: '1', feeRecordId: '1', studentName: 'Kwame Asante', admNo: '2026/001', amount: 1200, method: 'Bank Transfer', date: '2026-01-10', receivedBy: 'Accountant', receiptNo: 'RCP-1001', term: 'Term 3 2025/2026', notes: 'Full tuition payment' },
-  { id: '2', feeRecordId: '2', studentName: 'Ama Owusu', admNo: '2026/002', amount: 600, method: 'Mobile Money', date: '2026-02-15', receivedBy: 'Accountant', receiptNo: 'RCP-1002', term: 'Term 3 2025/2026', notes: 'Partial payment' },
-  { id: '3', feeRecordId: '3', studentName: 'Yao Mensah', admNo: '2026/003', amount: 900, method: 'Cash', date: '2026-03-01', receivedBy: 'Accountant', receiptNo: 'RCP-1003', term: 'Term 3 2025/2026', notes: 'Installment payment' },
-];
+const INITIAL_RECEIPTS: PaymentReceipt[] = [];
 
-const INITIAL_PAYROLL: PayrollEntry[] = [
-  { id: '1', staffName: 'J. Mensah', position: 'Senior Teacher', department: 'Mathematics', grossSalary: 4200, deductions: 630, netSalary: 3570, payPeriod: 'July 2026', status: 'Processed', ssfContribution: 420, taxDeduction: 210 },
-  { id: '2', staffName: 'G. Adjei', position: 'HOD Science', department: 'Science', grossSalary: 4800, deductions: 720, netSalary: 4080, payPeriod: 'July 2026', status: 'Processed', ssfContribution: 480, taxDeduction: 240 },
-  { id: '3', staffName: 'F. Boateng', position: 'Teacher (English)', department: 'English', grossSalary: 3600, deductions: 540, netSalary: 3060, payPeriod: 'July 2026', status: 'Pending', ssfContribution: 360, taxDeduction: 180 },
-  { id: '4', staffName: 'A. Tetteh', position: 'Accountant', department: 'Finance', grossSalary: 4500, deductions: 675, netSalary: 3825, payPeriod: 'July 2026', status: 'Pending', ssfContribution: 450, taxDeduction: 225 },
-  { id: '5', staffName: 'R. Amponsah', position: 'Asst. Headmaster', department: 'Administration', grossSalary: 5500, deductions: 825, netSalary: 4675, payPeriod: 'July 2026', status: 'Processed', ssfContribution: 550, taxDeduction: 275 },
-  { id: '6', staffName: 'D. Asante', position: 'Counsellor', department: 'Counselling', grossSalary: 3800, deductions: 570, netSalary: 3230, payPeriod: 'July 2026', status: 'Pending', ssfContribution: 380, taxDeduction: 190 },
-];
+const INITIAL_PAYROLL: PayrollEntry[] = [];
 
-const INITIAL_EXPENDITURE: ExpenditureRecord[] = [
-  { id: '1', date: '2026-07-06', category: 'Utilities', description: 'Electricity bill — July', amount: 3200, vendor: 'ECG', paymentMethod: 'Bank Transfer', authorizedBy: 'Headmaster', receiptNo: 'ECG-2026-07', notes: 'Monthly electricity' },
-  { id: '2', date: '2026-07-05', category: 'Stores', description: 'Cleaning supplies bulk purchase', amount: 850, vendor: 'CleanCo Ltd', paymentMethod: 'Cheque', authorizedBy: 'Accountant', receiptNo: 'CC-045', notes: 'Detergents, disinfectants' },
-  { id: '3', date: '2026-07-04', category: 'Repairs', description: 'Science lab equipment repair', amount: 1400, vendor: 'LabTech Services', paymentMethod: 'Cash', authorizedBy: 'HOD Science', notes: 'Microscope and centrifuge repair' },
-  { id: '4', date: '2026-07-03', category: 'Transport', description: 'School bus fuel — Week 1', amount: 1800, vendor: 'Goil', paymentMethod: 'Card', authorizedBy: 'Transport Officer', receiptNo: 'GOIL-W1', notes: 'Diesel for 3 buses' },
-  { id: '5', date: '2026-07-02', category: 'Equipment', description: 'New desktop computers (5 units)', amount: 15000, vendor: 'CompuGhana', paymentMethod: 'Bank Transfer', authorizedBy: 'Headmaster', receiptNo: 'CG-2026-07', notes: 'ICT lab upgrade' },
-  { id: '6', date: '2026-06-28', category: 'Miscellaneous', description: 'Sports day logistics', amount: 1200, vendor: 'Various', paymentMethod: 'Cash', authorizedBy: 'Sports Coach', notes: 'Refreshments, medals, decorations' },
-];
+const INITIAL_EXPENDITURE: ExpenditureRecord[] = [];
 
 const INITIAL_BUDGET_ITEMS: BudgetItem[] = [
   { id: '1', department: 'Academic', allocated: 45000, spent: 28000, remaining: 17000, term: 'Term 3 2025/2026', status: 'Active', notes: 'Teaching materials, exam printing' },
@@ -288,6 +262,12 @@ interface BursaryState {
   cancelInvoice: (id: string) => void;
   deleteInvoice: (id: string) => void;
   getOverdueInvoices: () => Invoice[];
+
+  // API
+  loadFees: () => Promise<void>;
+  loadReceipts: () => Promise<void>;
+  loadPayroll: () => Promise<void>;
+  loadExpenditure: () => Promise<void>;
 }
 
 export const useBursaryStore = create<BursaryState>((set, get) => ({
@@ -299,7 +279,7 @@ export const useBursaryStore = create<BursaryState>((set, get) => ({
   budgetSubmissions: INITIAL_BUDGET_SUBMISSIONS,
   invoices: INITIAL_INVOICES,
 
-  recordPayment: (feeRecordId, amount, method, receivedBy, notes) => {
+  recordPayment: async (feeRecordId, amount, method, receivedBy, notes) => {
     const fee = get().fees.find((f) => f.id === feeRecordId);
     if (!fee) return;
     const newPaid = fee.amountPaid + amount;
@@ -310,6 +290,9 @@ export const useBursaryStore = create<BursaryState>((set, get) => ({
       amount, method, date: todayISO(), receivedBy, receiptNo: nextReceiptNo(),
       term: fee.term, notes,
     };
+    try {
+      await apiClient.post<any>('/bursary/receipts', { feeRecordId, amount, method, receivedBy, notes, term: fee.term });
+    } catch {}
     set((s) => ({
       fees: s.fees.map((f) => f.id === feeRecordId ? { ...f, amountPaid: newPaid, balance: newBalance, status: newStatus, lastPaymentDate: todayISO(), lastPaymentMethod: method } : f),
       receipts: [receipt, ...s.receipts],
@@ -350,8 +333,14 @@ export const useBursaryStore = create<BursaryState>((set, get) => ({
     return { gross: p.reduce((s, e) => s + e.grossSalary, 0), net: p.reduce((s, e) => s + e.netSalary, 0), deductions: p.reduce((s, e) => s + e.deductions, 0) };
   },
 
-  recordExpenditure: (exp) => {
-    set((s) => ({ expenditure: [{ ...exp, id: nextId(), date: todayISO() }, ...s.expenditure] }));
+  recordExpenditure: async (exp) => {
+    const newExp: ExpenditureRecord = { ...exp, id: nextId(), date: todayISO() };
+    try {
+      const created = await apiClient.post<any>('/bursary/expenditure', exp);
+      set((s) => ({ expenditure: [{ ...newExp, id: created.id || nextId() }, ...s.expenditure] }));
+    } catch {
+      set((s) => ({ expenditure: [newExp, ...s.expenditure] }));
+    }
   },
   deleteExpenditure: (id) => {
     set((s) => ({ expenditure: s.expenditure.filter((e) => e.id !== id) }));
@@ -433,5 +422,30 @@ export const useBursaryStore = create<BursaryState>((set, get) => ({
   },
   getOverdueInvoices: () => {
     return get().invoices.filter((i) => i.status === 'Overdue');
+  },
+
+  loadFees: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/bursary/fees');
+      set({ fees: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadReceipts: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/bursary/receipts');
+      set({ receipts: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadPayroll: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/bursary/payroll');
+      set({ payroll: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadExpenditure: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/bursary/expenditure');
+      set({ expenditure: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
   },
 }));

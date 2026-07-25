@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@shared/api/apiClient';
 
 // ── Types ──
 
@@ -218,11 +219,7 @@ const INITIAL_WARDS: Ward[] = [
   { id: '2', name: 'Adwoa Asante', className: 'SHS1 Arts B', house: 'Mensah', attendance: '96%', avgScore: '81.2%', feesStatus: 'Cleared' },
 ];
 
-const INITIAL_ANNOUNCEMENTS: Announcement[] = [
-  { id: '1', title: 'Term 3 Mid-Semester Exam Schedule', body: 'Exams begin July 15. Please ensure your ward is prepared.', date: '2026-07-05', author: 'Headmaster' },
-  { id: '2', title: 'PTA General Meeting - July 20', body: 'All parents are invited to the general meeting at 10am in the assembly hall.', date: '2026-07-03', author: 'PTA Chairman' },
-  { id: '3', title: 'Visiting day rescheduled', body: 'Visiting day moved from July 7 to July 14.', date: '2026-06-28', author: 'Headmaster' },
-];
+const INITIAL_ANNOUNCEMENTS: Announcement[] = [];
 
 const INITIAL_FUNDRAISING: FundraisingProject[] = [
   {
@@ -244,11 +241,7 @@ const INITIAL_FUNDRAISING: FundraisingProject[] = [
   },
 ];
 
-const INITIAL_MEETINGS: PTAMeeting[] = [
-  { id: '1', date: '2026-07-20', time: '10:00 AM', topic: 'General Meeting - Term 3 Review', location: 'Assembly Hall', rsvp: 'Not Responded' },
-  { id: '2', date: '2026-08-15', time: '2:00 PM', topic: 'Executive Committee Meeting', location: 'Staff Common Room', rsvp: 'Not Responded' },
-  { id: '3', date: '2026-09-05', time: '10:00 AM', topic: 'New Academic Year Planning', location: 'Assembly Hall', rsvp: 'Not Responded' },
-];
+const INITIAL_MEETINGS: PTAMeeting[] = [];
 
 const INITIAL_DIRECTORY: ParentDirectoryEntry[] = [
   { id: '1', name: 'Mr. Asante', phone: '024-XXX-XXXX', ptaRole: 'Member', wardNames: 'Kwame, Adwoa' },
@@ -409,6 +402,10 @@ interface PTAState {
 
   grantAccess: (record: Omit<AccessRecord, 'id' | 'grantedDate'>) => void;
   revokeAccess: (id: string) => void;
+
+  // API
+  loadAnnouncements: () => Promise<void>;
+  loadMeetings: () => Promise<void>;
 }
 
 export const usePTAStore = create<PTAState>((set) => ({
@@ -426,9 +423,14 @@ export const usePTAStore = create<PTAState>((set) => ({
   healthVisits: INITIAL_HEALTH_VISITS,
   accessRecords: INITIAL_ACCESS,
 
-  addAnnouncement: (a) => {
+  addAnnouncement: async (a) => {
     const newAnn: Announcement = { ...a, id: nextId() };
-    set((s) => ({ announcements: [newAnn, ...s.announcements] }));
+    try {
+      const created = await apiClient.post<any>('/pta/announcements', a);
+      set((s) => ({ announcements: [{ ...newAnn, id: created.id || nextId() }, ...s.announcements] }));
+    } catch {
+      set((s) => ({ announcements: [newAnn, ...s.announcements] }));
+    }
   },
 
   deleteAnnouncement: (id) => {
@@ -600,5 +602,18 @@ export const usePTAStore = create<PTAState>((set) => ({
 
   revokeAccess: (id) => {
     set((s) => ({ accessRecords: s.accessRecords.filter((a) => a.id !== id) }));
+  },
+
+  loadAnnouncements: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/pta/announcements');
+      set({ announcements: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadMeetings: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/pta/meetings');
+      set({ meetings: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
   },
 }));

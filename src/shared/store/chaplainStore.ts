@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@shared/api/apiClient';
 
 // ── Types ──
 
@@ -126,16 +127,9 @@ const INITIAL_SERVICES: ServiceSchedule[] = [
   { id: '4', type: 'Midweek', day: 'Wednesday', time: '18:00', venue: 'Chapel', speaker: 'Rev. Fr. Owusu', topic: 'Midweek Service', attendance: 300, notes: 'Optional evening service' },
 ];
 
-const INITIAL_PRAYER_REQUESTS: PrayerRequest[] = [
-  { id: '1', studentName: 'Kwesi Mensah', studentClass: 'Form 2A', request: 'Prayers for exams success', status: 'Answered', visibility: 'Public', dateSubmitted: '2026-06-15', dateAnswered: '2026-07-01', notes: 'Student passed all subjects' },
-  { id: '2', studentName: 'Ama Serwaa', studentClass: 'Form 3B', request: 'Healing for mother', status: 'In Progress', visibility: 'Confidential', dateSubmitted: '2026-07-05', dateAnswered: null, notes: 'Mother is recovering' },
-  { id: '3', studentName: 'Yaw Boateng', studentClass: 'Form 1A', request: 'Guidance for career choice', status: 'Open', visibility: 'Public', dateSubmitted: '2026-07-10', dateAnswered: null, notes: '' },
-];
+const INITIAL_PRAYER_REQUESTS: PrayerRequest[] = [];
 
-const INITIAL_COUNSELLING: SpiritualCounselling[] = [
-  { id: '1', studentName: 'Akosua Frimpong', studentClass: 'Form 2C', type: 'Faith Crisis', date: '2026-07-08', summary: 'Doubting faith after family loss', followUpDate: '2026-07-22', status: 'Open', notes: 'Needs ongoing support' },
-  { id: '2', studentName: 'Kofi Asante', studentClass: 'Form 3A', type: 'Moral', date: '2026-06-20', summary: 'Behavioral guidance session', followUpDate: null, status: 'Resolved', notes: 'Student showed improvement' },
-];
+const INITIAL_COUNSELLING: SpiritualCounselling[] = [];
 
 const INITIAL_EVENTS: ReligiousEvent[] = [
   { id: '1', title: 'Annual Spiritual Renewal Week', type: 'Special', date: '2026-08-15', venue: 'Main Chapel', expectedAttendance: 1000, actualAttendance: null, status: 'Planned', coordinator: 'Chaplain Mensah', notes: 'Week-long program' },
@@ -211,6 +205,10 @@ interface ChaplainState {
 
   addBaptism: (b: Omit<BaptismRecord, 'id'>) => void;
   deleteBaptism: (id: string) => void;
+
+  // API
+  loadPrayerRequests: () => Promise<void>;
+  loadCounselling: () => Promise<void>;
 }
 
 const genId = (arr: { id: string }[]) => String(arr.length + 1);
@@ -229,7 +227,14 @@ export const useChaplainStore = create<ChaplainState>((set) => ({
   updateService: (id, s) => set((st) => ({ services: st.services.map((x) => x.id === id ? { ...x, ...s } : x) })),
   deleteService: (id) => set((st) => ({ services: st.services.filter((x) => x.id !== id) })),
 
-  addPrayerRequest: (r) => set((st) => ({ prayerRequests: [{ ...r, id: genId(st.prayerRequests) }, ...st.prayerRequests] })),
+  addPrayerRequest: async (r) => {
+    try {
+      const created = await apiClient.post<any>('/chaplain/prayer-requests', r);
+      set((st) => ({ prayerRequests: [{ ...r, id: created.id || genId(st.prayerRequests) }, ...st.prayerRequests] }));
+    } catch {
+      set((st) => ({ prayerRequests: [{ ...r, id: genId(st.prayerRequests) }, ...st.prayerRequests] }));
+    }
+  },
   updatePrayerStatus: (id, status) => set((st) => ({
     prayerRequests: st.prayerRequests.map((x) =>
       x.id === id ? { ...x, status, dateAnswered: status === 'Answered' ? new Date().toISOString().slice(0, 10) : x.dateAnswered } : x
@@ -237,7 +242,14 @@ export const useChaplainStore = create<ChaplainState>((set) => ({
   })),
   deletePrayerRequest: (id) => set((st) => ({ prayerRequests: st.prayerRequests.filter((x) => x.id !== id) })),
 
-  addCounselling: (c) => set((st) => ({ counselling: [{ ...c, id: genId(st.counselling) }, ...st.counselling] })),
+  addCounselling: async (c) => {
+    try {
+      const created = await apiClient.post<any>('/chaplain/counselling', c);
+      set((st) => ({ counselling: [{ ...c, id: created.id || genId(st.counselling) }, ...st.counselling] }));
+    } catch {
+      set((st) => ({ counselling: [{ ...c, id: genId(st.counselling) }, ...st.counselling] }));
+    }
+  },
   updateCounselling: (id, c) => set((st) => ({ counselling: st.counselling.map((x) => x.id === id ? { ...x, ...c } : x) })),
   deleteCounselling: (id) => set((st) => ({ counselling: st.counselling.filter((x) => x.id !== id) })),
 
@@ -258,4 +270,17 @@ export const useChaplainStore = create<ChaplainState>((set) => ({
 
   addBaptism: (b) => set((st) => ({ baptisms: [{ ...b, id: genId(st.baptisms) }, ...st.baptisms] })),
   deleteBaptism: (id) => set((st) => ({ baptisms: st.baptisms.filter((x) => x.id !== id) })),
+
+  loadPrayerRequests: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/chaplain/prayer-requests');
+      set({ prayerRequests: (data || []).map((d) => ({ ...d, id: d.id || String(Math.random()) })) });
+    } catch {}
+  },
+  loadCounselling: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/chaplain/counselling');
+      set({ counselling: (data || []).map((d) => ({ ...d, id: d.id || String(Math.random()) })) });
+    } catch {}
+  },
 }));

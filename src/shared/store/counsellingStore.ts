@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@shared/api/apiClient';
 
 // ── Counsellor Types ──
 
@@ -106,14 +107,7 @@ const COUNSELLORS: Counsellor[] = [
   { id: '2', name: 'Mrs. Mensah', type: 'Psychosocial', title: 'Psychosocial Support Coordinator', phone: '024 300 4000', email: 'mensah@sims.edu', room: 'Counselling Room 2', availability: 'Mon-Fri, 08:00 - 16:00' },
 ];
 
-const INITIAL_CASES: CounsellingCase[] = [
-  { id: '1', caseId: 'C-045', studentName: 'Student A', studentClass: 'Form 2B', category: 'Academic stress', type: 'Academic', description: 'Student struggling with multiple subjects, anxiety before exams', openedDate: '2026-07-05', status: 'Active', priority: 'High', assignedCounsellor: 'Mr. Osei', notes: 'Initial assessment completed. Student shows signs of exam anxiety.', followUpDate: '2026-07-12', confidential: true },
-  { id: '2', caseId: 'C-044', studentName: 'Student B', studentClass: 'Form 1A', category: 'Homesickness', type: 'Psychosocial', description: 'Boarding student missing family, affecting sleep and appetite', openedDate: '2026-07-03', status: 'Active', priority: 'Medium', assignedCounsellor: 'Mrs. Mensah', notes: 'Supportive counselling sessions ongoing. Housemaster informed.', followUpDate: '2026-07-10', confidential: true },
-  { id: '3', caseId: 'C-043', studentName: 'Student C', studentClass: 'Form 3C', category: 'Behavioral', type: 'Psychosocial', description: 'Disruptive behavior in class, possible underlying issues', openedDate: '2026-06-28', status: 'Monitor', priority: 'Medium', assignedCounsellor: 'Mrs. Mensah', notes: 'Referred to clinical psychologist for assessment.', followUpDate: '2026-07-15', confidential: true },
-  { id: '4', caseId: 'C-042', studentName: 'Student D', studentClass: 'Form 3A', category: 'Career guidance', type: 'Academic', description: 'Uncertain about subject selection for WASSCE', openedDate: '2026-06-20', status: 'Closed', priority: 'Low', assignedCounsellor: 'Mr. Osei', notes: 'Career assessment completed. Student decided on Science track.', followUpDate: '', confidential: false },
-  { id: '5', caseId: 'C-041', studentName: 'Student E', studentClass: 'Form 2A', category: 'Subject choice', type: 'Academic', description: 'Needs guidance on elective subjects', openedDate: '2026-06-18', status: 'Active', priority: 'Low', assignedCounsellor: 'Mr. Osei', notes: 'Exploring interest in Business vs Arts.', followUpDate: '2026-07-14', confidential: false },
-  { id: '6', caseId: 'C-040', studentName: 'Student F', studentClass: 'Form 1B', category: 'Peer conflict', type: 'Psychosocial', description: 'Bullying concerns reported by class teacher', openedDate: '2026-06-15', status: 'Referred', priority: 'High', assignedCounsellor: 'Mrs. Mensah', notes: 'Referred to speech therapist. School discipline team involved.', followUpDate: '2026-07-08', confidential: true },
-];
+const INITIAL_CASES: CounsellingCase[] = [];
 
 const INITIAL_SESSIONS: SessionLog[] = [
   { id: '1', caseId: '1', date: '2026-07-05', counsellor: 'Mr. Osei', type: 'Academic', summary: 'Initial assessment', notes: 'Student expressed anxiety about upcoming exams. Discussed study strategies and relaxation techniques.', nextAction: 'Follow-up session to review study plan', nextSessionDate: '2026-07-12' },
@@ -122,12 +116,7 @@ const INITIAL_SESSIONS: SessionLog[] = [
   { id: '4', caseId: '4', date: '2026-06-20', counsellor: 'Mr. Osei', type: 'Academic', summary: 'Career assessment', notes: 'Administered interest inventory. Student leans toward Science.', nextAction: 'None — case closed', nextSessionDate: '' },
 ];
 
-const INITIAL_APPOINTMENTS: Appointment[] = [
-  { id: '1', date: todayISO(), time: '10:00', studentName: 'Student A', studentClass: 'Form 2B', type: 'Academic', counsellor: 'Mr. Osei', reason: 'Follow-up on exam anxiety', status: 'Scheduled', notes: '' },
-  { id: '2', date: todayISO(), time: '11:00', studentName: 'Student E', studentClass: 'Form 2A', type: 'Academic', counsellor: 'Mr. Osei', reason: 'Subject choice discussion', status: 'Scheduled', notes: '' },
-  { id: '3', date: todayISO(), time: '14:00', studentName: 'Student B', studentClass: 'Form 1A', type: 'Psychosocial', counsellor: 'Mrs. Mensah', reason: 'Homesickness follow-up', status: 'Scheduled', notes: '' },
-  { id: '4', date: '2026-07-07', time: '14:00', studentName: 'Student B', studentClass: 'Form 1A', type: 'Psychosocial', counsellor: 'Mrs. Mensah', reason: 'Counselling session', status: 'Completed', notes: 'Went well, student more settled' },
-];
+const INITIAL_APPOINTMENTS: Appointment[] = [];
 
 const INITIAL_REFERRALS: Referral[] = [
   { id: '1', date: '2026-07-02', studentName: 'Student C', studentClass: 'Form 3C', referredTo: 'Clinical Psychologist', reason: 'Behavioral assessment', type: 'Psychosocial', status: 'Ongoing', notes: 'Assessment in progress, awaiting report' },
@@ -185,6 +174,10 @@ interface CounsellingState {
   addResource: (r: Omit<CareerResource, 'id'>) => void;
   updateResource: (id: string, updates: Partial<CareerResource>) => void;
   deleteResource: (id: string) => void;
+
+  // API
+  loadCases: () => Promise<void>;
+  loadAppointments: () => Promise<void>;
 }
 
 export const useCounsellingStore = create<CounsellingState>((set, get) => ({
@@ -196,11 +189,15 @@ export const useCounsellingStore = create<CounsellingState>((set, get) => ({
   resources: INITIAL_RESOURCES,
 
   // ── Cases ──
-  addCase: (c) => {
+  addCase: async (c) => {
     const caseNum = get().cases.length + 46;
-    set((state) => ({
-      cases: [{ ...c, id: nextId(), caseId: `C-${String(caseNum).padStart(3, '0')}`, openedDate: todayISO(), status: 'Active' }, ...state.cases],
-    }));
+    const newCase: CounsellingCase = { ...c, id: nextId(), caseId: `C-${String(caseNum).padStart(3, '0')}`, openedDate: todayISO(), status: 'Active' };
+    try {
+      const created = await apiClient.post<any>('/counselling/cases', c);
+      set((state) => ({ cases: [{ ...newCase, id: created.id || nextId() }, ...state.cases] }));
+    } catch {
+      set((state) => ({ cases: [newCase, ...state.cases] }));
+    }
   },
 
   updateCaseStatus: (id, status) => {
@@ -240,8 +237,13 @@ export const useCounsellingStore = create<CounsellingState>((set, get) => ({
   getSessionsByCase: (caseId) => get().sessions.filter((s) => s.caseId === caseId).sort((a, b) => b.date.localeCompare(a.date)),
 
   // ── Appointments ──
-  addAppointment: (a) => {
-    set((state) => ({ appointments: [{ ...a, id: nextId(), status: 'Scheduled' }, ...state.appointments] }));
+  addAppointment: async (a) => {
+    try {
+      const created = await apiClient.post<any>('/counselling/appointments', a);
+      set((state) => ({ appointments: [{ ...a, id: created.id || nextId(), status: 'Scheduled' }, ...state.appointments] }));
+    } catch {
+      set((state) => ({ appointments: [{ ...a, id: nextId(), status: 'Scheduled' }, ...state.appointments] }));
+    }
   },
 
   updateAppointmentStatus: (id, status) => {
@@ -288,6 +290,19 @@ export const useCounsellingStore = create<CounsellingState>((set, get) => ({
 
   deleteResource: (id) => {
     set((state) => ({ resources: state.resources.filter((r) => r.id !== id) }));
+  },
+
+  loadCases: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/counselling/cases');
+      set({ cases: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadAppointments: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/counselling/appointments');
+      set({ appointments: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
   },
 }));
 

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@shared/api/apiClient';
 
 // ── Types ──
 
@@ -285,6 +286,11 @@ interface PLCState {
   approveRequisition: (id: string, approvedBy: string) => void;
   rejectRequisition: (id: string, approvedBy: string) => void;
   deleteRequisition: (id: string) => void;
+
+  // Backend load methods
+  loadMeetings: () => Promise<void>;
+  loadRequisitions: () => Promise<void>;
+  loadResources: () => Promise<void>;
 }
 
 export const usePLCStore = create<PLCState>((set) => ({
@@ -392,5 +398,24 @@ export const usePLCStore = create<PLCState>((set) => ({
   },
   deleteRequisition: (id) => {
     set((s) => ({ requisitions: s.requisitions.filter(r => r.id !== id) }));
+  },
+
+  loadMeetings: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/plc/meetings');
+      set({ meetings: (data || []).map((d) => ({ ...d, id: d.id || `plc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` })) });
+    } catch {}
+  },
+  loadRequisitions: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/plc/requisitions');
+      set({ requisitions: (data || []).map((d) => ({ ...d, id: d.id || `plc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` })) });
+    } catch {}
+  },
+  loadResources: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/plc/resources');
+      set({ resources: (data || []).map((d) => ({ ...d, id: d.id || `plc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` })) });
+    } catch {}
   },
 }));

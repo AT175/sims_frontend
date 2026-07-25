@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, TextInput } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid, DataTable } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
@@ -35,6 +35,15 @@ export function AccountantDashboard() {
   const { returns, approveReturn, rejectReturn } = bursarStore;
 
   const { fees, receipts, payroll, expenditure, budgetItems, budgetSubmissions, invoices } = store;
+
+  useEffect(() => {
+    useBursaryStore.getState().loadFees();
+    useBursaryStore.getState().loadReceipts();
+    useBursaryStore.getState().loadPayroll();
+    useBursaryStore.getState().loadExpenditure();
+    useKitchenStore.getState().loadMenus();
+    useKitchenStore.getState().loadStock();
+  }, []);
 
   const totalCollected = store.getTotalCollected();
   const totalOutstanding = store.getTotalOutstanding();

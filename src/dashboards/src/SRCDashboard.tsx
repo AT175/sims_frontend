@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert, ScrollView } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
 import { useAuthStore } from '@store/authStore';
+import { useDynamicDashboardStore } from '@store/dynamicDashboardStore';
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'Overview' },
@@ -89,6 +90,16 @@ const nextId = () => String(++idCounter);
 export function SRCDashboard() {
   const [activePage, setActivePage] = useState('overview');
   const { logout } = useAuthStore();
+
+  useEffect(() => {
+    useDynamicDashboardStore.getState().loadSRCAnnouncements();
+    useDynamicDashboardStore.getState().loadSRCGrievances();
+    useDynamicDashboardStore.getState().loadSRCInitiatives();
+    useDynamicDashboardStore.getState().loadSRCPrefects();
+    useDynamicDashboardStore.getState().loadSRCEvents();
+    useDynamicDashboardStore.getState().loadSRCTransactions();
+    useDynamicDashboardStore.getState().loadSRCFeedback();
+  }, []);
 
   const [announcements, setAnnouncements] = useState(INITIAL_ANNOUNCEMENTS);
   const [grievances, setGrievances] = useState(INITIAL_GRIEVANCES);

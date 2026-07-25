@@ -66,11 +66,11 @@ export function AcademicDashboard() {
   const stats = getOverallStats();
 
   const [backendTimetable, setBackendTimetable] = useState<any[]>([]);
-  const [backendResults, setBackendResults] = useState<any[]>([]);
 
   useEffect(() => {
     academicApi.getTimetable().then(setBackendTimetable).catch(() => {});
-    academicApi.getResults().then(setBackendResults).catch(() => {});
+    useAcademicStore.getState().loadExams();
+    useAcademicStore.getState().loadTimetables();
   }, []);
 
   // Modal states

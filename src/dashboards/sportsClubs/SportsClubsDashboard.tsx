@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, ScrollView, Alert } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid, DataTable, RequisitionModal } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
@@ -27,6 +27,14 @@ export function SportsClubsDashboard() {
   const [activePage, setActivePage] = useState('clubs');
   const { user, logout } = useAuthStore();
   const coordinatorName = user?.displayName ?? 'Sports Coordinator';
+
+  const { loadClubs, loadFixtures } = useSportsStore();
+
+  useEffect(() => {
+    loadClubs();
+    loadFixtures();
+    useRequisitionStore.getState().loadRequisitions();
+  }, []);
 
   return (
     <DashboardLayout

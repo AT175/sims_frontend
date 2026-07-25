@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid, DataTable, RequisitionModal } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
@@ -20,6 +20,10 @@ export function HealthDashboard() {
   const { getByDepartment } = useRequisitionStore();
   const myRequisitions = getByDepartment('Health Centre');
   const reqStatusColor = (s: string) => s === 'Issued' ? colors.success : s === 'Approved' ? colors.info : s === 'Rejected' ? colors.danger : colors.warning;
+
+  useEffect(() => {
+    useRequisitionStore.getState().loadRequisitions();
+  }, []);
 
   const [patientName, setPatientName] = useState('');
   const [symptoms, setSymptoms] = useState('');

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@shared/api/apiClient';
 
 // ── Types ──
 
@@ -378,6 +379,11 @@ interface RegistryState {
   addStaff: (s: Omit<RegistryStaffRecord, 'id'>) => void;
   updateStaff: (id: string, s: Partial<RegistryStaffRecord>) => void;
   deleteStaff: (id: string) => void;
+
+  // Backend load methods
+  loadStudents: () => Promise<void>;
+  loadAdmissions: () => Promise<void>;
+  loadPlacements: () => Promise<void>;
 }
 
 export const useRegistryStore = create<RegistryState>((set, get) => ({
@@ -632,5 +638,24 @@ export const useRegistryStore = create<RegistryState>((set, get) => ({
   },
   deleteStaff: (id) => {
     set((st) => ({ staff: st.staff.filter((x) => x.id !== id) }));
+  },
+
+  loadStudents: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/registry/students');
+      set({ students: (data || []).map((d) => ({ ...d, id: d.id || `reg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` })) });
+    } catch {}
+  },
+  loadAdmissions: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/registry/admissions');
+      set({ admissions: (data || []).map((d) => ({ ...d, id: d.id || `reg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` })) });
+    } catch {}
+  },
+  loadPlacements: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/registry/placements');
+      set({ placements: (data || []).map((d) => ({ ...d, id: d.id || `reg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` })) });
+    } catch {}
   },
 }));

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert, ScrollView } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
@@ -47,6 +47,12 @@ export function PLCDashboard() {
     addActionItem, updateActionStatus, deleteActionItem,
     addRequisition, approveRequisition, rejectRequisition, deleteRequisition,
   } = usePLCStore();
+
+  useEffect(() => {
+    usePLCStore.getState().loadMeetings();
+    usePLCStore.getState().loadRequisitions();
+    usePLCStore.getState().loadResources();
+  }, []);
 
   const [meetingForm, setMeetingForm] = useState({
     date: todayStr(), topic: '', facilitator: coordinatorName, location: 'Staff Common Room',

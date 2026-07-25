@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@shared/api/apiClient';
 
 // ── Types ──
 
@@ -108,21 +109,9 @@ const todayISO = () => new Date().toISOString().slice(0, 10);
 
 // ── Initial Data ──
 
-const INITIAL_BOOKS: Book[] = [
-  { id: '1', title: 'Advanced Mathematics', author: 'K.A. Stroud', category: 'Mathematics', isbn: '9781352005981', totalCopies: 5, availableCopies: 3 },
-  { id: '2', title: 'Organic Chemistry', author: 'Morrison & Boyd', category: 'Science', isbn: '9780136436690', totalCopies: 3, availableCopies: 1 },
-  { id: '3', title: 'Things Fall Apart', author: 'Chinua Achebe', category: 'Literature', isbn: '9780385474542', totalCopies: 10, availableCopies: 8 },
-  { id: '4', title: 'Economics for SHS', author: 'G. Antwi', category: 'Business', totalCopies: 8, availableCopies: 5 },
-  { id: '5', title: 'A History of Ghana', author: 'F.K. Buah', category: 'History', totalCopies: 6, availableCopies: 6 },
-  { id: '6', title: 'Senior High Physics', author: 'A.A. Adjei', category: 'Science', totalCopies: 4, availableCopies: 2 },
-];
+const INITIAL_BOOKS: Book[] = [];
 
-const INITIAL_CIRCULATION: CirculationRecord[] = [
-  { id: '1', date: '2026-07-06', bookId: '1', bookTitle: 'Advanced Mathematics', borrowerName: 'K. Asante', borrowerClass: 'SHS2 Sci A', dueDate: '2026-07-20', status: 'Borrowed' },
-  { id: '2', date: '2026-07-05', bookId: '2', bookTitle: 'Organic Chemistry', borrowerName: 'G. Opoku', borrowerClass: 'SHS2 Sci B', dueDate: '2026-07-19', status: 'Borrowed' },
-  { id: '3', date: '2026-07-03', bookId: '3', bookTitle: 'Things Fall Apart', borrowerName: 'A. Owusu', borrowerClass: 'SHS1 Arts A', dueDate: '2026-07-17', returnDate: '2026-07-10', status: 'Returned' },
-  { id: '4', date: '2026-06-28', bookId: '6', bookTitle: 'Senior High Physics', borrowerName: 'M. Tetteh', borrowerClass: 'SHS3 Sci A', dueDate: '2026-07-12', status: 'Overdue' },
-];
+const INITIAL_CIRCULATION: CirculationRecord[] = [];
 
 const INITIAL_BOOKINGS: ICTBooking[] = [
   { id: '1', date: '2026-07-08', timeSlot: '08:00 - 09:20', className: 'SHS2 Sci A', teacherName: 'Mr. Adjei', lab: 'ICT Lab 1', purpose: 'Practical: Spreadsheets', status: 'Booked' },
@@ -190,6 +179,10 @@ interface LibraryState {
 
   getOverdue: () => CirculationRecord[];
   getBookAvailability: (bookId: string) => Book | undefined;
+
+  // API
+  loadBooks: () => Promise<void>;
+  loadCirculation: () => Promise<void>;
 }
 
 export const useLibraryStore = create<LibraryState>((set, get) => ({
@@ -200,9 +193,14 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   digitalResources: INITIAL_DIGITAL,
   accessRecords: INITIAL_ACCESS,
 
-  addBook: (book) => {
+  addBook: async (book) => {
     const newBook: Book = { ...book, id: nextId(), availableCopies: book.totalCopies };
-    set((s) => ({ books: [newBook, ...s.books] }));
+    try {
+      const created = await apiClient.post<any>('/library/books', book);
+      set((s) => ({ books: [{ ...newBook, id: created.id || nextId() }, ...s.books] }));
+    } catch {
+      set((s) => ({ books: [newBook, ...s.books] }));
+    }
   },
 
   updateBook: (id, updates) => {
@@ -215,24 +213,19 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     set((s) => ({ books: s.books.filter((b) => b.id !== id) }));
   },
 
-  borrowBook: (bookId, borrowerName, borrowerClass, dueDate) => {
+  borrowBook: async (bookId, borrowerName, borrowerClass, dueDate) => {
     const book = get().books.find((b) => b.id === bookId);
     if (!book || book.availableCopies <= 0) return;
     const record: CirculationRecord = {
-      id: nextId(),
-      date: todayISO(),
-      bookId,
-      bookTitle: book.title,
-      borrowerName,
-      borrowerClass,
-      dueDate,
-      status: 'Borrowed',
+      id: nextId(), date: todayISO(), bookId, bookTitle: book.title,
+      borrowerName, borrowerClass, dueDate, status: 'Borrowed',
     };
+    try {
+      await apiClient.post<any>('/library/circulation', { bookId, borrowerName, borrowerClass, dueDate });
+    } catch {}
     set((s) => ({
       circulation: [record, ...s.circulation],
-      books: s.books.map((b) =>
-        b.id === bookId ? { ...b, availableCopies: b.availableCopies - 1 } : b
-      ),
+      books: s.books.map((b) => b.id === bookId ? { ...b, availableCopies: b.availableCopies - 1 } : b),
     }));
   },
 
@@ -319,5 +312,18 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
 
   getBookAvailability: (bookId) => {
     return get().books.find((b) => b.id === bookId);
+  },
+
+  loadBooks: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/library/books');
+      set({ books: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadCirculation: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/library/circulation');
+      set({ circulation: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
   },
 }));

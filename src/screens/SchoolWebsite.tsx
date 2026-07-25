@@ -43,7 +43,7 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
   const [error, setError] = useState<string | null>(null);
   const [showPortal, setShowPortal] = useState(false);
   const [heroSlide, setHeroSlide] = useState(0);
-  const [activeSection, setActiveSection] = useState('home');
+  const [, setActiveSection] = useState('home');
 
   const heroFade = useRef(new Animated.Value(1)).current;
   const heroScale = useRef(new Animated.Value(1)).current;
@@ -128,7 +128,6 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
   const schoolShort = schoolName.split(' ').map((w) => w[0]).join('').slice(0, 4).toUpperCase();
   const motto = branding.motto || '';
   const primary = branding.primaryColor || colors.primary;
-  const secondary = branding.secondaryColor || colors.white;
   const accent = '#FFC93C';
   const primaryDark = primary === colors.primary ? colors.primaryDark : primary;
 

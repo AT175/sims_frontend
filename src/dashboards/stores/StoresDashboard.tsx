@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert, ScrollView } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid, DataTable } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
@@ -83,6 +83,12 @@ export function StoresDashboard() {
 
   const openModal = (type: string) => { setModalType(type); setShowModal(true); };
   const closeModal = () => setShowModal(false);
+
+  useEffect(() => {
+    useKitchenStore.getState().loadStock();
+    useKitchenStore.getState().loadMenus();
+    useRequisitionStore.getState().loadRequisitions();
+  }, []);
 
   const lowStockItems = inventory.filter(i => i.quantity <= i.reorderLevel);
   const totalValue = inventory.reduce((s, i) => s + i.quantity * i.unitCost, 0);

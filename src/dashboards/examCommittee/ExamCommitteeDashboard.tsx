@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert, ScrollView } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
@@ -20,6 +20,11 @@ export function ExamCommitteeDashboard() {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
   const store = useDynamicDashboardStore();
+
+  useEffect(() => {
+    useDynamicDashboardStore.getState().loadExamSchedules();
+    useDynamicDashboardStore.getState().loadExamResults();
+  }, []);
 
   const [examForm, setExamForm] = useState<{ examName: string; subject: string; date: string; time: string; duration: string; venue: string; status: 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled' }>({ examName: '', subject: '', date: '', time: '08:00', duration: '2h', venue: '', status: 'Scheduled' });
   const [paperForm, setPaperForm] = useState<{ subject: string; examiner: string; status: 'Drafted' | 'Reviewed' | 'Approved' | 'Printed'; dateSubmitted: string; notes: string }>({ subject: '', examiner: '', status: 'Drafted', dateSubmitted: '', notes: '' });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert, ScrollView } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
@@ -21,6 +21,11 @@ export function AcademicBoardDashboard() {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
   const store = useDynamicDashboardStore();
+
+  useEffect(() => {
+    useDynamicDashboardStore.getState().loadBoardMeetings();
+    useDynamicDashboardStore.getState().loadDeptReports();
+  }, []);
 
   const [meetingForm, setMeetingForm] = useState<{ title: string; date: string; attendees: string; agenda: string; status: 'Scheduled' | 'Completed' | 'Cancelled'; minutes: string }>({ title: '', date: '', attendees: '', agenda: '', status: 'Scheduled', minutes: '' });
   const [policyForm, setPolicyForm] = useState<{ title: string; category: string; status: 'Draft' | 'Under Review' | 'Approved' | 'Active'; dateApproved: string; description: string }>({ title: '', category: '', status: 'Draft', dateApproved: '', description: '' });

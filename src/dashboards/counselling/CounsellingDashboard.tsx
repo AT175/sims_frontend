@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert, ScrollView } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
@@ -41,6 +41,11 @@ export function CounsellingDashboard() {
     addReferral, updateReferralStatus, deleteReferral,
     addResource, deleteResource,
   } = useCounsellingStore();
+
+  useEffect(() => {
+    useCounsellingStore.getState().loadCases();
+    useCounsellingStore.getState().loadAppointments();
+  }, []);
 
   // ── Form state ──
   const [caseForm, setCaseForm] = useState({

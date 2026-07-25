@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert, ScrollView } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
@@ -19,6 +19,11 @@ export function HeadmasterSecretaryDashboard() {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
   const store = useDynamicDashboardStore();
+
+  useEffect(() => {
+    useDynamicDashboardStore.getState().loadAppointments();
+    useDynamicDashboardStore.getState().loadSecretaryTasks();
+  }, []);
 
   const [appointmentForm, setAppointmentForm] = useState<{ date: string; time: string; visitorName: string; purpose: string; status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled'; notes: string }>({ date: '', time: '', visitorName: '', purpose: '', status: 'Pending', notes: '' });
   const [correspondenceForm, setCorrespondenceForm] = useState<{ date: string; type: 'Incoming' | 'Outgoing'; from: string; to: string; subject: string; status: 'Pending' | 'Forwarded' | 'Filed' | 'Replied' }>({ date: '', type: 'Incoming', from: '', to: '', subject: '', status: 'Pending' });

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@shared/api/apiClient';
 
 // ── Types ──
 
@@ -61,18 +62,7 @@ const todayISO = () => new Date().toISOString().slice(0, 10);
 
 // ── Initial Data ──
 
-const INITIAL_STOCK: KitchenStockItem[] = [
-  { id: '1', name: 'Maize bags', quantity: 80, unit: 'bags', reorderLevel: 30, category: 'Grains' },
-  { id: '2', name: 'Rice', quantity: 35, unit: 'bags', reorderLevel: 20, category: 'Grains' },
-  { id: '3', name: 'Cooking oil', quantity: 12, unit: 'gallons', reorderLevel: 15, category: 'Cooking' },
-  { id: '4', name: 'Tomatoes', quantity: 8, unit: 'crates', reorderLevel: 10, category: 'Produce' },
-  { id: '5', name: 'Onions', quantity: 6, unit: 'sacks', reorderLevel: 8, category: 'Produce' },
-  { id: '6', name: 'Chicken', quantity: 20, unit: 'cartons', reorderLevel: 10, category: 'Protein' },
-  { id: '7', name: 'Fish (tilapia)', quantity: 15, unit: 'boxes', reorderLevel: 10, category: 'Protein' },
-  { id: '8', name: 'Salt', quantity: 5, unit: 'bags', reorderLevel: 3, category: 'Condiments' },
-  { id: '9', name: 'Pepper', quantity: 4, unit: 'sacks', reorderLevel: 5, category: 'Produce' },
-  { id: '10', name: 'Firewood', quantity: 25, unit: 'loads', reorderLevel: 15, category: 'Fuel' },
-];
+const INITIAL_STOCK: KitchenStockItem[] = [];
 
 const INITIAL_ISSUES: IssueLog[] = [
   { id: '1', date: '2026-07-08', itemName: 'Maize bags', quantity: 10, unit: 'bags', issuedTo: 'Kitchen - Breakfast', purpose: 'Porridge preparation' },
@@ -81,13 +71,7 @@ const INITIAL_ISSUES: IssueLog[] = [
   { id: '4', date: '2026-07-07', itemName: 'Chicken', quantity: 5, unit: 'cartons', issuedTo: 'Kitchen - Dinner', purpose: 'Chicken stew' },
 ];
 
-const INITIAL_MENU: MenuDay[] = [
-  { id: 'm1', day: 'Monday', breakfast: 'Porridge + bread', lunch: 'Jollof rice + chicken', dinner: 'Banku + tilapia' },
-  { id: 'm2', day: 'Tuesday', breakfast: 'Tea + eggs', lunch: 'Fufu + goat soup', dinner: 'Rice + stew' },
-  { id: 'm3', day: 'Wednesday', breakfast: 'Hausa koko + koko bread', lunch: 'Kenkey + fried fish', dinner: 'Yam + garden egg stew' },
-  { id: 'm4', day: 'Thursday', breakfast: 'Tea + bread', lunch: 'Waakye + egg', dinner: 'Tuo zaafi + ayoyo' },
-  { id: 'm5', day: 'Friday', breakfast: 'Porridge + bread', lunch: 'Plain rice + chicken stew', dinner: 'Konkonte + groundnut soup' },
-];
+const INITIAL_MENU: MenuDay[] = [];
 
 const INITIAL_CUSTOM_MENUS: CustomMenu[] = [
   { id: 'c1', personName: 'Kwame Asante', personRole: 'Student', reason: 'Lactose intolerant', day: 'Monday', breakfast: 'Tea (no milk) + bread', lunch: 'Jollof rice (no butter)', dinner: 'Banku + tilapia', active: true },
@@ -136,6 +120,10 @@ interface KitchenState {
   updateFinancialReqStatus: (id: string, status: FinancialReqStatus) => void;
   deleteFinancialReq: (id: string) => void;
   getPendingFinancialReqs: () => FinancialRequisition[];
+
+  // API
+  loadStock: () => Promise<void>;
+  loadMenus: () => Promise<void>;
 }
 
 export const useKitchenStore = create<KitchenState>((set, get) => ({
@@ -146,8 +134,13 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
   financialReqs: INITIAL_FIN_REQS,
 
   // ── Stock ──
-  addStockItem: (item) => {
-    set((state) => ({ stock: [...state.stock, { ...item, id: nextId() }] }));
+  addStockItem: async (item) => {
+    try {
+      const created = await apiClient.post<any>('/kitchen/stock', item);
+      set((state) => ({ stock: [...state.stock, { ...item, id: created.id || nextId() }] }));
+    } catch {
+      set((state) => ({ stock: [...state.stock, { ...item, id: nextId() }] }));
+    }
   },
 
   updateStockItem: (id, item) => {
@@ -182,8 +175,13 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
   },
 
   // ── Menu ──
-  addMenuDay: (day) => {
-    set((state) => ({ menu: [...state.menu, { ...day, id: nextId() }] }));
+  addMenuDay: async (day) => {
+    try {
+      const created = await apiClient.post<any>('/kitchen/menus', day);
+      set((state) => ({ menu: [...state.menu, { ...day, id: created.id || nextId() }] }));
+    } catch {
+      set((state) => ({ menu: [...state.menu, { ...day, id: nextId() }] }));
+    }
   },
 
   updateMenuDay: (id, day) => {
@@ -245,5 +243,18 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
 
   getPendingFinancialReqs: () => {
     return get().financialReqs.filter((r) => r.status === 'Pending');
+  },
+
+  loadStock: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/kitchen/stock');
+      set({ stock: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadMenus: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/kitchen/menus');
+      set({ menu: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
   },
 }));

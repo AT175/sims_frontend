@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert, ScrollView } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
@@ -19,6 +19,11 @@ export function SafeSpaceDashboard() {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
   const store = useDynamicDashboardStore();
+
+  useEffect(() => {
+    useDynamicDashboardStore.getState().loadSafetyIncidents();
+    useDynamicDashboardStore.getState().loadTrainingRecords();
+  }, []);
 
   const [incidentForm, setIncidentForm] = useState<{ date: string; location: string; severity: 'Low' | 'Medium' | 'High' | 'Critical'; status: 'Reported' | 'Investigating' | 'Resolved' | 'Escalated'; description: string; reportedBy: string; action: string }>({ date: '', location: '', severity: 'Medium', status: 'Reported', description: '', reportedBy: '', action: '' });
   const [inspectionForm, setInspectionForm] = useState<{ date: string; area: string; finding: string; riskLevel: 'Safe' | 'Minor Risk' | 'Major Risk' | 'Hazard'; recommendation: string; resolved: boolean }>({ date: '', area: '', finding: '', riskLevel: 'Safe', recommendation: '', resolved: false });

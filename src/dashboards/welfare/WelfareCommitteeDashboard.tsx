@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid, DataTable } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
 import { useAuthStore } from '@store/authStore';
+import { useDynamicDashboardStore } from '@store/dynamicDashboardStore';
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'ledger', label: 'Welfare Fund Ledger' },
@@ -14,6 +15,12 @@ const NAV_ITEMS: NavItem[] = [
 export function WelfareCommitteeDashboard() {
   const [activePage, setActivePage] = useState('ledger');
   const { logout } = useAuthStore();
+
+  useEffect(() => {
+    useDynamicDashboardStore.getState().loadWelfareLedger();
+    useDynamicDashboardStore.getState().loadWelfareSupportRequests();
+    useDynamicDashboardStore.getState().loadWelfareMembers();
+  }, []);
 
   const renderPage = () => {
     switch (activePage) {

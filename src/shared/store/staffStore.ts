@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@shared/api/apiClient';
 
 // ── Types ──
 
@@ -106,26 +107,9 @@ const INITIAL_RESOURCES: StaffResource[] = [
   { id: '7', name: 'Invigilation Guidelines', type: 'Policy', uploaded: '2026-07-01', uploadedBy: 'Academic Office', description: 'Rules and procedures for exam invigilation duties.', size: '95 KB' },
 ];
 
-const INITIAL_LEAVE_REQUESTS: LeaveRequest[] = [
-  { id: '1', staffName: 'J. Mensah', staffRole: 'Senior Teacher', dateSubmitted: '2026-07-05', startDate: '2026-07-15', endDate: '2026-07-20', type: 'Annual', reason: 'Family vacation planned during mid-term break.', status: 'Pending' },
-  { id: '2', staffName: 'G. Adjei', staffRole: 'HOD', dateSubmitted: '2026-05-10', startDate: '2026-05-20', endDate: '2026-05-25', type: 'Sick', reason: 'Medical procedure and recovery period.', status: 'Approved', reviewedBy: 'Headmaster', reviewDate: '2026-05-12', reviewNotes: 'Approved. Arrangements made for class coverage.' },
-  { id: '3', staffName: 'F. Boateng', staffRole: 'Teacher', dateSubmitted: '2026-03-01', startDate: '2026-03-10', endDate: '2026-03-15', type: 'Personal', reason: 'Personal family matters requiring attention.', status: 'Approved', reviewedBy: 'Headmaster', reviewDate: '2026-03-03', reviewNotes: 'Approved with coverage arrangements.' },
-  { id: '4', staffName: 'A. Tetteh', staffRole: 'Accountant', dateSubmitted: '2026-06-15', startDate: '2026-07-01', endDate: '2026-07-30', type: 'Study', reason: 'Professional certification course in financial management.', status: 'Approved', reviewedBy: 'Headmaster', reviewDate: '2026-06-18', reviewNotes: 'Approved. Temp cover arranged from finance office.' },
-  { id: '5', staffName: 'M. Owusu', staffRole: 'Teacher', dateSubmitted: '2026-07-08', startDate: '2026-07-12', endDate: '2026-07-14', type: 'Sick', reason: 'Severe malaria diagnosis, doctor recommends rest.', status: 'Pending' },
-];
+const INITIAL_LEAVE_REQUESTS: LeaveRequest[] = [];
 
-const INITIAL_DIRECTORY: StaffDirectoryEntry[] = [
-  { id: '1', name: 'J. Mensah', role: 'Senior Teacher', position: 'Senior Teacher (Mathematics)', department: 'Mathematics', phone: '024-100-2001', email: 'j.mensah@sims.edu', status: 'Active' },
-  { id: '2', name: 'G. Adjei', role: 'HOD', position: 'HOD Science', department: 'Science', phone: '027-100-2002', email: 'g.adjei@sims.edu', status: 'Active' },
-  { id: '3', name: 'F. Boateng', role: 'Teacher', position: 'Teacher (English)', department: 'English', phone: '020-100-2003', email: 'f.boateng@sims.edu', status: 'Active' },
-  { id: '4', name: 'A. Tetteh', role: 'Accountant', position: 'School Accountant', department: 'Finance', phone: '055-100-2004', email: 'a.tetteh@sims.edu', status: 'On Leave' },
-  { id: '5', name: 'M. Owusu', role: 'Teacher', position: 'Teacher (ICT)', department: 'ICT', phone: '024-100-2005', email: 'm.owusu@sims.edu', status: 'Active' },
-  { id: '6', name: 'D. Asante', role: 'Counsellor', position: 'School Counsellor', department: 'Counselling', phone: '027-100-2006', email: 'd.asante@sims.edu', status: 'Active' },
-  { id: '7', name: 'C. Dankwah', role: 'Coach', position: 'Sports Coach', department: 'Physical Education', phone: '020-100-2007', email: 'c.dankwah@sims.edu', status: 'Active' },
-  { id: '8', name: 'L. Frimpong', role: 'Librarian', position: 'School Librarian', department: 'Library', phone: '055-100-2008', email: 'l.frimpong@sims.edu', status: 'Active' },
-  { id: '9', name: 'P. Nyarko', role: 'HOD', position: 'HOD Arts', department: 'Arts & Humanities', phone: '024-100-2009', email: 'p.nyarko@sims.edu', status: 'Active' },
-  { id: '10', name: 'R. Amponsah', role: 'Administrator', position: 'Assistant Headmaster (Academic)', department: 'Administration', phone: '027-100-2010', email: 'r.amponsah@sims.edu', status: 'Active' },
-];
+const INITIAL_DIRECTORY: StaffDirectoryEntry[] = [];
 
 // ── Store ──
 
@@ -157,6 +141,10 @@ interface StaffState {
   // Directory
   addDirectoryEntry: (entry: Omit<StaffDirectoryEntry, 'id'>) => void;
   deleteDirectoryEntry: (id: string) => void;
+
+  // API
+  loadDirectory: () => Promise<void>;
+  loadLeaveRequests: () => Promise<void>;
 }
 
 export const useStaffStore = create<StaffState>((set, get) => ({
@@ -187,14 +175,14 @@ export const useStaffStore = create<StaffState>((set, get) => ({
     set((s) => ({ resources: s.resources.filter((r) => r.id !== id) }));
   },
 
-  submitLeave: (req) => {
-    const newReq: LeaveRequest = {
-      ...req,
-      id: nextId(),
-      dateSubmitted: todayISO(),
-      status: 'Pending',
-    };
-    set((s) => ({ leaveRequests: [newReq, ...s.leaveRequests] }));
+  submitLeave: async (req) => {
+    const newReq: LeaveRequest = { ...req, id: nextId(), dateSubmitted: todayISO(), status: 'Pending' };
+    try {
+      const created = await apiClient.post<any>('/staff/leave', req);
+      set((s) => ({ leaveRequests: [{ ...newReq, id: created.id || nextId() }, ...s.leaveRequests] }));
+    } catch {
+      set((s) => ({ leaveRequests: [newReq, ...s.leaveRequests] }));
+    }
   },
   reviewLeave: (id, status, reviewedBy, notes) => {
     set((s) => ({
@@ -210,10 +198,28 @@ export const useStaffStore = create<StaffState>((set, get) => ({
     return get().leaveRequests.filter((r) => r.status === 'Pending');
   },
 
-  addDirectoryEntry: (entry) => {
-    set((s) => ({ directory: [...s.directory, { ...entry, id: nextId() }] }));
+  addDirectoryEntry: async (entry) => {
+    try {
+      const created = await apiClient.post<any>('/staff', entry);
+      set((s) => ({ directory: [...s.directory, { ...entry, id: created.id || nextId() }] }));
+    } catch {
+      set((s) => ({ directory: [...s.directory, { ...entry, id: nextId() }] }));
+    }
   },
   deleteDirectoryEntry: (id) => {
     set((s) => ({ directory: s.directory.filter((d) => d.id !== id) }));
+  },
+
+  loadDirectory: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/staff');
+      set({ directory: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadLeaveRequests: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/staff/leave');
+      set({ leaveRequests: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
   },
 }));

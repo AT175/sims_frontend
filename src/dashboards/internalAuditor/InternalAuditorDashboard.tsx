@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert, ScrollView } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
@@ -18,6 +18,11 @@ export function InternalAuditorDashboard() {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
   const store = useDynamicDashboardStore();
+
+  useEffect(() => {
+    useDynamicDashboardStore.getState().loadAudits();
+    useDynamicDashboardStore.getState().loadAuditFindings();
+  }, []);
 
   const [auditForm, setAuditForm] = useState<{ title: string; type: 'Financial' | 'Compliance' | 'Operational' | 'IT'; startDate: string; endDate: string; auditor: string; status: 'Planned' | 'In Progress' | 'Completed' | 'Flagged' }>({ title: '', type: 'Financial', startDate: '', endDate: '', auditor: '', status: 'Planned' });
   const [findingForm, setFindingForm] = useState<{ auditTitle: string; severity: 'Low' | 'Medium' | 'High' | 'Critical'; finding: string; recommendation: string; status: 'Open' | 'Addressed' | 'Closed'; date: string }>({ auditTitle: '', severity: 'Medium', finding: '', recommendation: '', status: 'Open', date: '' });

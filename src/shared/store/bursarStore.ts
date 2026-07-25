@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@shared/api/apiClient';
 
 // ── Types ──
 
@@ -317,6 +318,11 @@ interface BursarState {
   rejectReturn: (id: string) => void;
   generateReturn: (period: ReturnPeriod, dateFrom: string, dateTo: string) => void;
   deleteReturn: (id: string) => void;
+
+  // Backend load methods
+  loadProcurement: () => Promise<void>;
+  loadPettyCash: () => Promise<void>;
+  loadCashTransactions: () => Promise<void>;
 }
 
 export const useBursarStore = create<BursarState>((set, get) => ({
@@ -465,5 +471,24 @@ export const useBursarStore = create<BursarState>((set, get) => ({
   },
   deleteReturn: (id) => {
     set((s) => ({ returns: s.returns.filter((r) => r.id !== id) }));
+  },
+
+  loadProcurement: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/bursar/procurement');
+      set({ procurement: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadPettyCash: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/bursar/petty-cash');
+      set({ pettyCash: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadCashTransactions: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/bursar/cash-transactions');
+      set({ cashTransactions: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
   },
 }));

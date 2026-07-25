@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert, ScrollView } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
@@ -44,7 +44,14 @@ export function SecurityDashboard() {
     addVisitor, updateVisitorStatus, deleteVisitor, getExpectedVisitors,
     toggleChecklistItem, addChecklistItem, deleteChecklistItem, getPendingChecklist, getChecklistProgress,
     addGuard, updateGuard, deleteGuard,
+    loadIncidents, loadGateLogs,
   } = useSecurityStore();
+
+  useEffect(() => {
+    loadIncidents();
+    loadGateLogs();
+    useExeatStore.getState().loadExeats();
+  }, []);
 
   const {
     exeats, getActiveAtGate, checkOut, checkIn,

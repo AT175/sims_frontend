@@ -49,7 +49,7 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: response.refreshToken,
       };
 
-      apiClient.setAuth(user.token, user.tenantId, user.refreshToken);
+      apiClient.setAuth(user.token ?? null, user.tenantId, user.refreshToken ?? null);
       set({ user, isAuthenticated: true, isLoading: false, isTempLogin: false });
       useNotificationStore.getState().addNotification({
         title: 'Welcome back',
@@ -83,7 +83,7 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: response.refreshToken,
       };
 
-      apiClient.setAuth(user.token, user.tenantId, user.refreshToken);
+      apiClient.setAuth(user.token ?? null, user.tenantId, user.refreshToken ?? null);
       set({ user, isAuthenticated: true, isLoading: false, isTempLogin: true });
     } catch (err) {
       set({
@@ -109,12 +109,6 @@ export const useAuthStore = create<AuthState>()(
       set({ user: userWithRole });
     }
 
-    // Demo mode: switch role locally without API
-    if (currentUser.token === 'demo-token') {
-      set({ user: { ...userWithRole, activeRole: roleId }, isLoading: false });
-      return;
-    }
-
     set({ isLoading: true, error: null });
     try {
       const response = await authApi.switchRole(roleId);
@@ -127,7 +121,7 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: response.refreshToken,
       };
 
-      apiClient.setAuth(user.token, user.tenantId, user.refreshToken);
+      apiClient.setAuth(user.token ?? null, user.tenantId, user.refreshToken ?? null);
       set({ user, isLoading: false });
       useNotificationStore.getState().addNotification({
         title: 'Role switched',
@@ -190,17 +184,34 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'sims-auth',
-      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated, isTempLogin: state.isTempLogin }),
+      partialize: (state) => ({
+        user: state.user ? {
+          id: state.user.id,
+          tenantId: state.user.tenantId,
+          schoolName: state.user.schoolName,
+          schoolLogoUrl: state.user.schoolLogoUrl,
+          profilePictureUrl: state.user.profilePictureUrl,
+          username: state.user.username,
+          displayName: state.user.displayName,
+          roles: state.user.roles,
+          activeRole: state.user.activeRole,
+        } as AuthUser : null,
+        isAuthenticated: state.isAuthenticated,
+        isTempLogin: state.isTempLogin,
+      }),
       onRehydrateStorage: () => (state) => {
         if (state?.user?.token) {
-          apiClient.setAuth(state.user.token, state.user.tenantId, state.user.refreshToken);
+          apiClient.setAuth(state.user.token, state.user.tenantId, state.user.refreshToken ?? null);
+        } else if (state?.isAuthenticated) {
+          // Token not persisted — user must re-authenticate
+          useAuthStore.setState({ isAuthenticated: false, user: null });
         }
       },
     },
   ),
 );
 
-apiClient.onAuthChange((token, refreshToken, tenantId) => {
+apiClient.onAuthChange((token, refreshToken, _tenantId) => {
   const state = useAuthStore.getState();
   if (token && state.user) {
     useAuthStore.setState({

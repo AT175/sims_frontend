@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid, DataTable, KitchenMenuWidget } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
@@ -34,6 +34,17 @@ export function DomesticDashboard() {
   const kitchenStore = useKitchenStore();
   const transportStore = useTransportStore();
   const cleaningStore = useCleaningStore();
+
+  useEffect(() => {
+    useBoardingStore.getState().loadRollCalls();
+    useBoardingStore.getState().loadDiscipline();
+    useKitchenStore.getState().loadStock();
+    useKitchenStore.getState().loadMenus();
+    useCleaningStore.getState().loadTasks();
+    useCleaningStore.getState().loadIssues();
+    useRequisitionStore.getState().loadRequisitions();
+    useTransportStore.getState().loadVehicles();
+  }, []);
 
   const pendingApprovals = getPendingDomestic();
   const allBoardingReqs = requisitions.filter(r => r.department === 'Boarding');

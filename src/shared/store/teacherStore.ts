@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@shared/api/apiClient';
 
 // ── Types ──
 
@@ -408,6 +409,14 @@ interface TeacherState {
   addRemedialStudent: (r: Omit<RemedialStudent, 'id'>) => void;
   updateRemedialProgress: (id: string, progress: RemedialStudent['progress'], notes: string) => void;
   deleteRemedialStudent: (id: string) => void;
+
+  // Backend load methods
+  loadLessonPlans: () => Promise<void>;
+  loadAssignments: () => Promise<void>;
+  loadGradebook: () => Promise<void>;
+  loadAttendance: () => Promise<void>;
+  loadSyllabus: () => Promise<void>;
+  loadMaterials: () => Promise<void>;
 }
 
 export const useTeacherStore = create<TeacherState>((set, get) => ({
@@ -586,5 +595,42 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
   },
   deleteRemedialStudent: (id) => {
     set((s) => ({ remedial: s.remedial.filter((r) => r.id !== id) }));
+  },
+
+  loadLessonPlans: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/teacher/lesson-plans');
+      set({ lessonPlans: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadAssignments: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/teacher/assignments');
+      set({ assignments: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadGradebook: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/teacher/gradebook');
+      set({ gradebook: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadAttendance: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/teacher/attendance');
+      set({ attendance: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadSyllabus: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/teacher/syllabus');
+      set({ syllabus: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadMaterials: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/teacher/materials');
+      set({ materials: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
   },
 }));

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@shared/api/apiClient';
 
 // ── Types ──
 
@@ -94,6 +95,9 @@ interface RequisitionState {
   getPendingDomestic: () => Requisition[];
   getPendingStores: () => Requisition[];
   getPendingHouse: (house: string) => Requisition[];
+
+  // Backend load methods
+  loadRequisitions: () => Promise<void>;
 }
 
 export const useRequisitionStore = create<RequisitionState>((set, get) => ({
@@ -220,5 +224,12 @@ export const useRequisitionStore = create<RequisitionState>((set, get) => ({
 
   getPendingHouse: (house) => {
     return get().requisitions.filter((r) => r.status === 'Issued' && r.house === house);
+  },
+
+  loadRequisitions: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/requisitions');
+      set({ requisitions: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
   },
 }));

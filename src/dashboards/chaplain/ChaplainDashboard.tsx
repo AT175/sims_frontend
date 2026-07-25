@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert, ScrollView } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
@@ -33,6 +33,11 @@ export function ChaplainDashboard() {
   useAuthStore();
 
   const store = useChaplainStore();
+
+  useEffect(() => {
+    useChaplainStore.getState().loadPrayerRequests();
+    useChaplainStore.getState().loadCounselling();
+  }, []);
 
   // ── Form state ──
   const [serviceForm, setServiceForm] = useState({

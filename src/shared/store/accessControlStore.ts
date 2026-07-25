@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@shared/api/apiClient';
 import type { NavItem } from '@shared/components/DashboardLayout';
 import { useNotificationStore } from './notificationStore';
 
@@ -59,6 +60,9 @@ interface AccessControlState {
   getNotificationsForRole: (role: string) => AccessNotification[];
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: (role: string) => void;
+
+  // Backend load methods
+  loadGrants: () => Promise<void>;
 }
 
 const nowISO = () => new Date().toISOString();
@@ -144,7 +148,7 @@ export const useAccessControlStore = create<AccessControlState>((set, get) => ({
 
   getFilteredNavItems: (userId, dashboardKey, allNavItems) => {
     const grant = get().grants.find((g) => g.userId === userId && g.dashboardKey === dashboardKey);
-    if (!grant) return allNavItems;
+    if (!grant) return []; // No grant = no access
     if (grant.allowedPages === 'all') return allNavItems;
     return allNavItems.filter((item) => grant.allowedPages.includes(item.key));
   },
@@ -193,6 +197,13 @@ export const useAccessControlStore = create<AccessControlState>((set, get) => ({
     set((st) => ({
       notifications: st.notifications.map((n) => n.forRole === role ? { ...n, read: true } : n),
     }));
+  },
+
+  loadGrants: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/access-control/grants');
+      set({ grants: (data || []).map((d) => ({ ...d, id: d.id || String(Date.now()) })) });
+    } catch {}
   },
 }));
 

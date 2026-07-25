@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert, ScrollView } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid, RequisitionModal } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
@@ -95,6 +95,12 @@ export function CateringDashboard() {
     addCustomMenu, updateCustomMenu, deleteCustomMenu, toggleCustomMenu,
     submitFinancialReq, deleteFinancialReq,
   } = useKitchenStore();
+
+  useEffect(() => {
+    useKitchenStore.getState().loadStock();
+    useKitchenStore.getState().loadMenus();
+    useRequisitionStore.getState().loadRequisitions();
+  }, []);
 
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');

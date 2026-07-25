@@ -165,6 +165,18 @@ export function HeadmasterDashboard() {
 
   useEffect(() => {
     sysAdminStore.loadUsers(user?.tenantId);
+    useBursaryStore.getState().loadFees();
+    useBursaryStore.getState().loadExpenditure();
+    useBursaryStore.getState().loadReceipts();
+    useBursaryStore.getState().loadPayroll();
+    useStaffStore.getState().loadDirectory();
+    useStaffStore.getState().loadLeaveRequests();
+    useRegistryStore.getState().loadStudents();
+    useRegistryStore.getState().loadAdmissions();
+    useHeadmasterStore.getState().loadApprovals();
+    useHeadmasterStore.getState().loadDisciplineCases();
+    useHeadmasterStore.getState().loadBroadcasts();
+    useAccessControlStore.getState().loadGrants();
   }, [user?.tenantId]);
 
   const [showAccessModal, setShowAccessModal] = useState(false);
@@ -2336,20 +2348,5 @@ const styles = StyleSheet.create({
   accessSummaryLabel: {
     fontWeight: fontWeight.semibold,
     color: colors.textSecondary,
-  },
-  errorBanner: {
-    backgroundColor: colors.danger + '15',
-    borderRadius: radius.md,
-    padding: spacing.sm,
-    marginBottom: spacing.sm,
-    width: '100%',
-  },
-  errorBannerText: {
-    color: colors.danger,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-  },
-  modalApproveBtnDisabled: {
-    opacity: 0.5,
   },
 });

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@shared/api/apiClient';
 
 // ── Types ──
 
@@ -245,20 +246,9 @@ const todayISO = () => new Date().toISOString().slice(0, 10);
 
 // ── Initial Data ──
 
-const INITIAL_EXAMS: Exam[] = [
-  { id: 'e1', title: 'Mid-Sem 1 Elective Math', subject: 'Elective Mathematics', classForm: 'SHS2 Sci A', date: '2025-07-15', startTime: '08:00', endTime: '10:00', venue: 'Hall A', maxScore: 50, status: 'Scheduled', resultsStatus: 'Not Started', invigilator: 'Mr. Mensah', term: 'Term 3' },
-  { id: 'e2', title: 'Mid-Sem 1 Chemistry', subject: 'Chemistry', classForm: 'SHS2 Sci A', date: '2025-07-16', startTime: '08:00', endTime: '10:00', venue: 'Hall A', maxScore: 50, status: 'Scheduled', resultsStatus: 'Not Started', invigilator: 'Mr. Adjei', term: 'Term 3' },
-  { id: 'e3', title: 'Mid-Sem 1 English', subject: 'English Language', classForm: 'SHS2 Sci A', date: '2025-07-17', startTime: '10:00', endTime: '12:00', venue: 'Hall B', maxScore: 50, status: 'Scheduled', resultsStatus: 'Not Started', invigilator: 'Mrs. Boateng', term: 'Term 3' },
-  { id: 'e4', title: 'Mid-Sem 1 Core Math', subject: 'Core Mathematics', classForm: 'SHS1 Sci A', date: '2025-07-18', startTime: '08:00', endTime: '10:00', venue: 'Hall A', maxScore: 50, status: 'Scheduled', resultsStatus: 'Not Started', invigilator: 'Mr. Mensah', term: 'Term 3' },
-];
+const INITIAL_EXAMS: Exam[] = [];
 
-const INITIAL_TIMETABLES: Timetable[] = [
-  { id: 't1', classForm: 'SHS1 Sci A', day: 'Monday', period: 1, startTime: '07:30', endTime: '08:20', subject: 'Core Mathematics', teacher: 'Mr. Mensah', room: 'A1', status: 'Published' },
-  { id: 't2', classForm: 'SHS1 Sci A', day: 'Monday', period: 2, startTime: '08:20', endTime: '09:10', subject: 'English Language', teacher: 'Mrs. Boateng', room: 'A1', status: 'Published' },
-  { id: 't3', classForm: 'SHS1 Sci A', day: 'Monday', period: 3, startTime: '09:10', endTime: '10:00', subject: 'Chemistry', teacher: 'Mr. Adjei', room: 'Lab 1', status: 'Published' },
-  { id: 't4', classForm: 'SHS2 Sci A', day: 'Monday', period: 1, startTime: '07:30', endTime: '08:20', subject: 'Elective Mathematics', teacher: 'Mr. Mensah', room: 'B1', status: 'Published' },
-  { id: 't5', classForm: 'SHS3 Sci A', day: 'Monday', period: 1, startTime: '07:30', endTime: '08:20', subject: 'Physics', teacher: 'Mr. Adjei', room: 'C1', status: 'Draft' },
-];
+const INITIAL_TIMETABLES: Timetable[] = [];
 
 const INITIAL_HOD_APPROVALS: HODApproval[] = [
   { id: 'h1', type: 'Teacher Assignment', from: 'Mr. Adjei', department: 'Science', detail: 'Assign Mr. Owusu to SHS1 Physics', date: '2025-07-08', status: 'Pending' },
@@ -484,6 +474,10 @@ interface AcademicState {
     pendingHODApprovals: number;
     scheduledExams: number;
   };
+
+  // API
+  loadExams: () => Promise<void>;
+  loadTimetables: () => Promise<void>;
 }
 
 // ── Store ──
@@ -503,13 +497,27 @@ export const useAcademicStore = create<AcademicState>((set, get) => ({
   admissionInsights: INITIAL_ADMISSION_INSIGHTS,
 
   // Exams
-  addExam: (e) => set((s) => ({ exams: [...s.exams, { ...e, id: nextId() }] })),
+  addExam: async (e) => {
+    try {
+      const created = await apiClient.post<any>('/academic/exams', e);
+      set((s) => ({ exams: [...s.exams, { ...e, id: created.id || nextId() }] }));
+    } catch {
+      set((s) => ({ exams: [...s.exams, { ...e, id: nextId() }] }));
+    }
+  },
   updateExam: (id, updates) => set((s) => ({ exams: s.exams.map((e) => e.id === id ? { ...e, ...updates } : e) })),
   deleteExam: (id) => set((s) => ({ exams: s.exams.filter((e) => e.id !== id) })),
   updateExamResultsStatus: (id, status) => set((s) => ({ exams: s.exams.map((e) => e.id === id ? { ...e, resultsStatus: status } : e) })),
 
   // Timetables
-  addTimetable: (t) => set((s) => ({ timetables: [...s.timetables, { ...t, id: nextId() }] })),
+  addTimetable: async (t) => {
+    try {
+      const created = await apiClient.post<any>('/academic/timetables', t);
+      set((s) => ({ timetables: [...s.timetables, { ...t, id: created.id || nextId() }] }));
+    } catch {
+      set((s) => ({ timetables: [...s.timetables, { ...t, id: nextId() }] }));
+    }
+  },
   deleteTimetable: (id) => set((s) => ({ timetables: s.timetables.filter((t) => t.id !== id) })),
   publishTimetable: (classForm) => set((s) => ({ timetables: s.timetables.map((t) => t.classForm === classForm ? { ...t, status: 'Published' } : t) })),
   getTimetableForClass: (classForm) => get().timetables.filter((t) => t.classForm === classForm),
@@ -596,5 +604,18 @@ export const useAcademicStore = create<AcademicState>((set, get) => ({
     const pendingHODApprovals = st.hodApprovals.filter((h) => h.status === 'Pending').length;
     const scheduledExams = st.exams.filter((e) => e.status === 'Scheduled').length;
     return { totalStudents, totalTeachers, totalSubjects, avgCoverage, avgPassRate, pendingReportCards, pendingTranscripts, activeSPIPs, pendingHODApprovals, scheduledExams };
+  },
+
+  loadExams: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/academic/exams');
+      set({ exams: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadTimetables: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/academic/timetables');
+      set({ timetables: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
   },
 }));

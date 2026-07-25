@@ -7,7 +7,6 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  Dimensions,
   useWindowDimensions,
   Animated,
   Easing,
@@ -17,14 +16,13 @@ import { useAuthStore } from '@store/authStore';
 import { useRegistryStore } from '@store/registryStore';
 import type { Programme, PaymentMethod } from '@store/registryStore';
 import { PROGRAMMES } from '@store/registryStore';
+import { apiClient } from '@shared/api/apiClient';
 import { colors, spacing, fontSize } from '@theme/index';
 import { loginStyles as s } from './loginStyles';
 
 type Tab = 'signin' | 'apply' | 'status';
 type AdmissionStep = 'search' | 'payment' | 'form' | 'submitted';
 type StatusStep = 'lookup' | 'result';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const HERO_SLIDES = [
   { image: '/b1.jpg', caption: 'Terchire Senior High School' },
@@ -64,6 +62,13 @@ export function LoginScreen({ presetTenantKey, onBack }: { presetTenantKey?: str
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  // Brute force protection
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
+  const [lockoutMsg, setLockoutMsg] = useState('');
+  const MAX_ATTEMPTS = 5;
+  const LOCKOUT_DURATION_MS = 60_000; // 1 minute
+
   const openPortal = (tab: Tab) => { setView('portal'); setActiveTab(tab); clearError(); };
   const goHome = () => { if (onBack) { onBack(); } else { setView('home'); } };
 
@@ -81,7 +86,7 @@ export function LoginScreen({ presetTenantKey, onBack }: { presetTenantKey?: str
   const [parentName, setParentName] = useState('');
   const [parentPhone, setParentPhone] = useState('');
   const [parentEmail, setParentEmail] = useState('');
-  const [selectedProgramme, setSelectedProgramme] = useState<Programme>('Science');
+  const [selectedProgramme, setSelectedProgramme] = useState<Programme>('General Science');
   const [matchedPlacement, setMatchedPlacement] = useState<any>(null);
   const [admissionLoading, setAdmissionLoading] = useState(false);
 
@@ -156,11 +161,40 @@ export function LoginScreen({ presetTenantKey, onBack }: { presetTenantKey?: str
   // ── Handlers ──
   const handleLogin = async () => {
     if (!username.trim() || !password.trim()) { Alert.alert('Error', 'Please enter your username and password'); return; }
+
+    // Brute force protection: check lockout
+    if (lockoutUntil && Date.now() < lockoutUntil) {
+      const remaining = Math.ceil((lockoutUntil - Date.now()) / 1000);
+      Alert.alert('Account Locked', `Too many failed attempts. Please wait ${remaining}s before trying again.`);
+      return;
+    }
+    // Reset lockout if expired
+    if (lockoutUntil && Date.now() >= lockoutUntil) {
+      setLockoutUntil(null);
+      setLockoutMsg('');
+      setLoginAttempts(0);
+    }
+
     const u = username.trim(), p = password.trim();
     if (u.startsWith('VOTER_')) {
       try { await loginTemp(u, p); return; } catch { /* fall through */ }
     }
-    login(u, p);
+    try {
+      await login(u, p);
+      setLoginAttempts(0);
+    } catch {
+      const nextAttempts = loginAttempts + 1;
+      setLoginAttempts(nextAttempts);
+      if (nextAttempts >= MAX_ATTEMPTS) {
+        const until = Date.now() + LOCKOUT_DURATION_MS;
+        setLockoutUntil(until);
+        setLockoutMsg(`Too many failed attempts. Account locked for 60 seconds.`);
+        Alert.alert('Account Locked', lockoutMsg || `Too many failed attempts. Account locked for 60 seconds.`);
+      } else {
+        const remaining = MAX_ATTEMPTS - nextAttempts;
+        Alert.alert('Login Failed', `Invalid credentials. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining before lockout.`);
+      }
+    }
   };
 
   const handleAdmissionSearch = () => {
@@ -221,7 +255,7 @@ export function LoginScreen({ presetTenantKey, onBack }: { presetTenantKey?: str
 
   const resetAdmission = () => {
     setAdmissionStep('search'); setWardName(''); setPlacementRef(''); setParentName('');
-    setParentPhone(''); setParentEmail(''); setSelectedProgramme('Science'); setMatchedPlacement(null);
+    setParentPhone(''); setParentEmail(''); setSelectedProgramme('General Science'); setMatchedPlacement(null);
     setPaymentMethod(null); setMmNumber(''); setMmRef(''); setScratchPin(''); setScratchSerial('');
   };
 

@@ -4,6 +4,11 @@ import { DashboardLayout, NavItem, StatCard, CardGrid, KitchenMenuWidget } from 
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
 import { useAuthStore } from '@store/authStore';
 import { electionApi } from '@shared/api/electionApi';
+import { useAcademicStore } from '@store/academicStore';
+import { useLibraryStore } from '@store/libraryStore';
+import { useBursaryStore } from '@store/bursaryStore';
+import { useKitchenStore } from '@store/kitchenStore';
+import { useRegistryStore } from '@store/registryStore';
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'profile', label: 'Profile' },
@@ -41,6 +46,13 @@ export function StudentDashboard() {
 
   useEffect(() => {
     fetchElectionData();
+    useAcademicStore.getState().loadExams();
+    useAcademicStore.getState().loadTimetables();
+    useLibraryStore.getState().loadBooks();
+    useLibraryStore.getState().loadCirculation();
+    useBursaryStore.getState().loadFees();
+    useKitchenStore.getState().loadMenus();
+    useRegistryStore.getState().loadStudents();
   }, []);
 
   const fetchElectionData = async () => {

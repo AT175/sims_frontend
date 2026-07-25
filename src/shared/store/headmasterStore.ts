@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@shared/api/apiClient';
 
 // ── Types ──
 
@@ -87,6 +88,11 @@ export interface HeadmasterState {
 
   addBroadcast: (item: Omit<Broadcast, 'id' | 'date'>) => void;
   deleteBroadcast: (id: string) => void;
+
+  // Backend load methods
+  loadApprovals: () => Promise<void>;
+  loadDisciplineCases: () => Promise<void>;
+  loadBroadcasts: () => Promise<void>;
 }
 
 export const useHeadmasterStore = create<HeadmasterState>((set, get) => ({
@@ -131,5 +137,24 @@ export const useHeadmasterStore = create<HeadmasterState>((set, get) => ({
   },
   deleteBroadcast: (id) => {
     set((s) => ({ broadcasts: s.broadcasts.filter((b) => b.id !== id) }));
+  },
+
+  loadApprovals: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/headmaster/approvals');
+      set({ approvals: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadDisciplineCases: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/headmaster/discipline-cases');
+      set({ disciplineCases: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadBroadcasts: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/headmaster/broadcasts');
+      set({ broadcasts: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
   },
 }));

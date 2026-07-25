@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, ScrollView, Alert } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid, DataTable, RequisitionModal } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
@@ -23,6 +23,12 @@ export function LibraryICTDashboard() {
   const [activePage, setActivePage] = useState('catalogue');
   const { user, logout } = useAuthStore();
   const librarianName = user?.displayName ?? 'Librarian';
+
+  useEffect(() => {
+    useLibraryStore.getState().loadBooks();
+    useLibraryStore.getState().loadCirculation();
+    useRequisitionStore.getState().loadRequisitions();
+  }, []);
 
   return (
     <DashboardLayout

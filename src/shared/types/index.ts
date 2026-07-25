@@ -81,8 +81,8 @@ export interface AuthUser {
   displayName: string;
   roles: RoleId[];
   activeRole: RoleId;
-  token: string;
-  refreshToken: string;
+  token?: string;
+  refreshToken?: string;
 }
 
 /** Term enum used across many entities */

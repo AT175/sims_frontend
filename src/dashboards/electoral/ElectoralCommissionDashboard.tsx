@@ -45,10 +45,12 @@ export function ElectoralCommissionDashboard() {
 
   // Ballot management state
   const [universalCredential, setUniversalCredential] = useState<any>(null);
+  const [_candidates, setCandidates] = useState<any[]>([]);
 
   // Load universal credential on mount
   useEffect(() => {
     generateUniversalCredential();
+    electionApi.getCandidates().then(setCandidates).catch(() => {});
   }, []);
 
   const generateUniversalCredential = async () => {

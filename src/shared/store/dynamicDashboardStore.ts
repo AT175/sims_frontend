@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@shared/api/apiClient';
 
 // ══════════════════════════════════════════════
 // ACADEMIC BOARD
@@ -420,6 +421,128 @@ const INITIAL_TASKS: SecretaryTask[] = [
 ]
 
 // ══════════════════════════════════════════════
+// GOVERNING BOARD
+// ══════════════════════════════════════════════
+
+export interface BoardPolicy {
+  id: string;
+  title: string;
+  submitted: string;
+  status: 'Pending Review' | 'Approved' | 'Rejected';
+}
+
+export interface BoardBudget {
+  id: string;
+  department: string;
+  allocated: string;
+  spent: string;
+  status: 'Submitted' | 'Approved' | 'Rejected';
+}
+
+export interface BoardMinutes {
+  id: string;
+  date: string;
+  topic: string;
+  resolutions: string;
+}
+
+// ══════════════════════════════════════════════
+// SRC
+// ══════════════════════════════════════════════
+
+export interface SRCAnnouncement {
+  id: string;
+  title: string;
+  body: string;
+  date: string;
+  author: string;
+  pinned: boolean;
+  views: number;
+}
+
+export interface SRCGrievance {
+  id: string;
+  date: string;
+  from: string;
+  subject: string;
+  category: string;
+  priority: 'low' | 'medium' | 'high';
+  status: 'Under Review' | 'Forwarded' | 'Resolved' | 'Rejected';
+}
+
+export interface SRCInitiative {
+  id: string;
+  name: string;
+  lead: string;
+  progress: number;
+  status: 'Planning' | 'In Progress' | 'Completed' | 'On Hold';
+  startDate: string;
+  endDate: string;
+}
+
+export interface SRCPrefect {
+  id: string;
+  name: string;
+  portfolio: string;
+  className: string;
+  level: 'Senior' | 'Junior';
+}
+
+export interface SRCEvent {
+  id: string;
+  event: string;
+  date: string;
+  status: string;
+  budget: string;
+}
+
+export interface SRCTransaction {
+  id: string;
+  date: string;
+  description: string;
+  amount: string;
+  type: 'Income' | 'Expense';
+}
+
+export interface SRCFeedback {
+  id: string;
+  category: string;
+  rating: number;
+  comment: string;
+  date: string;
+  from: string;
+}
+
+// ══════════════════════════════════════════════
+// WELFARE COMMITTEE
+// ══════════════════════════════════════════════
+
+export interface WelfareLedgerEntry {
+  id: string;
+  date: string;
+  description: string;
+  type: 'Income' | 'Disbursement';
+  amount: string;
+}
+
+export interface WelfareSupportRequest {
+  id: string;
+  date: string;
+  applicant: string;
+  reason: string;
+  amount: string;
+  status: 'Pending' | 'Approved' | 'Declined';
+}
+
+export interface WelfareMember {
+  id: string;
+  name: string;
+  role: string;
+  contributions: string;
+  status: 'Active' | 'Inactive';
+}
+
+// ══════════════════════════════════════════════
 // STORE
 // ══════════════════════════════════════════════
 
@@ -505,6 +628,62 @@ interface DynamicDashboardState {
   addVisitor: (v: Omit<VisitorLog, 'id'>) => void;
   addTask: (t: Omit<SecretaryTask, 'id'>) => void;
   updateTaskStatus: (id: string, status: TaskStatus) => void;
+
+  // Backend load methods — Academic Board
+  loadBoardMeetings: () => Promise<void>;
+  loadDeptReports: () => Promise<void>;
+  // Backend load methods — Exam Committee
+  loadExamSchedules: () => Promise<void>;
+  loadExamResults: () => Promise<void>;
+  // Backend load methods — Internal Auditor
+  loadAudits: () => Promise<void>;
+  loadAuditFindings: () => Promise<void>;
+  // Backend load methods — Headmaster Secretary
+  loadAppointments: () => Promise<void>;
+  loadSecretaryTasks: () => Promise<void>;
+  // Backend load methods — Dining Hall
+  loadMenuItems: () => Promise<void>;
+  loadMealAttendance: () => Promise<void>;
+  loadSupplies: () => Promise<void>;
+  // Backend load methods — Safe Space
+  loadSafetyIncidents: () => Promise<void>;
+  loadTrainingRecords: () => Promise<void>;
+
+  // Governing Board
+  boardPolicies: BoardPolicy[];
+  boardBudgets: BoardBudget[];
+  boardMinutes: BoardMinutes[];
+
+  // SRC
+  srcAnnouncements: SRCAnnouncement[];
+  srcGrievances: SRCGrievance[];
+  srcInitiatives: SRCInitiative[];
+  srcPrefects: SRCPrefect[];
+  srcEvents: SRCEvent[];
+  srcTransactions: SRCTransaction[];
+  srcFeedback: SRCFeedback[];
+
+  // Welfare
+  welfareLedger: WelfareLedgerEntry[];
+  welfareSupportRequests: WelfareSupportRequest[];
+  welfareMembers: WelfareMember[];
+
+  // Backend load methods — Governing Board
+  loadBoardPolicies: () => Promise<void>;
+  loadBoardBudgets: () => Promise<void>;
+  loadBoardMinutes: () => Promise<void>;
+  // Backend load methods — SRC
+  loadSRCAnnouncements: () => Promise<void>;
+  loadSRCGrievances: () => Promise<void>;
+  loadSRCInitiatives: () => Promise<void>;
+  loadSRCPrefects: () => Promise<void>;
+  loadSRCEvents: () => Promise<void>;
+  loadSRCTransactions: () => Promise<void>;
+  loadSRCFeedback: () => Promise<void>;
+  // Backend load methods — Welfare
+  loadWelfareLedger: () => Promise<void>;
+  loadWelfareSupportRequests: () => Promise<void>;
+  loadWelfareMembers: () => Promise<void>;
 }
 
 export const useDynamicDashboardStore = create<DynamicDashboardState>((set) => ({
@@ -587,4 +766,181 @@ export const useDynamicDashboardStore = create<DynamicDashboardState>((set) => (
   addVisitor: (v) => set((st) => ({ visitors: [{ ...v, id: genId(st.visitors) }, ...st.visitors] })),
   addTask: (t) => set((st) => ({ secretaryTasks: [{ ...t, id: genId(st.secretaryTasks) }, ...st.secretaryTasks] })),
   updateTaskStatus: (id, status) => set((st) => ({ secretaryTasks: st.secretaryTasks.map((x) => x.id === id ? { ...x, status } : x) })),
+
+  loadBoardMeetings: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/academic-board/meetings');
+      set({ meetings: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadDeptReports: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/academic-board/dept-reports');
+      set({ deptReports: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadExamSchedules: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/exam-committee/exams');
+      set({ exams: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadExamResults: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/exam-committee/results');
+      set({ examResults: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadAudits: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/auditor/audits');
+      set({ audits: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadAuditFindings: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/auditor/findings');
+      set({ auditFindings: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadAppointments: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/secretary/appointments');
+      set({ appointments: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadSecretaryTasks: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/secretary/tasks');
+      set({ secretaryTasks: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadMenuItems: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/dining/menu-items');
+      set({ menuItems: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadMealAttendance: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/dining/meal-attendance');
+      set({ mealAttendance: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadSupplies: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/dining/supplies');
+      set({ supplies: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadSafetyIncidents: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/safe-space/incidents');
+      set({ incidents: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadTrainingRecords: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/safe-space/training');
+      set({ trainingRecords: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+
+  // ── Governing Board ──
+  boardPolicies: [],
+  boardBudgets: [],
+  boardMinutes: [],
+
+  // ── SRC ──
+  srcAnnouncements: [],
+  srcGrievances: [],
+  srcInitiatives: [],
+  srcPrefects: [],
+  srcEvents: [],
+  srcTransactions: [],
+  srcFeedback: [],
+
+  // ── Welfare ──
+  welfareLedger: [],
+  welfareSupportRequests: [],
+  welfareMembers: [],
+
+  loadBoardPolicies: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/governing-board/policies');
+      set({ boardPolicies: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadBoardBudgets: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/governing-board/budgets');
+      set({ boardBudgets: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadBoardMinutes: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/governing-board/minutes');
+      set({ boardMinutes: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadSRCAnnouncements: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/src/announcements');
+      set({ srcAnnouncements: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadSRCGrievances: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/src/grievances');
+      set({ srcGrievances: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadSRCInitiatives: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/src/initiatives');
+      set({ srcInitiatives: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadSRCPrefects: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/src/prefects');
+      set({ srcPrefects: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadSRCEvents: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/src/events');
+      set({ srcEvents: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadSRCTransactions: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/src/transactions');
+      set({ srcTransactions: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadSRCFeedback: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/src/feedback');
+      set({ srcFeedback: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadWelfareLedger: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/welfare/ledger');
+      set({ welfareLedger: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadWelfareSupportRequests: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/welfare/support-requests');
+      set({ welfareSupportRequests: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
+  loadWelfareMembers: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/welfare/members');
+      set({ welfareMembers: (data || []).map((d) => ({ ...d, id: d.id || genId([]) })) });
+    } catch {}
+  },
 }));

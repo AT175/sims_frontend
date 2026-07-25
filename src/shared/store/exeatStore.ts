@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '@shared/api/apiClient';
 
 // ── Types ──
 
@@ -110,6 +111,9 @@ interface ExeatState {
   getApproved: () => Exeat[];
   getActiveAtGate: () => Exeat[];
   getById: (id: string) => Exeat | undefined;
+
+  // Backend load methods
+  loadExeats: () => Promise<void>;
 }
 
 export const useExeatStore = create<ExeatState>((set, get) => ({
@@ -198,4 +202,11 @@ export const useExeatStore = create<ExeatState>((set, get) => ({
   getActiveAtGate: () => get().exeats.filter((e) => e.status === 'Approved' || e.status === 'Checked Out'),
 
   getById: (id) => get().exeats.find((e) => e.id === id),
+
+  loadExeats: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/exeats');
+      set({ exeats: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
 }));

@@ -4,7 +4,6 @@ import { DashboardLayout, NavItem, StatCard, CardGrid, DataTable } from '@compon
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
 import { useAuthStore, useRegistryStore } from '@store/index';
 import { registryApi } from '@shared/api/registryApi';
-import { apiClient } from '@shared/api/apiClient';
 import {
   CERTIFICATE_TYPES, CORRESPONDENCE_DIRECTIONS, CORRESPONDENCE_PRIORITIES,
   STAFF_STATUSES, DOCUMENT_CHECKLIST, CLASS_SECTIONS, HOUSES,
@@ -30,9 +29,11 @@ export function RegistryDashboard() {
 
   const [backendStudents, setBackendStudents] = useState<any[]>([]);
   const [backendAdmissions, setBackendAdmissions] = useState<any[]>([]);
-  const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
+    useRegistryStore.getState().loadStudents();
+    useRegistryStore.getState().loadAdmissions();
+    useRegistryStore.getState().loadPlacements();
     fetchBackendData();
   }, []);
 
@@ -44,10 +45,8 @@ export function RegistryDashboard() {
       ]);
       setBackendStudents(studentsData);
       setBackendAdmissions(admissionsData);
-      setDataLoaded(true);
     } catch (err) {
       console.error('Failed to fetch backend data:', err);
-      setDataLoaded(true);
     }
   };
 

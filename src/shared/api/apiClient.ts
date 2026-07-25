@@ -14,9 +14,7 @@ class ApiClient {
   private refreshToken: string | null = null;
   private tenantId: string | null = null;
   private authChangeCallback: AuthChangeCallback | null = null;
-  private isRefreshing = false;
-  private retryCount = 0;
-  private static MAX_RETRIES = 1;
+  private refreshPromise: Promise<boolean> | null = null;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -55,7 +53,7 @@ class ApiClient {
     }
   }
 
-  async request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  async request<T>(path: string, options: RequestOptions = {}, _isRetry = false): Promise<T> {
     const token = this.token;
     const tenantId = this.tenantId;
 
@@ -77,25 +75,24 @@ class ApiClient {
       body: options.body ? JSON.stringify(options.body) : undefined,
     });
 
-    if (response.status === 401 && token && this.retryCount < ApiClient.MAX_RETRIES) {
-      this.retryCount++;
-      this.isRefreshing = true;
-      const refreshed = await this.tryRefresh();
-      this.isRefreshing = false;
+    if (response.status === 401 && token && !_isRetry) {
+      // Deduplicate concurrent refresh attempts
+      if (!this.refreshPromise) {
+        this.refreshPromise = this.tryRefresh();
+      }
+      const refreshed = await this.refreshPromise;
+      this.refreshPromise = null;
+
       if (refreshed) {
-        const result = this.request<T>(path, options);
-        this.retryCount = 0;
-        return result;
+        return this.request<T>(path, options, true);
       }
       this.token = null;
       this.refreshToken = null;
-      this.retryCount = 0;
       if (this.authChangeCallback) {
         this.authChangeCallback(null, null, null);
       }
       throw new Error('Session expired. Please log in again.');
     }
-    this.retryCount = 0;
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: response.statusText }));

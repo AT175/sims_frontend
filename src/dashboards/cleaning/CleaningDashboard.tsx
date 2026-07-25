@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert, ScrollView } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid, RequisitionModal } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
@@ -48,7 +48,16 @@ export function CleaningDashboard() {
     toggleCheckIn, updateStaffStatus,
     addSupply, updateSupply, deleteSupply, restockSupply, getLowStockSupplies,
     updateRosterStatus, addRosterEntry, deleteRosterEntry,
+    loadTasks, loadIssues,
   } = useCleaningStore();
+
+  useEffect(() => {
+    loadTasks();
+    loadIssues();
+    useRequisitionStore.getState().loadRequisitions();
+    useKitchenStore.getState().loadMenus();
+    useKitchenStore.getState().loadStock();
+  }, []);
 
   const { getTodayMenu } = useKitchenStore();
   const todayMenu = getTodayMenu();

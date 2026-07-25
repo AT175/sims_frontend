@@ -1,17 +1,38 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
+import { apiClient } from '@shared/api/apiClient';
+import { useAuthStore } from '@store/authStore';
 
 
 export function VerificationDashboard() {
   const [code, setCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const { user } = useAuthStore();
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     if (!code.trim()) {
       Alert.alert('Error', 'Please enter the verification code');
       return;
     }
-    Alert.alert('Verified', 'Identity verified successfully. You can now access the system.');
+    setVerifying(true);
+    try {
+      const response = await apiClient.post<{ accessToken: string; refreshToken: string }>('/auth/verify-code', {
+        code: code.trim(),
+        username: user?.username,
+      });
+      // Update auth state with verified tokens
+      apiClient.setAuth(response.accessToken, user?.tenantId ?? null, response.refreshToken);
+      useAuthStore.setState({
+        user: user ? { ...user, token: response.accessToken, refreshToken: response.refreshToken } : user,
+        isTempLogin: false,
+      });
+      Alert.alert('Verified', 'Identity verified successfully. You can now access the system.');
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || 'Invalid verification code. Please try again.');
+    } finally {
+      setVerifying(false);
+    }
   };
 
   return (
@@ -40,8 +61,8 @@ export function VerificationDashboard() {
               value={code}
               onChangeText={setCode}
             />
-            <TouchableOpacity style={styles.btn} onPress={handleVerify}>
-              <Text style={styles.btnText}>Verify Identity</Text>
+            <TouchableOpacity style={styles.btn} onPress={handleVerify} disabled={verifying}>
+              {verifying ? <ActivityIndicator color={colors.white} /> : <Text style={styles.btnText}>Verify Identity</Text>}
             </TouchableOpacity>
           </View>
         </View>

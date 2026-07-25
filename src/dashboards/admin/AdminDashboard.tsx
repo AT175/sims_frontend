@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, TextInput, Alert } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid, DataTable } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
@@ -81,6 +81,23 @@ export function AdminDashboard() {
   const exeatStore = useExeatStore();
   const bursarStore = useBursarStore();
   const adminStore = useAdminStore();
+
+  useEffect(() => {
+    useStaffStore.getState().loadDirectory();
+    useStaffStore.getState().loadLeaveRequests();
+    useSecurityStore.getState().loadIncidents();
+    useSecurityStore.getState().loadGateLogs();
+    useRegistryStore.getState().loadStudents();
+    useRegistryStore.getState().loadAdmissions();
+    useRegistryStore.getState().loadPlacements();
+    useExeatStore.getState().loadExeats();
+    useAdminStore.getState().loadCompliance();
+    useAdminStore.getState().loadFacilities();
+    useAdminStore.getState().loadTasks();
+    useBursarStore.getState().loadProcurement();
+    useBursarStore.getState().loadPettyCash();
+    useBursarStore.getState().loadCashTransactions();
+  }, []);
 
   // Derived data
   const pendingLeave = staffStore.getPendingLeave();
@@ -552,7 +569,7 @@ export function AdminDashboard() {
       admissionDate: new Date().toISOString().slice(0, 10),
       status: 'Active',
     });
-    setStudentForm({ firstName: '', lastName: '', dateOfBirth: '', gender: 'Male', programme: 'Science', guardianName: '', guardianPhone: '', guardianAddress: '', photoUrl: null, csspsRef: '' });
+    setStudentForm({ firstName: '', lastName: '', dateOfBirth: '', gender: 'Male', programme: 'General Science', guardianName: '', guardianPhone: '', guardianAddress: '', photoUrl: null, csspsRef: '' });
     setShowAddStudentModal(false);
     Alert.alert('Success', `Student enrolled as ${admNo}.\nClass: ${cls}\nHouse: ${house}`);
   };
@@ -928,7 +945,7 @@ export function AdminDashboard() {
                 <Text style={styles.pageSubtitle}>Manage admission applications and enroll new students</Text>
               </View>
               <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                <TouchableOpacity style={styles.addBtn} onPress={() => { setStudentForm({ firstName: '', lastName: '', dateOfBirth: '', gender: 'Male', programme: 'Science', guardianName: '', guardianPhone: '', guardianAddress: '', photoUrl: null, csspsRef: '' }); setShowAddStudentModal(true); }}>
+                <TouchableOpacity style={styles.addBtn} onPress={() => { setStudentForm({ firstName: '', lastName: '', dateOfBirth: '', gender: 'Male', programme: 'General Science', guardianName: '', guardianPhone: '', guardianAddress: '', photoUrl: null, csspsRef: '' }); setShowAddStudentModal(true); }}>
                   <Text style={styles.addBtnText}>+ Enroll Student</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.addBtn} onPress={() => { setCsvText(''); setShowBulkUploadModal(true); }}>
@@ -1014,7 +1031,7 @@ export function AdminDashboard() {
                 <Text style={styles.pageSubtitle}>Pre-load CSSPS placement records for admission matching</Text>
               </View>
               <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                <TouchableOpacity style={styles.addBtn} onPress={() => { setPlacementForm({ fullName: '', csspsRef: '', intendedClass: 'SHS1 Sci A', programme: 'Science' }); setShowPlacementModal(true); }}>
+                <TouchableOpacity style={styles.addBtn} onPress={() => { setPlacementForm({ fullName: '', csspsRef: '', intendedClass: 'SHS1 Sci A', programme: 'General Science' }); setShowPlacementModal(true); }}>
                   <Text style={styles.addBtnText}>+ Add Placement</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.addBtn} onPress={() => { setPlacementCsvText(''); setShowBulkPlacementModal(true); }}>
@@ -2100,7 +2117,7 @@ export function AdminDashboard() {
                     return;
                   }
                   registryStore.addPlacement({ fullName: placementForm.fullName.trim(), csspsRef: placementForm.csspsRef.trim(), intendedClass: placementForm.intendedClass, programme: placementForm.programme, preloadedBy: adminName });
-                  setPlacementForm({ fullName: '', csspsRef: '', intendedClass: 'SHS1 Sci A', programme: 'Science' });
+                  setPlacementForm({ fullName: '', csspsRef: '', intendedClass: 'SHS1 Sci A', programme: 'General Science' });
                   setShowPlacementModal(false);
                   Alert.alert('Success', 'Placement record added.');
                 }}>
