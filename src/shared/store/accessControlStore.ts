@@ -3,6 +3,8 @@ import { apiClient } from '@shared/api/apiClient';
 import type { NavItem } from '@shared/components/DashboardLayout';
 import { useNotificationStore } from './notificationStore';
 import { useAuthStore } from './authStore';
+import { ROLE_DASHBOARD_MAP } from '@shared/navigation/roleMap';
+import type { RoleId } from '@shared/types';
 
 export interface PageAccessGrant {
   id: string;
@@ -150,10 +152,19 @@ export const useAccessControlStore = create<AccessControlState>((set, get) => ({
   getFilteredNavItems: (userId, dashboardKey, allNavItems) => {
     const grant = get().grants.find((g) => g.userId === userId && g.dashboardKey === dashboardKey);
     if (!grant) {
-      // No grant: only headmaster (tenant admin) and system_admin (app admin) get full access
+      // No grant: check if this is the user's core role dashboard
       const user = useAuthStore.getState().user;
-      const isAdminRole = user?.roles?.some((r) => r === 'headmaster' || r === 'system_admin');
-      return isAdminRole ? allNavItems : [];
+      if (!user) return [];
+
+      // Headmaster and system_admin get full access to everything
+      const isAdminRole = user.roles?.some((r) => r === 'headmaster' || r === 'system_admin');
+      if (isAdminRole) return allNavItems;
+
+      // For all other users: full access to their own core role dashboard, no access to others
+      const coreDashboardKey = ROLE_DASHBOARD_MAP[user.activeRole as RoleId] ?? '';
+      if (dashboardKey === coreDashboardKey) return allNavItems;
+
+      return [];
     }
     if (grant.allowedPages === 'all') return allNavItems;
     return allNavItems.filter((item) => grant.allowedPages.includes(item.key));
