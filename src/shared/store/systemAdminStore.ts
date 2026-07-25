@@ -81,33 +81,6 @@ export interface DatabaseHealth {
 
 // ── Initial Data ──
 
-const INITIAL_USERS: SystemUser[] = [
-  { id: '1', username: 'admin', displayName: 'System Administrator', email: 'admin@sims.edu', roles: ['system_admin'], status: 'Active', lastLogin: '2026-07-13 08:45', createdAt: '2026-01-01', tenantId: 'tenant_001', failedAttempts: 0 },
-  { id: '2', username: 'headmaster', displayName: 'John Mensah', email: 'headmaster@sims.edu', roles: ['headmaster'], status: 'Active', lastLogin: '2026-07-13 07:30', createdAt: '2026-01-05', tenantId: 'tenant_001', failedAttempts: 0 },
-  { id: '3', username: 'bursar', displayName: 'Sarah Owusu', email: 'bursar@sims.edu', roles: ['bursary'], status: 'Active', lastLogin: '2026-07-12 16:20', createdAt: '2026-01-05', tenantId: 'tenant_001', failedAttempts: 0 },
-  { id: '4', username: 'registrar', displayName: 'Michael Boateng', email: 'registrar@sims.edu', roles: ['registry'], status: 'Active', lastLogin: '2026-07-13 09:00', createdAt: '2026-01-06', tenantId: 'tenant_001', failedAttempts: 0 },
-  { id: '5', username: 'teacher1', displayName: 'Grace Adjei', email: 'gadjei@sims.edu', roles: ['teacher'], status: 'Active', lastLogin: '2026-07-12 15:10', createdAt: '2026-01-10', tenantId: 'tenant_001', failedAttempts: 0 },
-  { id: '6', username: 'parent_addo', displayName: 'Mr. Addo', email: 'addo@email.com', roles: ['parent'], status: 'Active', lastLogin: '2026-07-10 14:00', createdAt: '2024-09-12', tenantId: 'tenant_001', failedAttempts: 0 },
-  { id: '7', username: 'staff1', displayName: 'Kwame Asante', email: 'kasante@sims.edu', roles: ['staff'], status: 'Suspended', lastLogin: '2026-06-28 10:00', createdAt: '2026-02-01', tenantId: 'tenant_001', failedAttempts: 3 },
-  { id: '8', username: 'security1', displayName: 'Daniel Tuffour', email: 'dtuffour@sims.edu', roles: ['security'], status: 'Active', lastLogin: '2026-07-13 06:00', createdAt: '2026-01-15', tenantId: 'tenant_001', failedAttempts: 0 },
-  { id: '9', username: 'chaplain', displayName: 'Rev. Emmanuel Mensah', email: 'chaplain@sims.edu', roles: ['chaplain'], status: 'Active', lastLogin: '2026-07-13 07:00', createdAt: '2026-01-08', tenantId: 'tenant_001', failedAttempts: 0 },
-];
-
-const INITIAL_LOGS: SystemLog[] = [
-  { id: '1', timestamp: '2026-07-13 09:12:34', level: 'INFO', source: 'Auth', message: 'User admin logged in successfully', user: 'admin' },
-  { id: '2', timestamp: '2026-07-13 09:05:18', level: 'INFO', source: 'Sync', message: 'Full sync completed - 1,247 records synced', user: 'admin' },
-  { id: '3', timestamp: '2026-07-13 08:45:02', level: 'INFO', source: 'Auth', message: 'User registrar logged in successfully', user: 'registrar' },
-  { id: '4', timestamp: '2026-07-13 07:30:15', level: 'INFO', source: 'Auth', message: 'User headmaster logged in successfully', user: 'headmaster' },
-  { id: '5', timestamp: '2026-07-12 23:00:00', level: 'INFO', source: 'Backup', message: 'Automatic backup completed - 45.2 MB', user: 'system' },
-  { id: '6', timestamp: '2026-07-12 18:32:44', level: 'WARN', source: 'Auth', message: 'Failed login attempt for staff1 - 3rd attempt', user: 'staff1' },
-  { id: '7', timestamp: '2026-07-12 18:31:20', level: 'WARN', source: 'Auth', message: 'Failed login attempt for staff1 - 2nd attempt', user: 'staff1' },
-  { id: '8', timestamp: '2026-07-12 18:30:05', level: 'WARN', source: 'Auth', message: 'Failed login attempt for staff1 - 1st attempt', user: 'staff1' },
-  { id: '9', timestamp: '2026-07-12 16:20:33', level: 'INFO', source: 'Auth', message: 'User bursar logged in successfully', user: 'bursar' },
-  { id: '10', timestamp: '2026-07-12 14:15:00', level: 'ERROR', source: 'Sync', message: 'Sync failed for device_003 - connection timeout', user: 'system' },
-  { id: '11', timestamp: '2026-07-12 12:00:00', level: 'INFO', source: 'System', message: 'Module Academic updated to v2.1.0', user: 'admin' },
-  { id: '12', timestamp: '2026-07-11 23:00:00', level: 'INFO', source: 'Backup', message: 'Automatic backup completed - 44.8 MB', user: 'system' },
-];
-
 const INITIAL_TENANT: TenantConfig = {
   id: 'tenant-001',
   schoolName: 'Ghana Senior High School',
@@ -171,6 +144,7 @@ export interface SystemAdminState {
   modules: ModuleStatus[];
   dbHealth: DatabaseHealth;
 
+  loadUsers: (tenantId?: string) => Promise<void>;
   addUser: (user: Omit<SystemUser, 'id' | 'createdAt' | 'lastLogin' | 'failedAttempts'>) => Promise<void>;
   updateUserStatus: (id: string, status: UserStatus) => void;
   updateUserRoles: (id: string, roles: RoleId[]) => void;
@@ -198,8 +172,8 @@ const todayISO = () => new Date().toISOString().slice(0, 10);
 const nowISO = () => new Date().toISOString().replace('T', ' ').slice(0, 19);
 
 export const useSystemAdminStore = create<SystemAdminState>((set, get) => ({
-  users: INITIAL_USERS,
-  logs: INITIAL_LOGS,
+  users: [],
+  logs: [],
   tenant: INITIAL_TENANT,
   backups: INITIAL_BACKUPS,
   modules: INITIAL_MODULES,
@@ -208,6 +182,29 @@ export const useSystemAdminStore = create<SystemAdminState>((set, get) => ({
   _tenantsCacheTime: 0,
   _isSavingTenant: false,
 
+  loadUsers: async (tenantId?: string) => {
+    try {
+      const path = tenantId ? `/auth/users?tenantId=${tenantId}` : '/auth/users';
+      const apiUsers = await apiClient.get<any[]>(path);
+      const mapped: SystemUser[] = (apiUsers || []).map((u) => ({
+        id: u.id,
+        username: u.username,
+        displayName: u.displayName,
+        email: u.email || '',
+        roles: (u.roles || []) as RoleId[],
+        status: u.lockedUntil && new Date(u.lockedUntil) > new Date() ? 'Locked' : 'Active',
+        lastLogin: null,
+        createdAt: u.createdAt ? new Date(u.createdAt).toISOString().slice(0, 10) : todayISO(),
+        tenantId: u.tenantId || '',
+        failedAttempts: u.failedLoginAttempts || 0,
+      }));
+      set({ users: mapped });
+    } catch (err: any) {
+      set((st) => ({
+        logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'ERROR', source: 'User Management', message: `Failed to load users: ${err.message}`, user: 'admin' }, ...st.logs],
+      }));
+    }
+  },
   addUser: async (user) => {
     try {
       const payload: Record<string, unknown> = {
@@ -226,6 +223,7 @@ export const useSystemAdminStore = create<SystemAdminState>((set, get) => ({
         users: [...st.users, { ...user, id, createdAt: todayISO(), lastLogin: null, failedAttempts: 0 }],
         logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'INFO', source: 'User Management', message: `User ${user.username} created by admin`, user: 'admin' }, ...st.logs],
       }));
+      await get().loadUsers(user.tenantId);
     } catch (err: any) {
       set((st) => ({
         logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'ERROR', source: 'User Management', message: `Failed to create user ${user.username}: ${err.message}`, user: 'admin' }, ...st.logs],

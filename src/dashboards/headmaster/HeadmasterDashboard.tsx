@@ -163,6 +163,10 @@ export function HeadmasterDashboard() {
     }
   }, [user?.tenantId, websiteLoaded]);
 
+  useEffect(() => {
+    sysAdminStore.loadUsers(user?.tenantId);
+  }, [user?.tenantId]);
+
   const [showAccessModal, setShowAccessModal] = useState(false);
   const [accessForm, setAccessForm] = useState({ userId: '', dashboardKey: '', allowedPages: [] as string[], fullAccess: false });
   const [accessSearch, setAccessSearch] = useState('');

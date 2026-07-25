@@ -63,6 +63,10 @@ export function SystemAdminDashboard() {
     }
   }, [user?.tenantId]);
 
+  useEffect(() => {
+    store.loadUsers(user?.tenantId);
+  }, [user?.tenantId]);
+
   // User modal state
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<SystemUser | null>(null);
@@ -1023,8 +1027,6 @@ const styles = StyleSheet.create({
   roleChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   roleChipText: { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: fontWeight.medium },
   roleChipTextActive: { color: colors.white, fontWeight: fontWeight.semibold },
-  errorBanner: { backgroundColor: colors.danger + '15', borderRadius: radius.md, padding: spacing.sm, marginBottom: spacing.sm, width: '100%' },
-  errorBannerText: { color: colors.danger, fontSize: fontSize.sm, fontWeight: fontWeight.medium },
   modalApproveBtnDisabled: { opacity: 0.5 },
   connBanner: { borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md },
   connBannerText: { fontSize: fontSize.md, fontWeight: fontWeight.bold },
