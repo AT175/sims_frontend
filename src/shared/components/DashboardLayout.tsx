@@ -212,7 +212,6 @@ export function DashboardLayout({
             <Text style={styles.roleModalTitle}>Switch Role</Text>
             <Text style={styles.roleModalSub}>Select a role to switch dashboards</Text>
             <ScrollView style={styles.roleList} showsVerticalScrollIndicator={false}>
-              {/* Core roles */}
               {user?.roles.map((role) => {
                 const dashKey = ROLE_DASHBOARD_MAP[role as RoleId];
                 const grant = accessStore.getGrantForUserDashboard(user.id, dashKey);
@@ -248,49 +247,6 @@ export function DashboardLayout({
                 </TouchableOpacity>
                 );
               })}
-              {/* Assigned/granted dashboards not in core roles */}
-              {assignedDashboardKeys
-                .filter((dashKey) => {
-                  const dashDef = DASHBOARD_MAP[dashKey];
-                  const role = dashDef?.role as RoleId | undefined;
-                  return role && !user?.roles.includes(role);
-                })
-                .map((dashKey) => {
-                  const dashDef = DASHBOARD_MAP[dashKey];
-                  const role = dashDef?.role as RoleId;
-                  const grant = accessStore.getGrantForUserDashboard(user!.id, dashKey);
-                  const pageLabel = grant && grant.allowedPages !== 'all'
-                    ? ` (${grant.allowedPages.length} page${grant.allowedPages.length > 1 ? 's' : ''})`
-                    : ' (full)';
-                  return (
-                  <TouchableOpacity
-                    key={`assigned-${dashKey}`}
-                    onPress={() => {
-                      if (role !== user!.activeRole) {
-                        switchRole(role);
-                      }
-                      setRoleSwitcherOpen(false);
-                    }}
-                    style={[
-                      styles.roleItem,
-                      user!.activeRole === role && styles.roleItemActive,
-                    ]}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={[
-                        styles.roleItemText,
-                        user!.activeRole === role && styles.roleItemTextActive,
-                      ]}
-                    >
-                      {ROLE_LABELS[role] ?? role}{pageLabel}
-                    </Text>
-                    {user!.activeRole === role && (
-                      <Text style={styles.roleItemCheck}>✓</Text>
-                    )}
-                  </TouchableOpacity>
-                  );
-                })}
             </ScrollView>
             <TouchableOpacity
               onPress={() => setRoleSwitcherOpen(false)}
