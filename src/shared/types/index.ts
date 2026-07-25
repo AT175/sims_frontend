@@ -83,6 +83,7 @@ export interface AuthUser {
   activeRole: RoleId;
   token?: string;
   refreshToken?: string;
+  mustChangePassword?: boolean;
 }
 
 /** Term enum used across many entities */

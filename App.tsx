@@ -48,6 +48,7 @@ import {
   HeadmasterSecretaryDashboard,
 } from '@dashboards/index';
 import { VerificationDashboard } from '@dashboards/verification/VerificationDashboard';
+import { ForceChangePasswordModal } from '@shared/components/ForceChangePasswordModal';
 
 
 const DASHBOARD_COMPONENTS: Record<string, React.ComponentType> = {
@@ -168,7 +169,12 @@ function AppContent() {
   const routeName = ROLE_DASHBOARD_MAP[user.activeRole as RoleId] ?? 'Headmaster';
   const DashboardComponent = DASHBOARD_COMPONENTS[routeName] ?? HeadmasterDashboard;
 
-  return <DashboardComponent />;
+  return (
+    <>
+      <DashboardComponent />
+      <ForceChangePasswordModal />
+    </>
+  );
 }
 
 export default function App() {

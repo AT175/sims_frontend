@@ -47,6 +47,7 @@ export const useAuthStore = create<AuthState>()(
         activeRole: response.user.activeRole as RoleId,
         token: response.accessToken,
         refreshToken: response.refreshToken,
+        mustChangePassword: (response.user as any).mustChangePassword ?? false,
       };
 
       apiClient.setAuth(user.token ?? null, user.tenantId, user.refreshToken ?? null);
@@ -152,7 +153,12 @@ export const useAuthStore = create<AuthState>()(
     set({ isLoading: true, error: null });
     try {
       await authApi.changePassword(currentPassword, newPassword);
-      set({ isLoading: false });
+      const currentUser = get().user;
+      if (currentUser) {
+        set({ user: { ...currentUser, mustChangePassword: false }, isLoading: false });
+      } else {
+        set({ isLoading: false });
+      }
       useNotificationStore.getState().addNotification({
         title: 'Password changed',
         message: 'Your password has been updated successfully.',

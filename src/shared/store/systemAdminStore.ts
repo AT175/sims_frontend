@@ -145,11 +145,11 @@ export interface SystemAdminState {
   dbHealth: DatabaseHealth;
 
   loadUsers: (tenantId?: string) => Promise<void>;
-  addUser: (user: Omit<SystemUser, 'id' | 'createdAt' | 'lastLogin' | 'failedAttempts'>) => Promise<void>;
+  addUser: (user: Omit<SystemUser, 'id' | 'createdAt' | 'lastLogin' | 'failedAttempts'>) => Promise<any>;
   updateUserStatus: (id: string, status: UserStatus) => void;
   updateUserRoles: (id: string, roles: RoleId[]) => void;
   deleteUser: (id: string) => void;
-  resetUserPassword: (id: string, newPassword: string) => Promise<void>;
+  resetUserPassword: (id: string, newPassword?: string) => Promise<any>;
   unlockUser: (id: string) => void;
 
   updateTenant: (config: Partial<TenantConfig>) => void;
@@ -209,11 +209,13 @@ export const useSystemAdminStore = create<SystemAdminState>((set, get) => ({
     try {
       const payload: Record<string, unknown> = {
         username: user.username,
-        password: (user as any).password || 'TempPass@123',
         displayName: user.displayName,
         roles: user.roles,
         tenantId: user.tenantId,
       };
+      if ((user as any).password && (user as any).password.trim()) {
+        payload.password = (user as any).password.trim();
+      }
       if (user.email && user.email.trim()) {
         payload.email = user.email.trim();
       }
@@ -224,6 +226,7 @@ export const useSystemAdminStore = create<SystemAdminState>((set, get) => ({
         logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'INFO', source: 'User Management', message: `User ${user.username} created by admin`, user: 'admin' }, ...st.logs],
       }));
       await get().loadUsers(user.tenantId);
+      return created;
     } catch (err: any) {
       set((st) => ({
         logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'ERROR', source: 'User Management', message: `Failed to create user ${user.username}: ${err.message}`, user: 'admin' }, ...st.logs],
@@ -252,14 +255,19 @@ export const useSystemAdminStore = create<SystemAdminState>((set, get) => ({
     }));
   },
 
-  resetUserPassword: async (id, newPassword) => {
+  resetUserPassword: async (id, newPassword?) => {
     const username = get().users.find((u) => u.id === id)?.username || 'unknown';
     try {
-      await apiClient.post(`/auth/users/${id}/reset-password`, { newPassword });
+      const payload: Record<string, unknown> = {};
+      if (newPassword && newPassword.trim()) {
+        payload.newPassword = newPassword.trim();
+      }
+      const result = await apiClient.post<any>(`/auth/users/${id}/reset-password`, payload);
       set((st) => ({
         users: st.users.map((u) => (u.id === id ? { ...u, failedAttempts: 0, status: u.status === 'Locked' ? 'Active' : u.status } : u)),
         logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'INFO', source: 'User Management', message: `Password reset for user ${username}`, user: 'admin' }, ...st.logs],
       }));
+      return result;
     } catch (err: any) {
       set((st) => ({
         logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'ERROR', source: 'User Management', message: `Failed to reset password for ${username}: ${err.message}`, user: 'admin' }, ...st.logs],

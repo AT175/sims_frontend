@@ -224,10 +224,6 @@ export function HeadmasterDashboard() {
       setCreateUserError('Username and display name are required.');
       return;
     }
-    if (!userForm.password.trim()) {
-      setCreateUserError('Password is required for new users.');
-      return;
-    }
     if (userForm.roles.length === 0) {
       setCreateUserError('At least one role must be assigned.');
       return;
@@ -235,10 +231,17 @@ export function HeadmasterDashboard() {
     setIsCreatingUser(true);
     setCreateUserError(null);
     try {
-      await sysAdminStore.addUser({ username: userForm.username.trim(), displayName: userForm.displayName.trim(), email: userForm.email.trim(), roles: userForm.roles, status: userForm.status, tenantId: userForm.tenantId, password: userForm.password } as any);
+      const result = await sysAdminStore.addUser({ username: userForm.username.trim(), displayName: userForm.displayName.trim(), email: userForm.email.trim(), roles: userForm.roles, status: userForm.status, tenantId: userForm.tenantId, password: userForm.password } as any);
       setUserForm({ username: '', displayName: '', email: '', password: '', roles: [], status: 'Active', tenantId: user?.tenantId || 'tenant-001' });
       setShowUserModal(false);
-      Alert.alert('Success', 'User account created.');
+      if (result?.defaultPassword) {
+        Alert.alert(
+          'User Created',
+          `Username: ${result.username}\n\nA random password has been generated:\n${result.defaultPassword}\n\nThe user will be required to change this password on first login. Please share it securely.`,
+        );
+      } else {
+        Alert.alert('Success', 'User account created.');
+      }
     } catch (err: any) {
       setCreateUserError(err.message || 'Failed to create user.');
     } finally {
@@ -1170,8 +1173,8 @@ export function HeadmasterDashboard() {
               <TextInput style={styles.textInput} value={userForm.displayName} onChangeText={(v) => setUserForm((f) => ({ ...f, displayName: v }))} placeholder="e.g. John Mensah" />
               <Text style={styles.inputLabel}>Email</Text>
               <TextInput style={styles.textInput} value={userForm.email} onChangeText={(v) => setUserForm((f) => ({ ...f, email: v }))} placeholder="e.g. jmensah@sims.edu" autoCapitalize="none" />
-              <Text style={styles.inputLabel}>Password</Text>
-              <TextInput style={styles.textInput} value={userForm.password} onChangeText={(v) => setUserForm((f) => ({ ...f, password: v }))} placeholder="Enter password" secureTextEntry />
+              <Text style={styles.inputLabel}>Password (leave blank to auto-generate)</Text>
+              <TextInput style={styles.textInput} value={userForm.password} onChangeText={(v) => setUserForm((f) => ({ ...f, password: v }))} placeholder="Leave blank to auto-generate random password" secureTextEntry />
               <Text style={styles.inputLabel}>Status</Text>
               <View style={styles.chipRow}>
                 {USER_STATUSES.map((s) => (
@@ -1211,15 +1214,21 @@ export function HeadmasterDashboard() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Reset Password</Text>
-            <Text style={styles.pageSubtitle}>Enter a new password for {resetUser?.displayName} ({resetUser?.username})</Text>
-            <Text style={styles.inputLabel}>New Password</Text>
-            <TextInput style={styles.textInput} value={newPassword} onChangeText={setNewPassword} placeholder="Enter new password" secureTextEntry />
+            <Text style={styles.pageSubtitle}>Reset password for {resetUser?.displayName} ({resetUser?.username})</Text>
+            <Text style={styles.inputLabel}>New Password (leave blank to auto-generate)</Text>
+            <TextInput style={styles.textInput} value={newPassword} onChangeText={setNewPassword} placeholder="Leave blank to auto-generate random password" secureTextEntry />
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.modalApproveBtn} onPress={async () => {
-                if (!newPassword.trim()) { Alert.alert('Error', 'Please enter a new password.'); return; }
                 try {
-                  await sysAdminStore.resetUserPassword(resetUser!.id, newPassword.trim());
-                  Alert.alert('Success', `Password reset for ${resetUser!.username}`);
+                  const result = await sysAdminStore.resetUserPassword(resetUser!.id, newPassword.trim() || undefined);
+                  if (result?.generatedPassword) {
+                    Alert.alert(
+                      'Password Reset',
+                      `A random password has been generated for ${resetUser?.username}:\n\n${result.generatedPassword}\n\nThe user will be required to change this password on next login. Please share it securely.`,
+                    );
+                  } else {
+                    Alert.alert('Success', `Password reset for ${resetUser?.username}`);
+                  }
                   setResetUser(null); setNewPassword('');
                 } catch (err: any) {
                   Alert.alert('Error', err.message || 'Failed to reset password.');

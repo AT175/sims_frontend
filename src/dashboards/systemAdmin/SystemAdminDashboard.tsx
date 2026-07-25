@@ -144,10 +144,6 @@ export function SystemAdminDashboard() {
       setUserError('Username and display name are required');
       return;
     }
-    if (!editingUser && !userForm.password.trim()) {
-      setUserError('Password is required for new users');
-      return;
-    }
     if (editingUser) {
       store.updateUserRoles(editingUser.id, userForm.roles);
       Alert.alert('Success', 'User updated successfully');
@@ -156,7 +152,7 @@ export function SystemAdminDashboard() {
       setIsSavingUser(true);
       setUserError(null);
       try {
-        await store.addUser({
+        const result = await store.addUser({
           username: userForm.username.trim(),
           displayName: userForm.displayName.trim(),
           email: userForm.email.trim(),
@@ -166,7 +162,14 @@ export function SystemAdminDashboard() {
           password: userForm.password,
         } as any);
         setShowUserModal(false);
-        Alert.alert('Success', 'User created successfully');
+        if (result?.defaultPassword) {
+          Alert.alert(
+            'User Created',
+            `Username: ${result.username}\n\nA random password has been generated:\n${result.defaultPassword}\n\nThe user will be required to change this password on first login. Please share it securely.`,
+          );
+        } else {
+          Alert.alert('Success', 'User created successfully');
+        }
       } catch (err: any) {
         setUserError(err.message || 'Failed to create user');
       } finally {
@@ -708,12 +711,12 @@ export function SystemAdminDashboard() {
                 keyboardType="email-address"
               />
 
-              <Text style={styles.inputLabel}>Password{editingUser ? ' (leave blank to keep current)' : ''}</Text>
+              <Text style={styles.inputLabel}>Password{editingUser ? ' (leave blank to keep current)' : ' (leave blank to auto-generate)'}</Text>
               <TextInput
                 style={styles.textInput}
                 value={userForm.password}
                 onChangeText={(v) => setUserForm((f) => ({ ...f, password: v }))}
-                placeholder="Enter password"
+                placeholder="Leave blank to auto-generate random password"
                 secureTextEntry
               />
 
@@ -781,21 +784,27 @@ export function SystemAdminDashboard() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Reset Password</Text>
-            <Text style={styles.pageSubtitle}>Enter a new password for {resetUser?.displayName} ({resetUser?.username})</Text>
-            <Text style={styles.inputLabel}>New Password</Text>
+            <Text style={styles.pageSubtitle}>Reset password for {resetUser?.displayName} ({resetUser?.username})</Text>
+            <Text style={styles.inputLabel}>New Password (leave blank to auto-generate)</Text>
             <TextInput
               style={styles.textInput}
               value={newPassword}
               onChangeText={setNewPassword}
-              placeholder="Enter new password"
+              placeholder="Leave blank to auto-generate random password"
               secureTextEntry
             />
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.modalApproveBtn} onPress={async () => {
-                if (!newPassword.trim()) { Alert.alert('Error', 'Please enter a new password'); return; }
                 try {
-                  await store.resetUserPassword(resetUser!.id, newPassword.trim());
-                  Alert.alert('Success', `Password reset for ${resetUser!.username}`);
+                  const result = await store.resetUserPassword(resetUser!.id, newPassword.trim() || undefined);
+                  if (result?.generatedPassword) {
+                    Alert.alert(
+                      'Password Reset',
+                      `A random password has been generated for ${resetUser?.username}:\n\n${result.generatedPassword}\n\nThe user will be required to change this password on next login. Please share it securely.`,
+                    );
+                  } else {
+                    Alert.alert('Success', `Password reset for ${resetUser?.username}`);
+                  }
                   setResetUser(null);
                   setNewPassword('');
                 } catch (err: any) {
