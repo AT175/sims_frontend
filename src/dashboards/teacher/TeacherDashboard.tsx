@@ -10,23 +10,39 @@ import {
   MATERIAL_TYPES,
   ANNOUNCEMENT_PRIORITIES, DAYS_OF_WEEK,
   REMEDIAL_PROGRESS,
+  QUESTION_TYPES, QUESTION_DIFFICULTIES,
+  BEHAVIOR_TYPES, BEHAVIOR_SEVERITIES,
+  COMMUNICATION_CHANNELS, CALENDAR_EVENT_TYPES,
+  SHARED_RESOURCE_TYPES,
+  WHITEBOARD_TOOLS, WHITEBOARD_COLORS,
 } from '@store/teacherStore';
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'Overview' },
   { key: 'subjects', label: 'My Subjects & Classes' },
   { key: 'timetable', label: 'My Timetable' },
+  { key: 'calendar', label: 'Calendar' },
   { key: 'lessonPlans', label: 'Lesson Plans' },
+  { key: 'aiAssistant', label: 'AI Lesson Assistant' },
   { key: 'materials', label: 'Lesson Materials' },
   { key: 'av', label: 'Audio & Video Library' },
   { key: 'live', label: 'Live / Virtual Class' },
+  { key: 'virtualClassroom', label: 'Virtual Classroom' },
   { key: 'assignments', label: 'Assignments & Assessments' },
+  { key: 'questionBank', label: 'Question Bank / Quizzes' },
   { key: 'gradebook', label: 'Gradebook' },
+  { key: 'analytics', label: 'Performance Analytics' },
   { key: 'attendance', label: 'Class Attendance' },
+  { key: 'attendanceAnalytics', label: 'Attendance Analytics' },
   { key: 'roster', label: 'Student Roster' },
+  { key: 'studentProfile', label: 'Student Profile' },
+  { key: 'behavior', label: 'Behavior & Discipline' },
   { key: 'syllabus', label: 'Syllabus Tracker' },
   { key: 'remedial', label: 'Remedial Support' },
+  { key: 'parentComms', label: 'Parent Communication' },
   { key: 'announcements', label: 'Class Announcements' },
+  { key: 'sharedResources', label: 'Shared Resources' },
+  { key: 'notifications', label: 'Notifications' },
   { key: 'plc', label: 'PLC' },
   { key: 'menu', label: "Today's Menu" },
 ];
@@ -45,14 +61,29 @@ export function TeacherDashboard() {
   const {
     subjects, materials, avRecordings, liveSessions, assignments,
     roster, announcements, lessonPlans, timetable, syllabus, remedial,
+    questionBank, quizzes, parentComms, behaviorNotes,
+    teacherNotifications, sharedResources, virtualClassroom,
     addMaterial, deleteMaterial, addAV, deleteAV,
     startLiveSession, endLiveSession, scheduleLiveSession, cancelLiveSession,
+    joinVirtualClassroom, leaveVirtualClassroom, toggleCamera, toggleMic,
+    toggleScreenShare, toggleWhiteboard, setWhiteboardTool, setWhiteboardColor,
+    setWhiteboardStrokeWidth, addWhiteboardPage, setWhiteboardPage,
+    sendChatMessage, lowerHand,
     addAssignment, publishAssignment, closeAssignment, deleteAssignment, gradeSubmission,
-    markAttendance, getAttendanceForDate, getAttendanceStats,
+    bulkGrade, duplicateAssignment,
+    markAttendance, getAttendanceForDate, getAttendanceStats, getAttendanceAnalytics,
     addAnnouncement, deleteAnnouncement,
     addLessonPlan, deleteLessonPlan, markLessonTaught,
     addSyllabusTopic, updateSyllabusTopic, deleteSyllabusTopic, getSyllabusProgress,
     addRemedialStudent, updateRemedialProgress, deleteRemedialStudent,
+    addQuestion, deleteQuestion, addQuiz, publishQuiz, closeQuiz, deleteQuiz,
+    addParentComm, deleteParentComm,
+    addBehaviorNote, deleteBehaviorNote,
+    addCalendarEvent, deleteCalendarEvent,
+    markNotificationRead, markAllNotificationsRead,
+    addSharedResource, deleteSharedResource,
+    getClassAnalytics, getStudentProfile,
+    generateAILessonPlan,
   } = tStore;
 
   useEffect(() => {
@@ -85,6 +116,53 @@ export function TeacherDashboard() {
   const [gradeFeedback, setGradeFeedback] = useState('');
   const [reflectingId, setReflectingId] = useState<string | null>(null);
   const [lessonReflection, setLessonReflection] = useState('');
+
+  // New feature states
+  const [showQuestionModal, setShowQuestionModal] = useState(false);
+  const [showQuizModal, setShowQuizModal] = useState(false);
+  const [showParentCommModal, setShowParentCommModal] = useState(false);
+  const [showBehaviorModal, setShowBehaviorModal] = useState(false);
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [showSharedResourceModal, setShowSharedResourceModal] = useState(false);
+  const [showBulkGradeModal, setShowBulkGradeModal] = useState(false);
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState<any>(null);
+  const [chatMessage, setChatMessage] = useState('');
+  const [profileSearchAdm, setProfileSearchAdm] = useState('');
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [bulkGrades, setBulkGrades] = useState<Record<string, string>>({});
+  const [bulkAssignmentId, setBulkAssignmentId] = useState<string | null>(null);
+
+  const [questionForm, setQuestionForm] = useState({
+    subject: selectedSubject, topic: '', type: 'MCQ' as any,
+    question: '', options: ['', '', '', ''], correctAnswer: '', marks: 2, difficulty: 'Easy' as any, tags: '',
+  });
+  const [quizForm, setQuizForm] = useState({
+    title: '', subject: selectedSubject, classForm: selectedClass,
+    questionIds: [] as string[], duration: 30, dueDate: '', expiryDate: '',
+  });
+  const [parentCommForm, setParentCommForm] = useState({
+    studentName: '', admNo: '', classForm: selectedClass, guardianName: '', guardianPhone: '',
+    channel: 'Phone Call' as any, direction: 'Outgoing' as any, subject: '', notes: '',
+    followUpNeeded: false, followUpDate: '',
+  });
+  const [behaviorForm, setBehaviorForm] = useState({
+    studentName: '', admNo: '', classForm: selectedClass, date: new Date().toISOString().slice(0, 10),
+    type: 'Neutral' as any, severity: 'Low' as any, category: '', description: '', actionTaken: '',
+  });
+  const [calendarForm, setCalendarForm] = useState({
+    title: '', date: new Date().toISOString().slice(0, 10), time: '',
+    type: 'Lesson' as any, subject: selectedSubject, classForm: selectedClass, notes: '',
+  });
+  const [sharedResourceForm, setSharedResourceForm] = useState({
+    title: '', subject: selectedSubject, type: 'Notes' as any, classForm: selectedClass, description: '',
+  });
+  const [aiForm, setAiForm] = useState({
+    subject: selectedSubject, classForm: selectedClass, topic: '', duration: '40 minutes',
+    objectives: '', teachingStyle: 'Direct instruction with guided practice',
+  });
+  const [assignmentExpiry, setAssignmentExpiry] = useState('');
 
   const [materialForm, setMaterialForm] = useState({ title: '', type: 'Note' as any, classForm: selectedClass, subject: selectedSubject, topic: '', description: '' });
   const [avForm, setAVForm] = useState({ title: '', type: 'Audio' as any, duration: '', classForm: selectedClass, subject: selectedSubject, topic: '' });
@@ -420,6 +498,7 @@ export function TeacherDashboard() {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.subjectName}>{a.title}</Text>
                     <Text style={styles.subjectClass}>{a.classForm} | Due: {a.dueDate} | Max: {a.maxScore}</Text>
+                    {a.expiryDate && a.expiryDate !== a.dueDate && <Text style={[styles.subjectMeta, { color: colors.warning }]}>Expires: {a.expiryDate}</Text>}
                     {a.description ? <Text style={styles.subjectMeta}>{a.description}</Text> : null}
                     <Text style={styles.subjectMeta}>Submissions: {a.submissions.length} | Graded: {a.submissions.filter((s) => s.status === 'Graded').length}</Text>
                   </View>
@@ -447,6 +526,10 @@ export function TeacherDashboard() {
                 <View style={styles.rowBtns}>
                   {a.status === 'Draft' && <TouchableOpacity style={styles.smallBtn} onPress={() => { publishAssignment(a.id); Alert.alert('Published', 'Assignment is now visible to students.'); }}><Text style={styles.smallBtnText}>Publish</Text></TouchableOpacity>}
                   {a.status === 'Published' && <TouchableOpacity style={styles.smallBtn} onPress={() => { closeAssignment(a.id); Alert.alert('Closed', 'Assignment closed.'); }}><Text style={styles.smallBtnText}>Close</Text></TouchableOpacity>}
+                  {a.submissions.filter((s) => s.status === 'Submitted' || s.status === 'Late').length > 1 && (
+                    <TouchableOpacity style={[styles.smallBtn, { backgroundColor: colors.info }]} onPress={() => { setBulkAssignmentId(a.id); setBulkGrades({}); setShowBulkGradeModal(true); }}><Text style={styles.smallBtnText}>Bulk Grade</Text></TouchableOpacity>
+                  )}
+                  <TouchableOpacity style={[styles.smallBtn, { backgroundColor: colors.accent }]} onPress={() => { duplicateAssignment(a.id, a.classForm); Alert.alert('Duplicated', 'Assignment duplicated as draft.'); }}><Text style={styles.smallBtnText}>Duplicate</Text></TouchableOpacity>
                   <TouchableOpacity style={[styles.smallBtn, { backgroundColor: colors.danger }]} onPress={() => { deleteAssignment(a.id); Alert.alert('Deleted', 'Assignment deleted.'); }}><Text style={styles.smallBtnText}>Delete</Text></TouchableOpacity>
                 </View>
               </View>
@@ -753,6 +836,569 @@ export function TeacherDashboard() {
             ))}
           </View>
         );
+
+      case 'calendar':
+        return (
+          <ScrollView>
+            <Text style={styles.pageTitle}>Calendar</Text>
+            <Text style={styles.pageSubtitle}>All your lessons, deadlines, and events in one view</Text>
+            <View style={styles.rowBtns}>
+              <TouchableOpacity style={styles.smallBtn} onPress={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}>
+                <Text style={styles.smallBtnText}>‹ Prev</Text>
+              </TouchableOpacity>
+              <Text style={[styles.sectionTitle, { flex: 1, textAlign: 'center', marginTop: 0 }]}>
+                {calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </Text>
+              <TouchableOpacity style={styles.smallBtn} onPress={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))}>
+                <Text style={styles.smallBtnText}>Next ›</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => setShowCalendarModal(true)}>
+              <Text style={styles.actionBtnText}>+ Add Event</Text>
+            </TouchableOpacity>
+            {(() => {
+              const events = tStore.getCalendarForMonth(calendarMonth.getFullYear(), calendarMonth.getMonth());
+              if (events.length === 0) return <Text style={styles.emptyText}>No events this month.</Text>;
+              return events.map((e) => (
+                <View key={e.id} style={[styles.subjectCard, { borderLeftWidth: 4, borderLeftColor:
+                  e.type === 'Exam' ? colors.danger : e.type === 'Assignment Due' ? colors.warning :
+                  e.type === 'Deadline' ? colors.danger : e.type === 'Meeting' ? colors.info :
+                  e.type === 'Lesson' ? colors.primary : colors.accent }]}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.subjectName}>{e.title}</Text>
+                      <Text style={styles.subjectClass}>{e.date}{e.time ? ` | ${e.time}` : ''}</Text>
+                      {e.subject ? <Text style={styles.subjectMeta}>{e.subject} — {e.classForm}</Text> : null}
+                      {e.notes ? <Text style={styles.subjectMeta}>{e.notes}</Text> : null}
+                    </View>
+                    {renderBadge(e.type, e.type === 'Exam' ? colors.danger : e.type === 'Assignment Due' ? colors.warning : e.type === 'Deadline' ? colors.danger : e.type === 'Meeting' ? colors.info : e.type === 'Lesson' ? colors.primary : colors.accent)}
+                  </View>
+                  <TouchableOpacity onPress={() => { deleteCalendarEvent(e.id); }}>
+                    <Text style={{ color: colors.danger, fontSize: fontSize.sm, marginTop: spacing.sm }}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
+              ));
+            })()}
+          </ScrollView>
+        );
+
+      case 'aiAssistant':
+        return (
+          <ScrollView>
+            <Text style={styles.pageTitle}>AI Lesson Plan Assistant</Text>
+            <Text style={styles.pageSubtitle}>Generate structured lesson plans with AI — integrates with GES AI or built-in generator</Text>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => { setShowAIModal(true); setAiResult(null); }}>
+              <Text style={styles.actionBtnText}>+ Generate Lesson Plan</Text>
+            </TouchableOpacity>
+            {aiResult && (
+              <View style={styles.subjectCard}>
+                <Text style={styles.subjectName}>AI-Generated Lesson Plan</Text>
+                <Text style={styles.sectionTitle}>Objectives</Text>
+                <Text style={styles.subjectMeta}>{aiResult.objectives}</Text>
+                <Text style={styles.sectionTitle}>Introduction</Text>
+                <Text style={styles.subjectMeta}>{aiResult.introduction}</Text>
+                <Text style={styles.sectionTitle}>Teaching Methods</Text>
+                <Text style={styles.subjectMeta}>{aiResult.teachingMethods}</Text>
+                <Text style={styles.sectionTitle}>Resources</Text>
+                <Text style={styles.subjectMeta}>{aiResult.resources}</Text>
+                <Text style={styles.sectionTitle}>Main Activity</Text>
+                <Text style={styles.subjectMeta}>{aiResult.mainActivity}</Text>
+                <Text style={styles.sectionTitle}>Activities</Text>
+                <Text style={styles.subjectMeta}>{aiResult.activities}</Text>
+                <Text style={styles.sectionTitle}>Differentiation</Text>
+                <Text style={styles.subjectMeta}>{aiResult.differentiation}</Text>
+                <Text style={styles.sectionTitle}>Assessment</Text>
+                <Text style={styles.subjectMeta}>{aiResult.assessment}</Text>
+                <Text style={styles.sectionTitle}>Homework</Text>
+                <Text style={styles.subjectMeta}>{aiResult.homework}</Text>
+                <Text style={styles.sectionTitle}>Conclusion</Text>
+                <Text style={styles.subjectMeta}>{aiResult.conclusion}</Text>
+                <TouchableOpacity style={[styles.actionBtn, { marginTop: spacing.md }]} onPress={() => {
+                  addLessonPlan({
+                    subject: aiForm.subject, classForm: aiForm.classForm,
+                    date: new Date().toISOString().slice(0, 10), topic: aiForm.topic,
+                    objectives: aiResult.objectives, teachingMethods: aiResult.teachingMethods,
+                    resources: aiResult.resources, activities: aiResult.activities,
+                    assessment: aiResult.assessment, homework: aiResult.homework,
+                  });
+                  Alert.alert('Saved', 'AI lesson plan saved to your lesson plans.');
+                  setAiResult(null);
+                }}>
+                  <Text style={styles.actionBtnText}>Save as Lesson Plan</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </ScrollView>
+        );
+
+      case 'virtualClassroom':
+        return (
+          <View>
+            <Text style={styles.pageTitle}>Virtual Classroom</Text>
+            <Text style={styles.pageSubtitle}>Full virtual teaching environment — camera, audio, whiteboard, screen share, chat</Text>
+            {!virtualClassroom ? (
+              <View>
+                <Text style={styles.sectionTitle}>Active Live Sessions</Text>
+                {liveSessions.filter((s) => s.status === 'Scheduled' || s.status === 'Live').map((s) => (
+                  <View key={s.id} style={styles.sessionCard}>
+                    <Text style={styles.sessionSubject}>{s.subject} — {s.classForm}</Text>
+                    <Text style={styles.sessionTime}>Topic: {s.topic}</Text>
+                    <Text style={styles.sessionTime}>{s.scheduledTime}</Text>
+                    <TouchableOpacity style={[styles.actionBtn, { marginTop: spacing.sm }]} onPress={() => {
+                      if (s.status === 'Scheduled') startLiveSession(s.id, teacherName);
+                      joinVirtualClassroom(s.id);
+                    }}>
+                      <Text style={styles.actionBtnText}>Enter Classroom</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                {liveSessions.filter((s) => s.status === 'Scheduled' || s.status === 'Live').length === 0 && (
+                  <Text style={styles.emptyText}>No active sessions. Schedule a live class first.</Text>
+                )}
+              </View>
+            ) : (
+              <View>
+                <View style={styles.vcToolbar}>
+                  <TouchableOpacity style={[styles.vcBtn, virtualClassroom.cameraOn && styles.vcBtnActive]} onPress={toggleCamera}>
+                    <Text style={styles.vcBtnText}>{virtualClassroom.cameraOn ? '📷 On' : '📷 Off'}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.vcBtn, virtualClassroom.micOn && styles.vcBtnActive]} onPress={toggleMic}>
+                    <Text style={styles.vcBtnText}>{virtualClassroom.micOn ? '🎤 On' : '🎤 Off'}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.vcBtn, virtualClassroom.screenSharing && styles.vcBtnActive]} onPress={toggleScreenShare}>
+                    <Text style={styles.vcBtnText}>{virtualClassroom.screenSharing ? '🖥️ Sharing' : '🖥️ Share'}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.vcBtn, virtualClassroom.whiteboardActive && styles.vcBtnActive]} onPress={toggleWhiteboard}>
+                    <Text style={styles.vcBtnText}>{virtualClassroom.whiteboardActive ? '📝 Board' : '📝 Board'}</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {virtualClassroom.whiteboardActive && (
+                  <View style={styles.whiteboardPanel}>
+                    <Text style={styles.sectionTitle}>Whiteboard — Page {virtualClassroom.whiteboard.currentPage + 1}</Text>
+                    <View style={styles.rowBtns}>
+                      {WHITEBOARD_TOOLS.map((t) => (
+                        <TouchableOpacity key={t} style={[styles.smallBtn, virtualClassroom.whiteboard.tool === t && styles.vcBtnActive]} onPress={() => setWhiteboardTool(t as any)}>
+                          <Text style={styles.smallBtnText}>{t}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    <View style={styles.rowBtns}>
+                      {WHITEBOARD_COLORS.map((c) => (
+                        <TouchableOpacity key={c} style={[styles.colorSwatch, { backgroundColor: c }, virtualClassroom.whiteboard.color === c && styles.colorSwatchActive]} onPress={() => setWhiteboardColor(c)} />
+                      ))}
+                    </View>
+                    <View style={styles.rowBtns}>
+                      <TouchableOpacity style={styles.smallBtn} onPress={() => setWhiteboardStrokeWidth(2)}><Text style={styles.smallBtnText}>Thin</Text></TouchableOpacity>
+                      <TouchableOpacity style={styles.smallBtn} onPress={() => setWhiteboardStrokeWidth(5)}><Text style={styles.smallBtnText}>Med</Text></TouchableOpacity>
+                      <TouchableOpacity style={styles.smallBtn} onPress={() => setWhiteboardStrokeWidth(8)}><Text style={styles.smallBtnText}>Thick</Text></TouchableOpacity>
+                      <TouchableOpacity style={styles.smallBtn} onPress={addWhiteboardPage}><Text style={styles.smallBtnText}>+ Page</Text></TouchableOpacity>
+                    </View>
+                    <View style={styles.whiteboardCanvas}>
+                      {virtualClassroom.whiteboard.pages.map((_, i) => (
+                        <TouchableOpacity key={i} style={[styles.pageChip, virtualClassroom.whiteboard.currentPage === i && styles.pageChipActive]} onPress={() => setWhiteboardPage(i)}>
+                          <Text style={styles.pageChipText}>{i + 1}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {virtualClassroom.raisedHands.length > 0 && (
+                  <View style={styles.alertCard}>
+                    <Text style={styles.alertTitle}>✋ Raised Hands</Text>
+                    {virtualClassroom.raisedHands.map((h) => (
+                      <View key={h.id} style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.xs }}>
+                        <Text style={{ flex: 1, color: colors.text }}>{h.studentName}</Text>
+                        <TouchableOpacity onPress={() => lowerHand(h.id)}><Text style={{ color: colors.danger }}>Lower</Text></TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                <Text style={styles.sectionTitle}>Class Chat</Text>
+                <ScrollView style={styles.chatContainer}>
+                  {virtualClassroom.chatMessages.map((msg) => (
+                    <View key={msg.id} style={styles.chatMsg}>
+                      <Text style={styles.chatSender}>{msg.sender}</Text>
+                      <Text style={styles.chatText}>{msg.message}</Text>
+                    </View>
+                  ))}
+                  {virtualClassroom.chatMessages.length === 0 && <Text style={styles.emptyText}>No messages yet.</Text>}
+                </ScrollView>
+                <View style={styles.chatInputRow}>
+                  <TextInput style={[styles.input, { flex: 1 }]} placeholder="Type message..." placeholderTextColor={colors.textLight} value={chatMessage} onChangeText={setChatMessage} />
+                  <TouchableOpacity style={styles.sendBtn} onPress={() => { if (chatMessage.trim()) { sendChatMessage(teacherName, chatMessage); setChatMessage(''); } }}>
+                    <Text style={styles.sendBtnText}>Send</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.danger, marginTop: spacing.md }]} onPress={() => { leaveVirtualClassroom(); }}>
+                  <Text style={styles.actionBtnText}>Leave Classroom</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        );
+
+      case 'questionBank':
+        return (
+          <View>
+            <Text style={styles.pageTitle}>Question Bank & Quiz Builder</Text>
+            <Text style={styles.pageSubtitle}>Create reusable questions and build quizzes with expiry dates</Text>
+            <View style={styles.rowBtns}>
+              <TouchableOpacity style={styles.actionBtn} onPress={() => setShowQuestionModal(true)}>
+                <Text style={styles.actionBtnText}>+ Add Question</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.info }]} onPress={() => setShowQuizModal(true)}>
+                <Text style={styles.actionBtnText}>+ Build Quiz</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.sectionTitle}>Question Bank ({questionBank.length})</Text>
+            {questionBank.map((q) => (
+              <View key={q.id} style={styles.subjectCard}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.subjectName}>{q.question}</Text>
+                    <Text style={styles.subjectClass}>{q.subject} | {q.topic} | {q.type} | {q.marks} marks</Text>
+                    <Text style={styles.subjectMeta}>Answer: {q.correctAnswer}</Text>
+                    {q.options && q.options.length > 0 && (
+                      <Text style={styles.subjectMeta}>Options: {q.options.join(' | ')}</Text>
+                    )}
+                    <Text style={styles.subjectMeta}>Difficulty: {q.difficulty} | Tags: {q.tags.join(', ')}</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => { deleteQuestion(q.id); Alert.alert('Deleted', 'Question removed.'); }}>
+                    <Text style={{ color: colors.danger, fontSize: fontSize.sm }}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+            <Text style={styles.sectionTitle}>Quizzes ({quizzes.length})</Text>
+            {quizzes.map((q) => (
+              <View key={q.id} style={[styles.subjectCard, { borderLeftWidth: 4, borderLeftColor: statusColor(q.status) }]}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.subjectName}>{q.title}</Text>
+                    <Text style={styles.subjectClass}>{q.subject} — {q.classForm} | {q.totalMarks} marks | {q.duration} min</Text>
+                    <Text style={styles.subjectMeta}>Due: {q.dueDate} | Expires: {q.expiryDate}</Text>
+                    <Text style={styles.subjectMeta}>{q.questionIds.length} questions</Text>
+                  </View>
+                  {renderBadge(q.status, statusColor(q.status))}
+                </View>
+                <View style={styles.rowBtns}>
+                  {q.status === 'Draft' && <TouchableOpacity style={styles.smallBtn} onPress={() => { publishQuiz(q.id); Alert.alert('Published', 'Quiz is now visible to students.'); }}><Text style={styles.smallBtnText}>Publish</Text></TouchableOpacity>}
+                  {q.status === 'Published' && <TouchableOpacity style={styles.smallBtn} onPress={() => { closeQuiz(q.id); Alert.alert('Closed', 'Quiz closed.'); }}><Text style={styles.smallBtnText}>Close</Text></TouchableOpacity>}
+                  <TouchableOpacity style={[styles.smallBtn, { backgroundColor: colors.danger }]} onPress={() => { deleteQuiz(q.id); Alert.alert('Deleted', 'Quiz deleted.'); }}><Text style={styles.smallBtnText}>Delete</Text></TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </View>
+        );
+
+      case 'analytics':
+        return (
+          <ScrollView>
+            <Text style={styles.pageTitle}>Performance Analytics</Text>
+            <Text style={styles.pageSubtitle}>Class-level insights, at-risk students, grade distribution</Text>
+            <View style={styles.pickerRow}>
+              {subjects.map((s) => (
+                <TouchableOpacity key={s.id} style={[styles.pickerChip, selectedClass === s.classForm && selectedSubject === s.subject && styles.pickerChipActive]} onPress={() => { setSelectedClass(s.classForm); setSelectedSubject(s.subject); }}>
+                  <Text style={[styles.pickerChipText, selectedClass === s.classForm && selectedSubject === s.subject && styles.pickerChipTextActive]}>{s.classForm}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            {(() => {
+              const a = getClassAnalytics(selectedClass, selectedSubject);
+              return (
+                <View>
+                  <CardGrid>
+                    <StatCard label="Class Average" value={`${a.average}%`} accentColor={colors.primary} />
+                    <StatCard label="Highest" value={`${a.max}%`} accentColor={colors.success} />
+                    <StatCard label="Lowest" value={`${a.min}%`} accentColor={colors.danger} />
+                    <StatCard label="Pass Rate" value={`${a.passRate}%`} subtitle="≥50%" accentColor={colors.info} />
+                    <StatCard label="At Risk" value={a.atRiskStudents.length} subtitle="<50%" accentColor={colors.danger} />
+                    <StatCard label="Top 3" value={a.topPerformers.length} accentColor={colors.purple} />
+                  </CardGrid>
+                  <Text style={styles.sectionTitle}>Grade Distribution</Text>
+                  {Object.entries(a.gradeDistribution).map(([grade, count]) => (
+                    <View key={grade} style={styles.distRow}>
+                      <Text style={styles.distGrade}>{grade}</Text>
+                      <View style={styles.distBarBg}>
+                        <View style={[styles.distBar, { width: `${(count / a.gradeDistribution[Object.keys(a.gradeDistribution).reduce((max, g) => a.gradeDistribution[g] > a.gradeDistribution[max] ? g : max, Object.keys(a.gradeDistribution)[0])] || 1) * 100}%`, backgroundColor: grade.startsWith('A') ? colors.success : grade.startsWith('B') ? colors.info : grade.startsWith('C') ? colors.warning : colors.danger }]} />
+                      </View>
+                      <Text style={styles.distCount}>{count}</Text>
+                    </View>
+                  ))}
+                  {a.atRiskStudents.length > 0 && (
+                    <View>
+                      <Text style={styles.sectionTitle}>At-Risk Students</Text>
+                      {a.atRiskStudents.map((s) => (
+                        <View key={s.id} style={[styles.subjectCard, { borderLeftWidth: 4, borderLeftColor: colors.danger }]}>
+                          <Text style={styles.subjectName}>{s.studentName} ({s.admNo})</Text>
+                          <Text style={styles.subjectClass}>{s.total}/{s.totalMax} — {s.grade}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                  <Text style={styles.sectionTitle}>Top Performers</Text>
+                  {a.topPerformers.map((s, i) => (
+                    <View key={s.id} style={[styles.subjectCard, { borderLeftWidth: 4, borderLeftColor: colors.success }]}>
+                      <Text style={styles.subjectName}>#{i + 1} {s.studentName}</Text>
+                      <Text style={styles.subjectClass}>{s.total}/{s.totalMax} — {s.grade}</Text>
+                    </View>
+                  ))}
+                </View>
+              );
+            })()}
+          </ScrollView>
+        );
+
+      case 'attendanceAnalytics':
+        return (
+          <ScrollView>
+            <Text style={styles.pageTitle}>Attendance Analytics</Text>
+            <Text style={styles.pageSubtitle}>Patterns, frequent absentees, per-student rates</Text>
+            <View style={styles.pickerRow}>
+              {[...new Set(subjects.map((s) => s.classForm))].map((c) => (
+                <TouchableOpacity key={c} style={[styles.pickerChip, selectedClass === c && styles.pickerChipActive]} onPress={() => setSelectedClass(c)}>
+                  <Text style={[styles.pickerChipText, selectedClass === c && styles.pickerChipTextActive]}>{c}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            {(() => {
+              const a = getAttendanceAnalytics(selectedClass);
+              return (
+                <View>
+                  {a.patterns.frequentAbsentees.length > 0 && (
+                    <View>
+                      <Text style={styles.sectionTitle}>Frequent Absentees (≥3 absences)</Text>
+                      {a.patterns.frequentAbsentees.map((s) => (
+                        <View key={s.admNo} style={[styles.subjectCard, { borderLeftWidth: 4, borderLeftColor: colors.danger }]}>
+                          <Text style={styles.subjectName}>{s.studentName} ({s.admNo})</Text>
+                          <Text style={styles.subjectClass}>{s.absentCount} absences</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                  <Text style={styles.sectionTitle}>Per-Student Attendance</Text>
+                  <DataTable
+                    columns={[
+                      { key: 'studentName', label: 'Student', render: (i: any) => i.studentName },
+                      { key: 'present', label: 'Present', render: (i: any) => i.present },
+                      { key: 'absent', label: 'Absent', render: (i: any) => i.absent },
+                      { key: 'late', label: 'Late', render: (i: any) => i.late },
+                      { key: 'excused', label: 'Excused', render: (i: any) => i.excused },
+                      { key: 'rate', label: 'Rate', render: (i: any) => `${i.rate}%` },
+                    ]}
+                    data={a.perStudent}
+                  />
+                </View>
+              );
+            })()}
+          </ScrollView>
+        );
+
+      case 'studentProfile':
+        return (
+          <ScrollView>
+            <Text style={styles.pageTitle}>Student Profile</Text>
+            <Text style={styles.pageSubtitle}>360° view: grades, attendance, behavior, parent comms, assignments</Text>
+            <Text style={styles.inputLabel}>Search by Admission No</Text>
+            <View style={styles.chatInputRow}>
+              <TextInput style={[styles.input, { flex: 1 }]} placeholder="e.g. 2026/001" placeholderTextColor={colors.textLight} value={profileSearchAdm} onChangeText={setProfileSearchAdm} />
+              <TouchableOpacity style={styles.sendBtn} onPress={() => {
+                if (!profileSearchAdm.trim()) { Alert.alert('Error', 'Enter admission number'); return; }
+                const p = getStudentProfile(profileSearchAdm.trim());
+                if (!p.roster) { Alert.alert('Not Found', 'No student with that admission number.'); return; }
+                setAiResult(p);
+              }}>
+                <Text style={styles.sendBtnText}>Search</Text>
+              </TouchableOpacity>
+            </View>
+            {aiResult?.roster && (
+              <View>
+                <View style={styles.subjectCard}>
+                  <Text style={styles.subjectName}>{aiResult.roster.name} ({aiResult.roster.admNo})</Text>
+                  <Text style={styles.subjectClass}>{aiResult.roster.classForm} | Avg: {aiResult.roster.avgScore} | Attendance: {aiResult.roster.attendancePct}</Text>
+                  <Text style={styles.subjectMeta}>Guardian: {aiResult.roster.guardianName} | {aiResult.roster.guardianPhone}</Text>
+                </View>
+                <Text style={styles.sectionTitle}>Grades</Text>
+                {aiResult.grades.length > 0 ? aiResult.grades.map((g: any) => (
+                  <View key={g.id} style={styles.subjectCard}>
+                    <Text style={styles.subjectName}>{g.subject} — {g.grade}</Text>
+                    <Text style={styles.subjectClass}>{g.total}/{g.totalMax} | {g.term}</Text>
+                  </View>
+                )) : <Text style={styles.emptyText}>No grades recorded.</Text>}
+                <Text style={styles.sectionTitle}>Attendance ({aiResult.attendance.length} records)</Text>
+                {aiResult.attendance.slice(0, 5).map((a: any) => (
+                  <View key={a.id} style={styles.subCard}>
+                    <Text style={styles.subName}>{a.date} — {a.subject}</Text>
+                    {renderBadge(a.status, statusColor(a.status))}
+                  </View>
+                ))}
+                <Text style={styles.sectionTitle}>Behavior Notes</Text>
+                {aiResult.behavior.length > 0 ? aiResult.behavior.map((b: any) => (
+                  <View key={b.id} style={[styles.subjectCard, { borderLeftWidth: 4, borderLeftColor: b.type === 'Positive' ? colors.success : b.type === 'Negative' ? colors.danger : colors.info }]}>
+                    <Text style={styles.subjectName}>{b.type} — {b.category}</Text>
+                    <Text style={styles.subjectClass}>{b.date} | Severity: {b.severity}</Text>
+                    <Text style={styles.subjectMeta}>{b.description}</Text>
+                    <Text style={styles.subjectMeta}>Action: {b.actionTaken}</Text>
+                  </View>
+                )) : <Text style={styles.emptyText}>No behavior notes.</Text>}
+                <Text style={styles.sectionTitle}>Parent Communications</Text>
+                {aiResult.parentComms.length > 0 ? aiResult.parentComms.map((c: any) => (
+                  <View key={c.id} style={styles.subjectCard}>
+                    <Text style={styles.subjectName}>{c.subject}</Text>
+                    <Text style={styles.subjectClass}>{c.date} | {c.channel} | {c.direction}</Text>
+                    <Text style={styles.subjectMeta}>{c.notes}</Text>
+                  </View>
+                )) : <Text style={styles.emptyText}>No parent communications.</Text>}
+                <Text style={styles.sectionTitle}>Assignment Submissions</Text>
+                {aiResult.assignments.filter((a: any) => a.submission).map((a: any) => (
+                  <View key={a.assignment.id} style={styles.subjectCard}>
+                    <Text style={styles.subjectName}>{a.assignment.title}</Text>
+                    <Text style={styles.subjectClass}>Score: {a.submission.score ?? '—'}/{a.assignment.maxScore}</Text>
+                    {renderBadge(a.submission.status, statusColor(a.submission.status))}
+                  </View>
+                ))}
+                {aiResult.assignments.filter((a: any) => a.submission).length === 0 && <Text style={styles.emptyText}>No submissions.</Text>}
+                {aiResult.remedial && (
+                  <View>
+                    <Text style={styles.sectionTitle}>Remedial Support</Text>
+                    <View style={[styles.subjectCard, { borderLeftWidth: 4, borderLeftColor: statusColor(aiResult.remedial.progress) }]}>
+                      <Text style={styles.subjectName}>{aiResult.remedial.area}</Text>
+                      <Text style={styles.subjectClass}>Progress: {aiResult.remedial.progress}</Text>
+                      <Text style={styles.subjectMeta}>{aiResult.remedial.notes}</Text>
+                    </View>
+                  </View>
+                )}
+              </View>
+            )}
+          </ScrollView>
+        );
+
+      case 'behavior':
+        return (
+          <View>
+            <Text style={styles.pageTitle}>Behavior & Discipline</Text>
+            <Text style={styles.pageSubtitle}>Record classroom behavior — positive and negative</Text>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => setShowBehaviorModal(true)}>
+              <Text style={styles.actionBtnText}>+ Add Behavior Note</Text>
+            </TouchableOpacity>
+            {behaviorNotes.length === 0 && <Text style={styles.emptyText}>No behavior notes recorded.</Text>}
+            {behaviorNotes.map((b) => (
+              <View key={b.id} style={[styles.subjectCard, { borderLeftWidth: 4, borderLeftColor: b.type === 'Positive' ? colors.success : b.type === 'Negative' ? colors.danger : colors.info }]}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.subjectName}>{b.studentName} ({b.admNo})</Text>
+                    <Text style={styles.subjectClass}>{b.date} | {b.category} | Severity: {b.severity}</Text>
+                    <Text style={styles.subjectMeta}>{b.description}</Text>
+                    <Text style={styles.subjectMeta}>Action: {b.actionTaken}</Text>
+                    <Text style={styles.subjectMeta}>By: {b.reportedBy}</Text>
+                  </View>
+                  {renderBadge(b.type, b.type === 'Positive' ? colors.success : b.type === 'Negative' ? colors.danger : colors.info)}
+                </View>
+                <TouchableOpacity onPress={() => { deleteBehaviorNote(b.id); Alert.alert('Deleted', 'Behavior note removed.'); }}>
+                  <Text style={{ color: colors.danger, fontSize: fontSize.sm, marginTop: spacing.sm }}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        );
+
+      case 'parentComms':
+        return (
+          <View>
+            <Text style={styles.pageTitle}>Parent Communication Log</Text>
+            <Text style={styles.pageSubtitle}>Track all interactions with parents/guardians</Text>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => setShowParentCommModal(true)}>
+              <Text style={styles.actionBtnText}>+ Log Communication</Text>
+            </TouchableOpacity>
+            {(() => {
+              const followUps = tStore.getFollowUps();
+              if (followUps.length > 0) return (
+                <View style={styles.alertCard}>
+                  <Text style={styles.alertTitle}>Follow-ups needed ({followUps.length})</Text>
+                  {followUps.map((f) => (
+                    <Text key={f.id} style={styles.alertText}>{f.studentName} — {f.subject} | Follow up: {f.followUpDate}</Text>
+                  ))}
+                </View>
+              );
+              return null;
+            })()}
+            {parentComms.length === 0 && <Text style={styles.emptyText}>No communications logged.</Text>}
+            {parentComms.map((c) => (
+              <View key={c.id} style={[styles.subjectCard, { borderLeftWidth: 4, borderLeftColor: c.direction === 'Outgoing' ? colors.info : colors.success }]}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.subjectName}>{c.studentName} ({c.admNo})</Text>
+                    <Text style={styles.subjectClass}>{c.date} | {c.channel} | {c.direction}</Text>
+                    <Text style={styles.subjectMeta}>Guardian: {c.guardianName} | {c.guardianPhone}</Text>
+                    <Text style={styles.subjectMeta}>Subject: {c.subject}</Text>
+                    <Text style={styles.subjectMeta}>{c.notes}</Text>
+                    {c.followUpNeeded && <Text style={[styles.subjectMeta, { color: colors.warning }]}>Follow-up: {c.followUpDate}</Text>}
+                  </View>
+                  {renderBadge(c.direction, c.direction === 'Outgoing' ? colors.info : colors.success)}
+                </View>
+                <TouchableOpacity onPress={() => { deleteParentComm(c.id); Alert.alert('Deleted', 'Communication removed.'); }}>
+                  <Text style={{ color: colors.danger, fontSize: fontSize.sm, marginTop: spacing.sm }}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        );
+
+      case 'sharedResources':
+        return (
+          <View>
+            <Text style={styles.pageTitle}>Shared Resources</Text>
+            <Text style={styles.pageSubtitle}>Resources shared by colleagues teaching the same subjects</Text>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => setShowSharedResourceModal(true)}>
+              <Text style={styles.actionBtnText}>+ Share Resource</Text>
+            </TouchableOpacity>
+            {sharedResources.length === 0 && <Text style={styles.emptyText}>No shared resources.</Text>}
+            {sharedResources.map((r) => (
+              <View key={r.id} style={styles.subjectCard}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.subjectName}>{r.title}</Text>
+                    <Text style={styles.subjectClass}>{r.subject} | {r.type} | {r.classForm}</Text>
+                    <Text style={styles.subjectMeta}>{r.description}</Text>
+                    <Text style={styles.subjectMeta}>Shared by {r.sharedBy} on {r.sharedDate}</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => { deleteSharedResource(r.id); Alert.alert('Deleted', 'Resource removed.'); }}>
+                    <Text style={{ color: colors.danger, fontSize: fontSize.sm }}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </View>
+        );
+
+      case 'notifications':
+        return (
+          <View>
+            <Text style={styles.pageTitle}>Notifications</Text>
+            <Text style={styles.pageSubtitle}>Stay updated on submissions, feedback, and deadlines</Text>
+            <TouchableOpacity style={[styles.smallBtn, { marginBottom: spacing.md }]} onPress={() => markAllNotificationsRead()}>
+              <Text style={styles.smallBtnText}>Mark All Read</Text>
+            </TouchableOpacity>
+            {teacherNotifications.length === 0 && <Text style={styles.emptyText}>No notifications.</Text>}
+            {teacherNotifications.map((n) => (
+              <TouchableOpacity key={n.id} style={[styles.subjectCard, { borderLeftWidth: 4, borderLeftColor: n.read ? colors.border : colors.primary, opacity: n.read ? 0.6 : 1 }]} onPress={() => markNotificationRead(n.id)}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.subjectName}>{n.title}</Text>
+                    <Text style={styles.subjectClass}>{n.message}</Text>
+                    <Text style={styles.subjectMeta}>{n.date} | {n.type}</Text>
+                  </View>
+                  {!n.read && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary, marginTop: 4 }} />}
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        );
+
       default:
         return null;
     }
@@ -901,11 +1547,13 @@ export function TeacherDashboard() {
           <TextInput style={styles.input} placeholder="e.g. Elective Mathematics" placeholderTextColor={colors.textLight} value={assignmentForm.subject} onChangeText={(v) => setAssignmentForm({ ...assignmentForm, subject: v })} />
           <Text style={styles.inputLabel}>Due Date *</Text>
           <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={assignmentForm.dueDate} onChangeText={(v) => setAssignmentForm({ ...assignmentForm, dueDate: v })} />
+          <Text style={styles.inputLabel}>Expiry Date (when submission closes)</Text>
+          <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={assignmentExpiry} onChangeText={setAssignmentExpiry} />
           <Text style={styles.inputLabel}>Max Score</Text>
           <TextInput style={styles.input} placeholder="20" placeholderTextColor={colors.textLight} value={String(assignmentForm.maxScore)} onChangeText={(v) => setAssignmentForm({ ...assignmentForm, maxScore: parseInt(v) || 0 })} keyboardType="numeric" />
           <View style={styles.modalActions}>
             <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowAssignmentModal(false)}><Text style={styles.modalBtnTextDark}>Cancel</Text></TouchableOpacity>
-            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={() => { if (!assignmentForm.title.trim()) { Alert.alert('Error', 'Title is required'); return; } if (!assignmentForm.dueDate.trim()) { Alert.alert('Error', 'Due date is required'); return; } addAssignment(assignmentForm); setAssignmentForm({ title: '', description: '', classForm: selectedClass, subject: selectedSubject, dueDate: '', maxScore: 20 }); setShowAssignmentModal(false); Alert.alert('Success', 'Assignment created as draft. Publish it to make it visible to students.'); }}><Text style={styles.modalBtnTextLight}>Create</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={() => { if (!assignmentForm.title.trim()) { Alert.alert('Error', 'Title is required'); return; } if (!assignmentForm.dueDate.trim()) { Alert.alert('Error', 'Due date is required'); return; } addAssignment({ ...assignmentForm, expiryDate: assignmentExpiry || assignmentForm.dueDate }); setAssignmentForm({ title: '', description: '', classForm: selectedClass, subject: selectedSubject, dueDate: '', maxScore: 20 }); setAssignmentExpiry(''); setShowAssignmentModal(false); Alert.alert('Success', 'Assignment created as draft. Publish it to make it visible to students.'); }}><Text style={styles.modalBtnTextLight}>Create</Text></TouchableOpacity>
           </View>
         </ScrollView></View></View>
       </Modal>
@@ -1079,6 +1727,229 @@ export function TeacherDashboard() {
           </View>
         </ScrollView></View></View>
       </Modal>
+
+      {/* Question Modal */}
+      <Modal visible={showQuestionModal} transparent animationType="fade" onRequestClose={() => setShowQuestionModal(false)}>
+        <View style={styles.modalOverlay}><View style={styles.modalContent}><ScrollView showsVerticalScrollIndicator={false}>
+          <Text style={styles.modalTitle}>Add Question</Text>
+          <Text style={styles.inputLabel}>Subject</Text>
+          <TextInput style={styles.input} placeholder="e.g. Elective Mathematics" placeholderTextColor={colors.textLight} value={questionForm.subject} onChangeText={(v) => setQuestionForm({ ...questionForm, subject: v })} />
+          <Text style={styles.inputLabel}>Topic</Text>
+          <TextInput style={styles.input} placeholder="e.g. Differentiation" placeholderTextColor={colors.textLight} value={questionForm.topic} onChangeText={(v) => setQuestionForm({ ...questionForm, topic: v })} />
+          <Text style={styles.inputLabel}>Type</Text>
+          <View style={styles.selectRow}>{QUESTION_TYPES.map((opt) => (<TouchableOpacity key={opt} style={[styles.selectChip, questionForm.type === opt && styles.selectChipActive]} onPress={() => setQuestionForm({ ...questionForm, type: opt })}><Text style={[styles.selectChipText, questionForm.type === opt && styles.selectChipTextActive]}>{opt}</Text></TouchableOpacity>))}</View>
+          <Text style={styles.inputLabel}>Question *</Text>
+          <TextInput style={[styles.input, styles.textArea]} placeholder="Enter the question" placeholderTextColor={colors.textLight} value={questionForm.question} onChangeText={(v) => setQuestionForm({ ...questionForm, question: v })} multiline />
+          {questionForm.type === 'MCQ' && (
+            <View>
+              <Text style={styles.inputLabel}>Options (one per line)</Text>
+              {questionForm.options.map((opt, i) => (
+                <TextInput key={i} style={styles.input} placeholder={`Option ${i + 1}`} placeholderTextColor={colors.textLight} value={opt} onChangeText={(v) => { const o = [...questionForm.options]; o[i] = v; setQuestionForm({ ...questionForm, options: o }); }} />
+              ))}
+            </View>
+          )}
+          <Text style={styles.inputLabel}>Correct Answer *</Text>
+          <TextInput style={styles.input} placeholder="Correct answer" placeholderTextColor={colors.textLight} value={questionForm.correctAnswer} onChangeText={(v) => setQuestionForm({ ...questionForm, correctAnswer: v })} />
+          <Text style={styles.inputLabel}>Marks</Text>
+          <TextInput style={styles.input} placeholder="2" placeholderTextColor={colors.textLight} value={String(questionForm.marks)} onChangeText={(v) => setQuestionForm({ ...questionForm, marks: parseInt(v) || 1 })} keyboardType="numeric" />
+          <Text style={styles.inputLabel}>Difficulty</Text>
+          <View style={styles.selectRow}>{QUESTION_DIFFICULTIES.map((opt) => (<TouchableOpacity key={opt} style={[styles.selectChip, questionForm.difficulty === opt && styles.selectChipActive]} onPress={() => setQuestionForm({ ...questionForm, difficulty: opt })}><Text style={[styles.selectChipText, questionForm.difficulty === opt && styles.selectChipTextActive]}>{opt}</Text></TouchableOpacity>))}</View>
+          <Text style={styles.inputLabel}>Tags (comma-separated)</Text>
+          <TextInput style={styles.input} placeholder="e.g. power rule, polynomial" placeholderTextColor={colors.textLight} value={questionForm.tags} onChangeText={(v) => setQuestionForm({ ...questionForm, tags: v })} />
+          <View style={styles.modalActions}>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowQuestionModal(false)}><Text style={styles.modalBtnTextDark}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={() => { if (!questionForm.question.trim() || !questionForm.correctAnswer.trim()) { Alert.alert('Error', 'Question and correct answer are required'); return; } addQuestion({ ...questionForm, tags: questionForm.tags.split(',').map((t) => t.trim()).filter(Boolean), options: questionForm.type === 'MCQ' ? questionForm.options.filter(Boolean) : undefined }); setQuestionForm({ subject: selectedSubject, topic: '', type: 'MCQ', question: '', options: ['', '', '', ''], correctAnswer: '', marks: 2, difficulty: 'Easy', tags: '' }); setShowQuestionModal(false); Alert.alert('Success', 'Question added to bank.'); }}><Text style={styles.modalBtnTextLight}>Add</Text></TouchableOpacity>
+          </View>
+        </ScrollView></View></View>
+      </Modal>
+
+      {/* Quiz Modal */}
+      <Modal visible={showQuizModal} transparent animationType="fade" onRequestClose={() => setShowQuizModal(false)}>
+        <View style={styles.modalOverlay}><View style={styles.modalContent}><ScrollView showsVerticalScrollIndicator={false}>
+          <Text style={styles.modalTitle}>Build Quiz</Text>
+          <Text style={styles.inputLabel}>Title *</Text>
+          <TextInput style={styles.input} placeholder="e.g. Calculus Quick Quiz" placeholderTextColor={colors.textLight} value={quizForm.title} onChangeText={(v) => setQuizForm({ ...quizForm, title: v })} />
+          <Text style={styles.inputLabel}>Subject</Text>
+          <TextInput style={styles.input} placeholder="e.g. Elective Mathematics" placeholderTextColor={colors.textLight} value={quizForm.subject} onChangeText={(v) => setQuizForm({ ...quizForm, subject: v })} />
+          <Text style={styles.inputLabel}>Class</Text>
+          <TextInput style={styles.input} placeholder="e.g. SHS2 Sci A" placeholderTextColor={colors.textLight} value={quizForm.classForm} onChangeText={(v) => setQuizForm({ ...quizForm, classForm: v })} />
+          <Text style={styles.inputLabel}>Duration (minutes)</Text>
+          <TextInput style={styles.input} placeholder="30" placeholderTextColor={colors.textLight} value={String(quizForm.duration)} onChangeText={(v) => setQuizForm({ ...quizForm, duration: parseInt(v) || 30 })} keyboardType="numeric" />
+          <Text style={styles.inputLabel}>Due Date *</Text>
+          <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={quizForm.dueDate} onChangeText={(v) => setQuizForm({ ...quizForm, dueDate: v })} />
+          <Text style={styles.inputLabel}>Expiry Date *</Text>
+          <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={quizForm.expiryDate} onChangeText={(v) => setQuizForm({ ...quizForm, expiryDate: v })} />
+          <Text style={styles.inputLabel}>Select Questions</Text>
+          {questionBank.map((q) => (
+            <TouchableOpacity key={q.id} style={[styles.selectChip, quizForm.questionIds.includes(q.id) && styles.selectChipActive, { marginBottom: spacing.xs }]} onPress={() => { const ids = quizForm.questionIds.includes(q.id) ? quizForm.questionIds.filter((id) => id !== q.id) : [...quizForm.questionIds, q.id]; setQuizForm({ ...quizForm, questionIds: ids }); }}>
+              <Text style={[styles.selectChipText, quizForm.questionIds.includes(q.id) && styles.selectChipTextActive]}>{q.question.slice(0, 60)}... ({q.marks} marks)</Text>
+            </TouchableOpacity>
+          ))}
+          {questionBank.length === 0 && <Text style={styles.emptyText}>No questions in bank. Add questions first.</Text>}
+          <View style={styles.modalActions}>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowQuizModal(false)}><Text style={styles.modalBtnTextDark}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={() => { if (!quizForm.title.trim() || quizForm.questionIds.length === 0 || !quizForm.dueDate.trim() || !quizForm.expiryDate.trim()) { Alert.alert('Error', 'Title, questions, due date, and expiry date are required'); return; } addQuiz(quizForm); setQuizForm({ title: '', subject: selectedSubject, classForm: selectedClass, questionIds: [], duration: 30, dueDate: '', expiryDate: '' }); setShowQuizModal(false); Alert.alert('Success', 'Quiz created as draft.'); }}><Text style={styles.modalBtnTextLight}>Create</Text></TouchableOpacity>
+          </View>
+        </ScrollView></View></View>
+      </Modal>
+
+      {/* Parent Communication Modal */}
+      <Modal visible={showParentCommModal} transparent animationType="fade" onRequestClose={() => setShowParentCommModal(false)}>
+        <View style={styles.modalOverlay}><View style={styles.modalContent}><ScrollView showsVerticalScrollIndicator={false}>
+          <Text style={styles.modalTitle}>Log Parent Communication</Text>
+          <Text style={styles.inputLabel}>Student Name *</Text>
+          <TextInput style={styles.input} placeholder="e.g. Daniel Osei" placeholderTextColor={colors.textLight} value={parentCommForm.studentName} onChangeText={(v) => setParentCommForm({ ...parentCommForm, studentName: v })} />
+          <Text style={styles.inputLabel}>Admission No</Text>
+          <TextInput style={styles.input} placeholder="e.g. 2026/004" placeholderTextColor={colors.textLight} value={parentCommForm.admNo} onChangeText={(v) => setParentCommForm({ ...parentCommForm, admNo: v })} />
+          <Text style={styles.inputLabel}>Class</Text>
+          <TextInput style={styles.input} placeholder="e.g. SHS2 Sci A" placeholderTextColor={colors.textLight} value={parentCommForm.classForm} onChangeText={(v) => setParentCommForm({ ...parentCommForm, classForm: v })} />
+          <Text style={styles.inputLabel}>Guardian Name</Text>
+          <TextInput style={styles.input} placeholder="e.g. Mrs. Adwoa Osei" placeholderTextColor={colors.textLight} value={parentCommForm.guardianName} onChangeText={(v) => setParentCommForm({ ...parentCommForm, guardianName: v })} />
+          <Text style={styles.inputLabel}>Guardian Phone</Text>
+          <TextInput style={styles.input} placeholder="e.g. 055-555-1004" placeholderTextColor={colors.textLight} value={parentCommForm.guardianPhone} onChangeText={(v) => setParentCommForm({ ...parentCommForm, guardianPhone: v })} />
+          <Text style={styles.inputLabel}>Channel</Text>
+          <View style={styles.selectRow}>{COMMUNICATION_CHANNELS.map((opt) => (<TouchableOpacity key={opt} style={[styles.selectChip, parentCommForm.channel === opt && styles.selectChipActive]} onPress={() => setParentCommForm({ ...parentCommForm, channel: opt })}><Text style={[styles.selectChipText, parentCommForm.channel === opt && styles.selectChipTextActive]}>{opt}</Text></TouchableOpacity>))}</View>
+          <Text style={styles.inputLabel}>Direction</Text>
+          <View style={styles.selectRow}>{(['Outgoing', 'Incoming'] as const).map((opt) => (<TouchableOpacity key={opt} style={[styles.selectChip, parentCommForm.direction === opt && styles.selectChipActive]} onPress={() => setParentCommForm({ ...parentCommForm, direction: opt })}><Text style={[styles.selectChipText, parentCommForm.direction === opt && styles.selectChipTextActive]}>{opt}</Text></TouchableOpacity>))}</View>
+          <Text style={styles.inputLabel}>Subject</Text>
+          <TextInput style={styles.input} placeholder="e.g. Poor performance in class test" placeholderTextColor={colors.textLight} value={parentCommForm.subject} onChangeText={(v) => setParentCommForm({ ...parentCommForm, subject: v })} />
+          <Text style={styles.inputLabel}>Notes</Text>
+          <TextInput style={[styles.input, styles.textArea]} placeholder="Details of the conversation" placeholderTextColor={colors.textLight} value={parentCommForm.notes} onChangeText={(v) => setParentCommForm({ ...parentCommForm, notes: v })} multiline />
+          <Text style={styles.inputLabel}>Follow-up Needed?</Text>
+          <View style={styles.selectRow}>{([true, false] as const).map((opt) => (<TouchableOpacity key={String(opt)} style={[styles.selectChip, parentCommForm.followUpNeeded === opt && styles.selectChipActive]} onPress={() => setParentCommForm({ ...parentCommForm, followUpNeeded: opt })}><Text style={[styles.selectChipText, parentCommForm.followUpNeeded === opt && styles.selectChipTextActive]}>{opt ? 'Yes' : 'No'}</Text></TouchableOpacity>))}</View>
+          {parentCommForm.followUpNeeded && (
+            <View>
+              <Text style={styles.inputLabel}>Follow-up Date</Text>
+              <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={parentCommForm.followUpDate} onChangeText={(v) => setParentCommForm({ ...parentCommForm, followUpDate: v })} />
+            </View>
+          )}
+          <View style={styles.modalActions}>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowParentCommModal(false)}><Text style={styles.modalBtnTextDark}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={() => { if (!parentCommForm.studentName.trim()) { Alert.alert('Error', 'Student name is required'); return; } addParentComm({ ...parentCommForm, date: new Date().toISOString().slice(0, 10) }); setParentCommForm({ studentName: '', admNo: '', classForm: selectedClass, guardianName: '', guardianPhone: '', channel: 'Phone Call', direction: 'Outgoing', subject: '', notes: '', followUpNeeded: false, followUpDate: '' }); setShowParentCommModal(false); Alert.alert('Success', 'Communication logged.'); }}><Text style={styles.modalBtnTextLight}>Save</Text></TouchableOpacity>
+          </View>
+        </ScrollView></View></View>
+      </Modal>
+
+      {/* Behavior Modal */}
+      <Modal visible={showBehaviorModal} transparent animationType="fade" onRequestClose={() => setShowBehaviorModal(false)}>
+        <View style={styles.modalOverlay}><View style={styles.modalContent}><ScrollView showsVerticalScrollIndicator={false}>
+          <Text style={styles.modalTitle}>Add Behavior Note</Text>
+          <Text style={styles.inputLabel}>Student Name *</Text>
+          <TextInput style={styles.input} placeholder="e.g. Samuel Aidoo" placeholderTextColor={colors.textLight} value={behaviorForm.studentName} onChangeText={(v) => setBehaviorForm({ ...behaviorForm, studentName: v })} />
+          <Text style={styles.inputLabel}>Admission No</Text>
+          <TextInput style={styles.input} placeholder="e.g. 2026/003" placeholderTextColor={colors.textLight} value={behaviorForm.admNo} onChangeText={(v) => setBehaviorForm({ ...behaviorForm, admNo: v })} />
+          <Text style={styles.inputLabel}>Class</Text>
+          <TextInput style={styles.input} placeholder="e.g. SHS2 Sci A" placeholderTextColor={colors.textLight} value={behaviorForm.classForm} onChangeText={(v) => setBehaviorForm({ ...behaviorForm, classForm: v })} />
+          <Text style={styles.inputLabel}>Date</Text>
+          <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={behaviorForm.date} onChangeText={(v) => setBehaviorForm({ ...behaviorForm, date: v })} />
+          <Text style={styles.inputLabel}>Type</Text>
+          <View style={styles.selectRow}>{BEHAVIOR_TYPES.map((opt) => (<TouchableOpacity key={opt} style={[styles.selectChip, behaviorForm.type === opt && styles.selectChipActive]} onPress={() => setBehaviorForm({ ...behaviorForm, type: opt })}><Text style={[styles.selectChipText, behaviorForm.type === opt && styles.selectChipTextActive]}>{opt}</Text></TouchableOpacity>))}</View>
+          <Text style={styles.inputLabel}>Severity</Text>
+          <View style={styles.selectRow}>{BEHAVIOR_SEVERITIES.map((opt) => (<TouchableOpacity key={opt} style={[styles.selectChip, behaviorForm.severity === opt && styles.selectChipActive]} onPress={() => setBehaviorForm({ ...behaviorForm, severity: opt })}><Text style={[styles.selectChipText, behaviorForm.severity === opt && styles.selectChipTextActive]}>{opt}</Text></TouchableOpacity>))}</View>
+          <Text style={styles.inputLabel}>Category</Text>
+          <TextInput style={styles.input} placeholder="e.g. Disruption, Class Participation" placeholderTextColor={colors.textLight} value={behaviorForm.category} onChangeText={(v) => setBehaviorForm({ ...behaviorForm, category: v })} />
+          <Text style={styles.inputLabel}>Description</Text>
+          <TextInput style={[styles.input, styles.textArea]} placeholder="What happened?" placeholderTextColor={colors.textLight} value={behaviorForm.description} onChangeText={(v) => setBehaviorForm({ ...behaviorForm, description: v })} multiline />
+          <Text style={styles.inputLabel}>Action Taken</Text>
+          <TextInput style={[styles.input, styles.textArea]} placeholder="What action was taken?" placeholderTextColor={colors.textLight} value={behaviorForm.actionTaken} onChangeText={(v) => setBehaviorForm({ ...behaviorForm, actionTaken: v })} multiline />
+          <View style={styles.modalActions}>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowBehaviorModal(false)}><Text style={styles.modalBtnTextDark}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={() => { if (!behaviorForm.studentName.trim() || !behaviorForm.description.trim()) { Alert.alert('Error', 'Student name and description are required'); return; } addBehaviorNote({ ...behaviorForm, reportedBy: teacherName }); setBehaviorForm({ studentName: '', admNo: '', classForm: selectedClass, date: new Date().toISOString().slice(0, 10), type: 'Neutral', severity: 'Low', category: '', description: '', actionTaken: '' }); setShowBehaviorModal(false); Alert.alert('Success', 'Behavior note added.'); }}><Text style={styles.modalBtnTextLight}>Save</Text></TouchableOpacity>
+          </View>
+        </ScrollView></View></View>
+      </Modal>
+
+      {/* Calendar Event Modal */}
+      <Modal visible={showCalendarModal} transparent animationType="fade" onRequestClose={() => setShowCalendarModal(false)}>
+        <View style={styles.modalOverlay}><View style={styles.modalContent}><ScrollView showsVerticalScrollIndicator={false}>
+          <Text style={styles.modalTitle}>Add Calendar Event</Text>
+          <Text style={styles.inputLabel}>Title *</Text>
+          <TextInput style={styles.input} placeholder="e.g. Calculus Quiz" placeholderTextColor={colors.textLight} value={calendarForm.title} onChangeText={(v) => setCalendarForm({ ...calendarForm, title: v })} />
+          <Text style={styles.inputLabel}>Date *</Text>
+          <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={calendarForm.date} onChangeText={(v) => setCalendarForm({ ...calendarForm, date: v })} />
+          <Text style={styles.inputLabel}>Time</Text>
+          <TextInput style={styles.input} placeholder="e.g. 14:00" placeholderTextColor={colors.textLight} value={calendarForm.time} onChangeText={(v) => setCalendarForm({ ...calendarForm, time: v })} />
+          <Text style={styles.inputLabel}>Type</Text>
+          <View style={styles.selectRow}>{CALENDAR_EVENT_TYPES.map((opt) => (<TouchableOpacity key={opt} style={[styles.selectChip, calendarForm.type === opt && styles.selectChipActive]} onPress={() => setCalendarForm({ ...calendarForm, type: opt })}><Text style={[styles.selectChipText, calendarForm.type === opt && styles.selectChipTextActive]}>{opt}</Text></TouchableOpacity>))}</View>
+          <Text style={styles.inputLabel}>Subject</Text>
+          <TextInput style={styles.input} placeholder="e.g. Elective Mathematics" placeholderTextColor={colors.textLight} value={calendarForm.subject} onChangeText={(v) => setCalendarForm({ ...calendarForm, subject: v })} />
+          <Text style={styles.inputLabel}>Class</Text>
+          <TextInput style={styles.input} placeholder="e.g. SHS2 Sci A" placeholderTextColor={colors.textLight} value={calendarForm.classForm} onChangeText={(v) => setCalendarForm({ ...calendarForm, classForm: v })} />
+          <Text style={styles.inputLabel}>Notes</Text>
+          <TextInput style={[styles.input, styles.textArea]} placeholder="Additional notes" placeholderTextColor={colors.textLight} value={calendarForm.notes} onChangeText={(v) => setCalendarForm({ ...calendarForm, notes: v })} multiline />
+          <View style={styles.modalActions}>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowCalendarModal(false)}><Text style={styles.modalBtnTextDark}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={() => { if (!calendarForm.title.trim() || !calendarForm.date.trim()) { Alert.alert('Error', 'Title and date are required'); return; } addCalendarEvent(calendarForm); setCalendarForm({ title: '', date: new Date().toISOString().slice(0, 10), time: '', type: 'Lesson', subject: selectedSubject, classForm: selectedClass, notes: '' }); setShowCalendarModal(false); Alert.alert('Success', 'Event added.'); }}><Text style={styles.modalBtnTextLight}>Add</Text></TouchableOpacity>
+          </View>
+        </ScrollView></View></View>
+      </Modal>
+
+      {/* Shared Resource Modal */}
+      <Modal visible={showSharedResourceModal} transparent animationType="fade" onRequestClose={() => setShowSharedResourceModal(false)}>
+        <View style={styles.modalOverlay}><View style={styles.modalContent}><ScrollView showsVerticalScrollIndicator={false}>
+          <Text style={styles.modalTitle}>Share Resource</Text>
+          <Text style={styles.inputLabel}>Title *</Text>
+          <TextInput style={styles.input} placeholder="e.g. Calculus Notes" placeholderTextColor={colors.textLight} value={sharedResourceForm.title} onChangeText={(v) => setSharedResourceForm({ ...sharedResourceForm, title: v })} />
+          <Text style={styles.inputLabel}>Subject</Text>
+          <TextInput style={styles.input} placeholder="e.g. Elective Mathematics" placeholderTextColor={colors.textLight} value={sharedResourceForm.subject} onChangeText={(v) => setSharedResourceForm({ ...sharedResourceForm, subject: v })} />
+          <Text style={styles.inputLabel}>Type</Text>
+          <View style={styles.selectRow}>{SHARED_RESOURCE_TYPES.map((opt) => (<TouchableOpacity key={opt} style={[styles.selectChip, sharedResourceForm.type === opt && styles.selectChipActive]} onPress={() => setSharedResourceForm({ ...sharedResourceForm, type: opt })}><Text style={[styles.selectChipText, sharedResourceForm.type === opt && styles.selectChipTextActive]}>{opt}</Text></TouchableOpacity>))}</View>
+          <Text style={styles.inputLabel}>Class</Text>
+          <TextInput style={styles.input} placeholder="e.g. SHS2 Sci A" placeholderTextColor={colors.textLight} value={sharedResourceForm.classForm} onChangeText={(v) => setSharedResourceForm({ ...sharedResourceForm, classForm: v })} />
+          <Text style={styles.inputLabel}>Description</Text>
+          <TextInput style={[styles.input, styles.textArea]} placeholder="Brief description" placeholderTextColor={colors.textLight} value={sharedResourceForm.description} onChangeText={(v) => setSharedResourceForm({ ...sharedResourceForm, description: v })} multiline />
+          <View style={styles.modalActions}>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowSharedResourceModal(false)}><Text style={styles.modalBtnTextDark}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={() => { if (!sharedResourceForm.title.trim()) { Alert.alert('Error', 'Title is required'); return; } addSharedResource({ ...sharedResourceForm, sharedBy: teacherName }); setSharedResourceForm({ title: '', subject: selectedSubject, type: 'Notes', classForm: selectedClass, description: '' }); setShowSharedResourceModal(false); Alert.alert('Success', 'Resource shared.'); }}><Text style={styles.modalBtnTextLight}>Share</Text></TouchableOpacity>
+          </View>
+        </ScrollView></View></View>
+      </Modal>
+
+      {/* AI Lesson Plan Modal */}
+      <Modal visible={showAIModal} transparent animationType="fade" onRequestClose={() => setShowAIModal(false)}>
+        <View style={styles.modalOverlay}><View style={styles.modalContent}><ScrollView showsVerticalScrollIndicator={false}>
+          <Text style={styles.modalTitle}>AI Lesson Plan Generator</Text>
+          <Text style={styles.modalSubtitle}>Generates a structured lesson plan — connects to GES AI if available</Text>
+          <Text style={styles.inputLabel}>Subject</Text>
+          <TextInput style={styles.input} placeholder="e.g. Elective Mathematics" placeholderTextColor={colors.textLight} value={aiForm.subject} onChangeText={(v) => setAiForm({ ...aiForm, subject: v })} />
+          <Text style={styles.inputLabel}>Class</Text>
+          <TextInput style={styles.input} placeholder="e.g. SHS2 Sci A" placeholderTextColor={colors.textLight} value={aiForm.classForm} onChangeText={(v) => setAiForm({ ...aiForm, classForm: v })} />
+          <Text style={styles.inputLabel}>Topic *</Text>
+          <TextInput style={styles.input} placeholder="e.g. Integration by substitution" placeholderTextColor={colors.textLight} value={aiForm.topic} onChangeText={(v) => setAiForm({ ...aiForm, topic: v })} />
+          <Text style={styles.inputLabel}>Duration</Text>
+          <TextInput style={styles.input} placeholder="e.g. 40 minutes" placeholderTextColor={colors.textLight} value={aiForm.duration} onChangeText={(v) => setAiForm({ ...aiForm, duration: v })} />
+          <Text style={styles.inputLabel}>Specific Objectives (optional)</Text>
+          <TextInput style={[styles.input, styles.textArea]} placeholder="Any specific objectives you want included" placeholderTextColor={colors.textLight} value={aiForm.objectives} onChangeText={(v) => setAiForm({ ...aiForm, objectives: v })} multiline />
+          <Text style={styles.inputLabel}>Teaching Style (optional)</Text>
+          <TextInput style={styles.input} placeholder="e.g. Inquiry-based, direct instruction" placeholderTextColor={colors.textLight} value={aiForm.teachingStyle} onChangeText={(v) => setAiForm({ ...aiForm, teachingStyle: v })} />
+          <View style={styles.modalActions}>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowAIModal(false)}><Text style={styles.modalBtnTextDark}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={async () => { if (!aiForm.topic.trim()) { Alert.alert('Error', 'Topic is required'); return; } setAiLoading(true); try { const result = await generateAILessonPlan(aiForm); setAiResult(result); setShowAIModal(false); } catch { Alert.alert('Error', 'Failed to generate lesson plan.'); } setAiLoading(false); }}><Text style={styles.modalBtnTextLight}>{aiLoading ? 'Generating...' : 'Generate'}</Text></TouchableOpacity>
+          </View>
+        </ScrollView></View></View>
+      </Modal>
+
+      {/* Bulk Grade Modal */}
+      <Modal visible={showBulkGradeModal} transparent animationType="fade" onRequestClose={() => setShowBulkGradeModal(false)}>
+        <View style={styles.modalOverlay}><View style={styles.modalContent}><ScrollView showsVerticalScrollIndicator={false}>
+          <Text style={styles.modalTitle}>Bulk Grade Entry</Text>
+          <Text style={styles.modalSubtitle}>Enter scores for all submissions at once</Text>
+          {(() => {
+            const assignment = assignments.find((a) => a.id === bulkAssignmentId);
+            if (!assignment) return <Text style={styles.emptyText}>No assignment selected.</Text>;
+            return assignment.submissions.map((sub) => (
+              <View key={sub.id}>
+                <Text style={styles.inputLabel}>{sub.studentName} (Max: {assignment.maxScore})</Text>
+                <TextInput style={styles.input} placeholder="Score" placeholderTextColor={colors.textLight} value={bulkGrades[sub.id] || ''} onChangeText={(v) => setBulkGrades({ ...bulkGrades, [sub.id]: v })} keyboardType="numeric" />
+              </View>
+            ));
+          })()}
+          <View style={styles.modalActions}>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowBulkGradeModal(false)}><Text style={styles.modalBtnTextDark}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={() => { if (!bulkAssignmentId) return; const grades = Object.entries(bulkGrades).map(([submissionId, score]) => ({ submissionId, score: parseFloat(score) || 0 })).filter((g) => !isNaN(g.score)); bulkGrade(bulkAssignmentId, grades); setBulkGrades({}); setShowBulkGradeModal(false); Alert.alert('Success', 'Grades saved.'); }}><Text style={styles.modalBtnTextLight}>Save All</Text></TouchableOpacity>
+          </View>
+        </ScrollView></View></View>
+      </Modal>
     </DashboardLayout>
   );
 }
@@ -1150,4 +2021,29 @@ const styles = StyleSheet.create({
   alertText: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 2 },
   filePickerBtn: { borderWidth: 1.5, borderColor: colors.primary, borderStyle: 'dashed', borderRadius: radius.md, paddingVertical: spacing.md, alignItems: 'center', marginBottom: spacing.sm, backgroundColor: colors.primary + '08' },
   filePickerBtnText: { color: colors.primary, fontSize: fontSize.md, fontWeight: fontWeight.semibold },
+  // Virtual Classroom styles
+  vcToolbar: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md },
+  vcBtn: { backgroundColor: colors.surfaceAlt, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderWidth: 1.5, borderColor: colors.border },
+  vcBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  vcBtnText: { color: colors.text, fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
+  whiteboardPanel: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.md },
+  colorSwatch: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: colors.border, marginRight: spacing.xs },
+  colorSwatchActive: { borderColor: colors.text, borderWidth: 3 },
+  whiteboardCanvas: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.sm },
+  pageChip: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.surfaceAlt, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: colors.border },
+  pageChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  pageChipText: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, color: colors.textSecondary },
+  chatContainer: { maxHeight: 200, backgroundColor: colors.surfaceAlt, borderRadius: radius.md, padding: spacing.sm, marginBottom: spacing.sm },
+  chatMsg: { marginBottom: spacing.xs },
+  chatSender: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, color: colors.primary },
+  chatText: { fontSize: fontSize.sm, color: colors.text },
+  chatInputRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
+  sendBtn: { backgroundColor: colors.primary, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
+  sendBtnText: { color: colors.white, fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
+  // Analytics distribution styles
+  distRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs, gap: spacing.sm },
+  distGrade: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, color: colors.text, width: 30 },
+  distBarBg: { flex: 1, height: 20, backgroundColor: colors.surfaceAlt, borderRadius: radius.sm, overflow: 'hidden' },
+  distBar: { height: '100%', borderRadius: radius.sm },
+  distCount: { fontSize: fontSize.sm, color: colors.textSecondary, width: 30, textAlign: 'right' },
 });
