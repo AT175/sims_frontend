@@ -148,7 +148,7 @@ export const useAccessControlStore = create<AccessControlState>((set, get) => ({
 
   getFilteredNavItems: (userId, dashboardKey, allNavItems) => {
     const grant = get().grants.find((g) => g.userId === userId && g.dashboardKey === dashboardKey);
-    if (!grant) return []; // No grant = no access
+    if (!grant) return allNavItems; // No grant = full access (default)
     if (grant.allowedPages === 'all') return allNavItems;
     return allNavItems.filter((item) => grant.allowedPages.includes(item.key));
   },
