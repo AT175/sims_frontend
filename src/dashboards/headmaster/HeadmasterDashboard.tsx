@@ -17,6 +17,7 @@ import type { SchoolBranding } from '@shared/api/apiClient';
 import { DASHBOARD_CATALOG, DASHBOARD_MAP } from '@shared/navigation/dashboardCatalog';
 import { ROLE_LABELS } from '@shared/navigation/roleMap';
 import type { RoleId } from '@shared/types';
+import { GeneratedPasswordModal } from '@shared/components/GeneratedPasswordModal';
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'Executive Overview' },
@@ -120,6 +121,7 @@ export function HeadmasterDashboard() {
   const [roleDraft, setRoleDraft] = useState<RoleId[]>([]);
   const [resetUser, setResetUser] = useState<SystemUser | null>(null);
   const [newPassword, setNewPassword] = useState('');
+  const [generatedPassword, setGeneratedPassword] = useState<{ username: string; password: string; title: string } | null>(null);
 
   // ── Website Settings state ──
   const [websiteForm, setWebsiteForm] = useState<Partial<SchoolBranding> & { tenantId?: string }>({
@@ -235,10 +237,7 @@ export function HeadmasterDashboard() {
       setUserForm({ username: '', displayName: '', email: '', password: '', roles: [], status: 'Active', tenantId: user?.tenantId || 'tenant-001' });
       setShowUserModal(false);
       if (result?.defaultPassword) {
-        Alert.alert(
-          'User Created',
-          `Username: ${result.username}\n\nA random password has been generated:\n${result.defaultPassword}\n\nThe user will be required to change this password on first login. Please share it securely.`,
-        );
+        setGeneratedPassword({ username: result.username, password: result.defaultPassword, title: 'User Created' });
       } else {
         Alert.alert('Success', 'User account created.');
       }
@@ -1222,10 +1221,7 @@ export function HeadmasterDashboard() {
                 try {
                   const result = await sysAdminStore.resetUserPassword(resetUser!.id, newPassword.trim() || undefined);
                   if (result?.generatedPassword) {
-                    Alert.alert(
-                      'Password Reset',
-                      `A random password has been generated for ${resetUser?.username}:\n\n${result.generatedPassword}\n\nThe user will be required to change this password on next login. Please share it securely.`,
-                    );
+                    setGeneratedPassword({ username: resetUser?.username || '', password: result.generatedPassword, title: 'Password Reset' });
                   } else {
                     Alert.alert('Success', `Password reset for ${resetUser?.username}`);
                   }
@@ -1486,6 +1482,14 @@ export function HeadmasterDashboard() {
           </View>
         </View>
       </Modal>
+
+      <GeneratedPasswordModal
+        visible={generatedPassword !== null}
+        username={generatedPassword?.username || ''}
+        password={generatedPassword?.password || ''}
+        title={generatedPassword?.title}
+        onClose={() => setGeneratedPassword(null)}
+      />
     </DashboardLayout>
   );
 }
