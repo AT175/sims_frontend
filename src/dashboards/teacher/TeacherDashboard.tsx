@@ -171,6 +171,11 @@ export function TeacherDashboard() {
   const [lessonPlanForm, setLessonPlanForm] = useState({ subject: selectedSubject, classForm: selectedClass, date: new Date().toISOString().slice(0, 10), topic: '', objectives: '', teachingMethods: '', resources: '', activities: '', assessment: '', homework: '' });
   const [uploadForm, setUploadForm] = useState({ subject: selectedSubject, classForm: selectedClass, date: new Date().toISOString().slice(0, 10), topic: '', fileName: '' });
   const [liveForm, setLiveForm] = useState({ subject: selectedSubject, classForm: selectedClass, scheduledTime: '', topic: '' });
+  const [liveDate, setLiveDate] = useState(new Date().toISOString().slice(0, 10));
+  const [liveHour, setLiveHour] = useState('14');
+  const [liveMinute, setLiveMinute] = useState('00');
+  const [showGoLiveModal, setShowGoLiveModal] = useState(false);
+  const [goLiveForm, setGoLiveForm] = useState({ subject: selectedSubject, classForm: selectedClass, topic: '' });
   const [syllabusForm, setSyllabusForm] = useState({ subject: selectedSubject, classForm: selectedClass, topic: '', subTopics: '', week: 1 });
   const [remedialForm, setRemedialForm] = useState({ studentName: '', admNo: '', classForm: selectedClass, subject: selectedSubject, area: '', intervention: '', notes: '' });
 
@@ -443,9 +448,14 @@ export function TeacherDashboard() {
           <View>
             <Text style={styles.pageTitle}>Live / Virtual Class Session</Text>
             <Text style={styles.pageSubtitle}>Start or schedule an online class</Text>
-            <TouchableOpacity style={styles.startLiveBtn} onPress={() => setShowLiveModal(true)}>
-              <Text style={styles.startLiveBtnText}>+ Schedule Live Class</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
+              <TouchableOpacity style={[styles.startLiveBtn, { flex: 1, backgroundColor: colors.danger }]} onPress={() => setShowGoLiveModal(true)}>
+                <Text style={styles.startLiveBtnText}>🔴 Go Live Now</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.startLiveBtn, { flex: 1 }]} onPress={() => setShowLiveModal(true)}>
+                <Text style={styles.startLiveBtnText}>+ Schedule</Text>
+              </TouchableOpacity>
+            </View>
             <Text style={styles.sectionTitle}>Sessions</Text>
             {liveSessions.length === 0 && <Text style={styles.emptyText}>No sessions scheduled.</Text>}
             {liveSessions.map((s) => (
@@ -464,15 +474,23 @@ export function TeacherDashboard() {
                     <TouchableOpacity style={[styles.smallBtn, { backgroundColor: colors.success }]} onPress={() => { startLiveSession(s.id, teacherName); Alert.alert('Live', 'Session is now live.'); }}>
                       <Text style={styles.smallBtnText}>Start Now</Text>
                     </TouchableOpacity>
+                    <TouchableOpacity style={[styles.smallBtn, { backgroundColor: colors.info }]} onPress={() => { startLiveSession(s.id, teacherName); joinVirtualClassroom(s.id); }}>
+                      <Text style={styles.smallBtnText}>Enter Classroom</Text>
+                    </TouchableOpacity>
                     <TouchableOpacity style={[styles.smallBtn, { backgroundColor: colors.danger }]} onPress={() => { cancelLiveSession(s.id); Alert.alert('Cancelled', 'Session cancelled.'); }}>
                       <Text style={styles.smallBtnText}>Cancel</Text>
                     </TouchableOpacity>
                   </View>
                 )}
                 {s.status === 'Live' && (
-                  <TouchableOpacity style={[styles.smallBtn, { backgroundColor: colors.danger }]} onPress={() => { endLiveSession(s.id); Alert.alert('Ended', 'Session ended.'); }}>
-                    <Text style={styles.smallBtnText}>End Session</Text>
-                  </TouchableOpacity>
+                  <View style={styles.rowBtns}>
+                    <TouchableOpacity style={[styles.smallBtn, { backgroundColor: colors.info }]} onPress={() => joinVirtualClassroom(s.id)}>
+                      <Text style={styles.smallBtnText}>Enter Classroom</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.smallBtn, { backgroundColor: colors.danger }]} onPress={() => { endLiveSession(s.id); leaveVirtualClassroom(); Alert.alert('Ended', 'Session ended.'); }}>
+                      <Text style={styles.smallBtnText}>End Session</Text>
+                    </TouchableOpacity>
+                  </View>
                 )}
               </View>
             ))}
@@ -953,11 +971,52 @@ export function TeacherDashboard() {
                   </View>
                 ))}
                 {liveSessions.filter((s) => s.status === 'Scheduled' || s.status === 'Live').length === 0 && (
-                  <Text style={styles.emptyText}>No active sessions. Schedule a live class first.</Text>
+                  <View>
+                    <Text style={styles.emptyText}>No active sessions. Schedule a live class or use Go Live to start instantly.</Text>
+                    <TouchableOpacity style={[styles.startLiveBtn, { backgroundColor: colors.danger, marginTop: spacing.md }]} onPress={() => setShowGoLiveModal(true)}>
+                      <Text style={styles.startLiveBtnText}>🔴 Go Live Now</Text>
+                    </TouchableOpacity>
+                  </View>
                 )}
               </View>
             ) : (
               <View>
+                {/* Session Info Header */}
+                {(() => {
+                  const session = liveSessions.find((s) => s.id === virtualClassroom.sessionId);
+                  if (!session) return null;
+                  return (
+                    <View style={[styles.sessionCard, { borderLeftWidth: 4, borderLeftColor: colors.danger }]}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.sessionSubject}>🔴 LIVE: {session.subject} — {session.classForm}</Text>
+                          <Text style={styles.sessionTime}>Topic: {session.topic}</Text>
+                        </View>
+                        <Text style={[styles.sessionTime, { color: colors.danger, fontWeight: fontWeight.bold }]}>REC</Text>
+                      </View>
+                    </View>
+                  );
+                })()}
+
+                {/* Participants */}
+                <View style={styles.whiteboardPanel}>
+                  <Text style={styles.sectionTitle}>Participants ({virtualClassroom.participants.length + 1})</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs }}>
+                    <Text style={{ fontSize: fontSize.sm, color: colors.primary, fontWeight: fontWeight.bold }}>{teacherName} (Host)</Text>
+                    {virtualClassroom.cameraOn && <Text style={{ fontSize: fontSize.xs, color: colors.success, marginLeft: spacing.xs }}>📷</Text>}
+                    {virtualClassroom.micOn && <Text style={{ fontSize: fontSize.xs, color: colors.success, marginLeft: spacing.xs }}>🎤</Text>}
+                  </View>
+                  {virtualClassroom.participants.map((p) => (
+                    <View key={p.id} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs }}>
+                      <Text style={{ flex: 1, fontSize: fontSize.sm, color: colors.text }}>{p.name}</Text>
+                      <Text style={{ fontSize: fontSize.xs, color: p.cameraOn ? colors.success : colors.textLight }}>{p.cameraOn ? '📷' : '📷off'}</Text>
+                      <Text style={{ fontSize: fontSize.xs, color: p.micOn ? colors.success : colors.textLight, marginLeft: spacing.xs }}>{p.micOn ? '🎤' : '🎤off'}</Text>
+                    </View>
+                  ))}
+                  {virtualClassroom.participants.length === 0 && <Text style={styles.emptyText}>No students have joined yet.</Text>}
+                </View>
+
+                {/* Controls Toolbar */}
                 <View style={styles.vcToolbar}>
                   <TouchableOpacity style={[styles.vcBtn, virtualClassroom.cameraOn && styles.vcBtnActive]} onPress={toggleCamera}>
                     <Text style={styles.vcBtnText}>{virtualClassroom.cameraOn ? '📷 On' : '📷 Off'}</Text>
@@ -969,10 +1028,11 @@ export function TeacherDashboard() {
                     <Text style={styles.vcBtnText}>{virtualClassroom.screenSharing ? '🖥️ Sharing' : '🖥️ Share'}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.vcBtn, virtualClassroom.whiteboardActive && styles.vcBtnActive]} onPress={toggleWhiteboard}>
-                    <Text style={styles.vcBtnText}>{virtualClassroom.whiteboardActive ? '📝 Board' : '📝 Board'}</Text>
+                    <Text style={styles.vcBtnText}>📝 Board</Text>
                   </TouchableOpacity>
                 </View>
 
+                {/* Whiteboard */}
                 {virtualClassroom.whiteboardActive && (
                   <View style={styles.whiteboardPanel}>
                     <Text style={styles.sectionTitle}>Whiteboard — Page {virtualClassroom.whiteboard.currentPage + 1}</Text>
@@ -1004,9 +1064,10 @@ export function TeacherDashboard() {
                   </View>
                 )}
 
+                {/* Raised Hands */}
                 {virtualClassroom.raisedHands.length > 0 && (
                   <View style={styles.alertCard}>
-                    <Text style={styles.alertTitle}>✋ Raised Hands</Text>
+                    <Text style={styles.alertTitle}>✋ Raised Hands ({virtualClassroom.raisedHands.length})</Text>
                     {virtualClassroom.raisedHands.map((h) => (
                       <View key={h.id} style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.xs }}>
                         <Text style={{ flex: 1, color: colors.text }}>{h.studentName}</Text>
@@ -1016,6 +1077,7 @@ export function TeacherDashboard() {
                   </View>
                 )}
 
+                {/* Chat */}
                 <Text style={styles.sectionTitle}>Class Chat</Text>
                 <ScrollView style={styles.chatContainer}>
                   {virtualClassroom.chatMessages.map((msg) => (
@@ -1033,8 +1095,9 @@ export function TeacherDashboard() {
                   </TouchableOpacity>
                 </View>
 
-                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.danger, marginTop: spacing.md }]} onPress={() => { leaveVirtualClassroom(); }}>
-                  <Text style={styles.actionBtnText}>Leave Classroom</Text>
+                {/* End & Leave */}
+                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.danger, marginTop: spacing.md }]} onPress={() => { const sid = virtualClassroom.sessionId; endLiveSession(sid); leaveVirtualClassroom(); Alert.alert('Session Ended', 'Live session has ended.'); }}>
+                  <Text style={styles.actionBtnText}>End Session & Leave</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -1671,13 +1734,47 @@ export function TeacherDashboard() {
           <TextInput style={styles.input} placeholder="e.g. Elective Mathematics" placeholderTextColor={colors.textLight} value={liveForm.subject} onChangeText={(v) => setLiveForm({ ...liveForm, subject: v })} />
           <Text style={styles.inputLabel}>Class</Text>
           <TextInput style={styles.input} placeholder="e.g. SHS2 Sci A" placeholderTextColor={colors.textLight} value={liveForm.classForm} onChangeText={(v) => setLiveForm({ ...liveForm, classForm: v })} />
-          <Text style={styles.inputLabel}>Scheduled Time *</Text>
-          <TextInput style={styles.input} placeholder="e.g. 2026-07-11 14:00" placeholderTextColor={colors.textLight} value={liveForm.scheduledTime} onChangeText={(v) => setLiveForm({ ...liveForm, scheduledTime: v })} />
+          <Text style={styles.inputLabel}>Date *</Text>
+          <View style={styles.dateTimePickerRow}>
+            <TextInput style={[styles.input, { flex: 2 }]} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={liveDate} onChangeText={setLiveDate} />
+            <Text style={styles.dateTimePickerSep}>at</Text>
+            <TextInput style={[styles.input, { flex: 1 }]} placeholder="HH" placeholderTextColor={colors.textLight} value={liveHour} onChangeText={setLiveHour} keyboardType="numeric" maxLength={2} />
+            <Text style={styles.dateTimePickerSep}>:</Text>
+            <TextInput style={[styles.input, { flex: 1 }]} placeholder="MM" placeholderTextColor={colors.textLight} value={liveMinute} onChangeText={setLiveMinute} keyboardType="numeric" maxLength={2} />
+          </View>
+          <View style={styles.selectRow}>
+            {['08:00', '10:00', '12:00', '14:00', '15:00', '16:00'].map((t) => {
+              const [h, m] = t.split(':');
+              return (
+                <TouchableOpacity key={t} style={[styles.selectChip, liveHour === h && liveMinute === m && styles.selectChipActive]} onPress={() => { setLiveHour(h); setLiveMinute(m); }}>
+                  <Text style={[styles.selectChipText, liveHour === h && liveMinute === m && styles.selectChipTextActive]}>{t}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
           <Text style={styles.inputLabel}>Topic *</Text>
           <TextInput style={styles.input} placeholder="e.g. Integration by substitution" placeholderTextColor={colors.textLight} value={liveForm.topic} onChangeText={(v) => setLiveForm({ ...liveForm, topic: v })} />
           <View style={styles.modalActions}>
             <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowLiveModal(false)}><Text style={styles.modalBtnTextDark}>Cancel</Text></TouchableOpacity>
-            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={() => { if (!liveForm.topic.trim() || !liveForm.scheduledTime.trim()) { Alert.alert('Error', 'Topic and scheduled time are required'); return; } scheduleLiveSession(liveForm); setLiveForm({ subject: selectedSubject, classForm: selectedClass, scheduledTime: '', topic: '' }); setShowLiveModal(false); Alert.alert('Success', 'Live class scheduled.'); }}><Text style={styles.modalBtnTextLight}>Schedule</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={() => { if (!liveForm.topic.trim() || !liveDate.trim()) { Alert.alert('Error', 'Topic and date are required'); return; } const timeStr = `${liveDate} ${liveHour.padStart(2, '0')}:${liveMinute.padStart(2, '0')}`; scheduleLiveSession({ ...liveForm, scheduledTime: timeStr }); setLiveForm({ subject: selectedSubject, classForm: selectedClass, scheduledTime: '', topic: '' }); setLiveDate(new Date().toISOString().slice(0, 10)); setLiveHour('14'); setLiveMinute('00'); setShowLiveModal(false); Alert.alert('Success', 'Live class scheduled.'); }}><Text style={styles.modalBtnTextLight}>Schedule</Text></TouchableOpacity>
+          </View>
+        </ScrollView></View></View>
+      </Modal>
+
+      {/* Go Live Modal */}
+      <Modal visible={showGoLiveModal} transparent animationType="fade" onRequestClose={() => setShowGoLiveModal(false)}>
+        <View style={styles.modalOverlay}><View style={styles.modalContent}><ScrollView showsVerticalScrollIndicator={false}>
+          <Text style={styles.modalTitle}>🔴 Go Live Now</Text>
+          <Text style={styles.modalSubtitle}>Start an instant live session — students will be notified immediately</Text>
+          <Text style={styles.inputLabel}>Subject</Text>
+          <TextInput style={styles.input} placeholder="e.g. Elective Mathematics" placeholderTextColor={colors.textLight} value={goLiveForm.subject} onChangeText={(v) => setGoLiveForm({ ...goLiveForm, subject: v })} />
+          <Text style={styles.inputLabel}>Class *</Text>
+          <TextInput style={styles.input} placeholder="e.g. SHS2 Sci A" placeholderTextColor={colors.textLight} value={goLiveForm.classForm} onChangeText={(v) => setGoLiveForm({ ...goLiveForm, classForm: v })} />
+          <Text style={styles.inputLabel}>Topic *</Text>
+          <TextInput style={styles.input} placeholder="e.g. Integration by substitution" placeholderTextColor={colors.textLight} value={goLiveForm.topic} onChangeText={(v) => setGoLiveForm({ ...goLiveForm, topic: v })} />
+          <View style={styles.modalActions}>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowGoLiveModal(false)}><Text style={styles.modalBtnTextDark}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit, { backgroundColor: colors.danger }]} onPress={() => { if (!goLiveForm.topic.trim() || !goLiveForm.classForm.trim()) { Alert.alert('Error', 'Class and topic are required to go live'); return; } const now = new Date(); const timeStr = `${now.toISOString().slice(0, 10)} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`; scheduleLiveSession({ subject: goLiveForm.subject, classForm: goLiveForm.classForm, scheduledTime: timeStr, topic: goLiveForm.topic }); const newSession = useTeacherStore.getState().liveSessions[0]; if (newSession) { startLiveSession(newSession.id, teacherName); joinVirtualClassroom(newSession.id); } setGoLiveForm({ subject: selectedSubject, classForm: selectedClass, topic: '' }); setShowGoLiveModal(false); Alert.alert('Live Now', 'You are now live! Students have been notified.'); }}><Text style={styles.modalBtnTextLight}>Go Live</Text></TouchableOpacity>
           </View>
         </ScrollView></View></View>
       </Modal>
@@ -2046,4 +2143,7 @@ const styles = StyleSheet.create({
   distBarBg: { flex: 1, height: 20, backgroundColor: colors.surfaceAlt, borderRadius: radius.sm, overflow: 'hidden' },
   distBar: { height: '100%', borderRadius: radius.sm },
   distCount: { fontSize: fontSize.sm, color: colors.textSecondary, width: 30, textAlign: 'right' },
+  // Date/time picker
+  dateTimePickerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm },
+  dateTimePickerSep: { fontSize: fontSize.sm, color: colors.textSecondary },
 });
