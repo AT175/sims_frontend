@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { apiClient } from '@shared/api/apiClient';
 import type { NavItem } from '@shared/components/DashboardLayout';
 import { useNotificationStore } from './notificationStore';
+import { useAuthStore } from './authStore';
 
 export interface PageAccessGrant {
   id: string;
@@ -148,7 +149,12 @@ export const useAccessControlStore = create<AccessControlState>((set, get) => ({
 
   getFilteredNavItems: (userId, dashboardKey, allNavItems) => {
     const grant = get().grants.find((g) => g.userId === userId && g.dashboardKey === dashboardKey);
-    if (!grant) return allNavItems; // No grant = full access (default)
+    if (!grant) {
+      // No grant: only headmaster (tenant admin) and system_admin (app admin) get full access
+      const user = useAuthStore.getState().user;
+      const isAdminRole = user?.roles?.some((r) => r === 'headmaster' || r === 'system_admin');
+      return isAdminRole ? allNavItems : [];
+    }
     if (grant.allowedPages === 'all') return allNavItems;
     return allNavItems.filter((item) => grant.allowedPages.includes(item.key));
   },
