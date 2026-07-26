@@ -1,4 +1,6 @@
 const CACHE_NAME = 'sims-v2';
+const BRANDING_CACHE_NAME = 'sims-branding-v1';
+const IMAGE_CACHE_NAME = 'sims-images-v1';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -19,7 +21,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      Promise.all(keys.filter((k) => k !== CACHE_NAME && k !== BRANDING_CACHE_NAME && k !== IMAGE_CACHE_NAME).map((k) => caches.delete(k)))
     )
   );
   self.clients.claim();
@@ -27,8 +29,10 @@ self.addEventListener('activate', (event) => {
 
 // Fetch strategy:
 // - Navigation requests (HTML): network-first, fallback to cache
+// - Branding API (/api/public/tenants/): cache-first with 24h TTL
+// - Image requests: cache-first with long TTL
 // - Static assets: cache-first
-// - API calls: network-first with cache fallback
+// - API calls: network-first with cache fallback (5min TTL)
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
@@ -38,6 +42,9 @@ self.addEventListener('fetch', (event) => {
   const isSameOrigin = url.origin === self.location.origin;
   const isApiCall = url.pathname.startsWith('/api') || !isSameOrigin;
   const isNavigation = request.mode === 'navigate';
+  const isBrandingApi = url.pathname.includes('/api/public/tenants/');
+  const isImageRequest = request.destination === 'image' ||
+    /\.(png|jpe?g|gif|svg|webp|ico|bmp)$/i.test(url.pathname);
 
   if (isNavigation) {
     event.respondWith(
@@ -48,6 +55,73 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => caches.match(request).then((cached) => cached || caches.match('/index.html')))
+    );
+    return;
+  }
+
+  // Branding API: cache-first with 24h TTL — enables offline homepage
+  if (isBrandingApi) {
+    event.respondWith(
+      caches.open(BRANDING_CACHE_NAME).then((cache) =>
+        cache.match(request).then((cached) => {
+          if (cached) {
+            const ts = cached.headers.get('X-Cache-Timestamp');
+            if (ts && Date.now() - parseInt(ts) < 86400000) {
+              // Cache is fresh (24h) — return it
+              return cached;
+            }
+          }
+          // Fetch fresh branding data
+          return fetch(request).then((response) => {
+            if (response.ok) {
+              const copy = response.clone();
+              const headers = new Headers(response.headers);
+              headers.set('X-Cache-Timestamp', Date.now().toString());
+              const cachedResponse = new Response(copy.body, {
+                status: response.status,
+                statusText: response.statusText,
+                headers: headers,
+              });
+              cache.put(request, cachedResponse);
+            }
+            return response;
+          }).catch(() => cached || new Response('{"error":"Offline"}', {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' },
+          }));
+        })
+      )
+    );
+    return;
+  }
+
+  // Images: cache-first with long TTL (7 days)
+  if (isImageRequest) {
+    event.respondWith(
+      caches.open(IMAGE_CACHE_NAME).then((cache) =>
+        cache.match(request).then((cached) => {
+          if (cached) {
+            const ts = cached.headers.get('X-Cache-Timestamp');
+            if (ts && Date.now() - parseInt(ts) < 604800000) {
+              return cached;
+            }
+          }
+          return fetch(request).then((response) => {
+            if (response.ok) {
+              const copy = response.clone();
+              const headers = new Headers(response.headers);
+              headers.set('X-Cache-Timestamp', Date.now().toString());
+              const cachedResponse = new Response(copy.body, {
+                status: response.status,
+                statusText: response.statusText,
+                headers: headers,
+              });
+              cache.put(request, cachedResponse);
+            }
+            return response;
+          }).catch(() => cached || Response.error());
+        })
+      )
     );
     return;
   }
@@ -104,7 +178,24 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
+// Background Sync API: trigger sync when connection is restored
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'simsgh-sync') {
+    event.waitUntil(
+      self.clients.matchAll().then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: 'BACKGROUND_SYNC' });
+        });
+      })
+    );
+  }
+});
+
 self.addEventListener('message', (event) => {
   if (event.data === 'SKIP_WAITING') self.skipWaiting();
-  if (event.data === 'CLEAR_CACHE') caches.delete(CACHE_NAME);
+  if (event.data === 'CLEAR_CACHE') {
+    caches.delete(CACHE_NAME);
+    caches.delete(BRANDING_CACHE_NAME);
+    caches.delete(IMAGE_CACHE_NAME);
+  }
 });

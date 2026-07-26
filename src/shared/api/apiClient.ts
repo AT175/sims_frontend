@@ -174,6 +174,12 @@ class ApiClient {
     return this.get<SchoolBranding>(`/public/tenants/${tenantKey}`);
   }
 
+  async getPublicSync(tenantKey: string, since: string): Promise<{ updated: boolean; branding: SchoolBranding | null }> {
+    return this.get<{ updated: boolean; branding: SchoolBranding | null }>(
+      `/sync/branding/${tenantKey}?since=${encodeURIComponent(since)}`
+    );
+  }
+
   async updateTenantBranding(id: string, data: Partial<SchoolBranding>): Promise<any> {
     return this.put<any>(`/tenants/${id}`, data as any);
   }
@@ -203,6 +209,11 @@ export interface SchoolBranding {
   twitterUrl: string | null;
   newsItems: { title: string; body: string; date: string }[];
   galleryImages: string[];
+  programmes: { name: string; description: string; icon: string }[];
+  staffProfiles: { name: string; title: string; photoUrl: string | null; bio: string | null }[];
+  upcomingEvents: { title: string; date: string; description: string; type: string }[];
+  testimonials: { author: string; role: string; content: string; rating: number }[];
+  updatedAt?: string;
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

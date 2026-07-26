@@ -1,29 +1,42 @@
 import { Database, Model } from '@nozbe/watermelondb';
 import { SyncQueueModel, SyncedModel } from './models';
+import { cacheBranding, getCachedBranding, getPendingOfflineCount } from './indexedDBAdapter';
+import type { SchoolBranding } from '@shared/api/apiClient';
 
 const SYNCED_TABLES = [
+  // Registry
   'students',
   'placements',
   'admission_applications',
   'parent_accounts',
   'certificates',
   'correspondence_logs',
+  // Staff
   'staff',
   'subjects',
   'class_sections',
   'teacher_assignments',
   'enrollments',
+  // Academic
   'lesson_materials',
   'live_class_sessions',
   'assignments',
   'submissions',
   'assessments',
   'class_attendance',
+  'exam_results',
+  'report_cards',
+  'timetables',
+  'exams',
+  'curriculum',
+  'transcripts',
+  // Bursary
   'student_fee_ledgers',
   'fee_payments',
   'payroll_records',
   'expenditure_entries',
   'budget_lines',
+  // Boarding
   'houses',
   'room_allocations',
   'roll_call_entries',
@@ -290,5 +303,50 @@ export class SyncEngine {
   /** Get the last sync timestamp */
   getLastSyncAt(): Date | null {
     return this.lastSyncAt;
+  }
+
+  /** Get current sync status for UI */
+  getSyncStatus(): { pending: number; lastSync: Date | null; isSyncing: boolean } {
+    return {
+      pending: 0, // Will be populated async by caller
+      lastSync: this.lastSyncAt,
+      isSyncing: this.isSyncing,
+    };
+  }
+
+  /** Sync school branding data and cache to IndexedDB */
+  async syncBranding(tenantKey: string): Promise<SchoolBranding | null> {
+    // Try to get from cache first
+    const cached = await getCachedBranding(tenantKey);
+
+    try {
+      const response = await fetch(
+        `${this.config.apiUrl}/public/tenants/${tenantKey}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Tenant-Id': this.config.getTenantId() ?? '',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        console.warn('[SyncEngine] Branding fetch failed, using cache');
+        return cached;
+      }
+
+      const branding: SchoolBranding = await response.json();
+      await cacheBranding(tenantKey, branding);
+      return branding;
+    } catch (error) {
+      console.warn('[SyncEngine] Branding sync error, using cache:', error);
+      return cached;
+    }
+  }
+
+  /** Get pending count from offline adapter */
+  async getOfflinePendingCount(): Promise<number> {
+    return getPendingOfflineCount();
   }
 }

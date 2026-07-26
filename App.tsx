@@ -49,6 +49,7 @@ import {
 } from '@dashboards/index';
 import { VerificationDashboard } from '@dashboards/verification/VerificationDashboard';
 import { ForceChangePasswordModal } from '@shared/components/ForceChangePasswordModal';
+import { SyncStatusIndicator } from '@shared/components/SyncStatusIndicator';
 
 
 const DASHBOARD_COMPONENTS: Record<string, React.ComponentType> = {
@@ -173,6 +174,7 @@ function AppContent() {
     <>
       <DashboardComponent />
       <ForceChangePasswordModal />
+      <SyncStatusIndicator />
     </>
   );
 }

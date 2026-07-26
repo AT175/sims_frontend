@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,8 @@ import {
 import { apiClient, SchoolBranding } from '@shared/api/apiClient';
 import { LoginScreen } from '@screens/LoginScreen';
 import { colors, spacing, fontSize, fontWeight, radius, shadows } from '@theme/index';
+import { getCachedBranding, cacheBranding } from '@db/indexedDBAdapter';
+import { useConnectionStatus } from '@shared/hooks/useConnectionStatus';
 
 interface SchoolWebsiteProps {
   tenantKey: string;
@@ -44,6 +46,8 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
   const [showPortal, setShowPortal] = useState(false);
   const [heroSlide, setHeroSlide] = useState(0);
   const [, setActiveSection] = useState('home');
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const { isOnline } = useConnectionStatus();
 
   const heroFade = useRef(new Animated.Value(1)).current;
   const heroScale = useRef(new Animated.Value(1)).current;
@@ -75,18 +79,42 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
     return () => clearInterval(interval);
   }, [heroFade, heroScale, loading, error]);
 
-  const loadBranding = async () => {
+  const loadBranding = useCallback(async () => {
     setLoading(true);
     setError(null);
+
+    // Step 1: Try to load from IndexedDB cache first for instant render
+    try {
+      const cached = await getCachedBranding(tenantKey);
+      if (cached) {
+        setBranding(cached);
+        setLoading(false);
+        setIsOfflineMode(!isOnline);
+      }
+    } catch {
+      // Cache read failed — continue to network fetch
+    }
+
+    // Step 2: Fetch from API (network)
     try {
       const data = await apiClient.getPublicBranding(tenantKey);
       setBranding(data);
+      setIsOfflineMode(false);
+      // Update cache with fresh data
+      cacheBranding(tenantKey, data).catch(() => {});
     } catch (err: any) {
-      setError(err.message || 'Failed to load school information');
+      // Step 3: If API failed and we have cached data, keep showing it
+      const cached = await getCachedBranding(tenantKey);
+      if (cached) {
+        setBranding(cached);
+        setIsOfflineMode(true);
+      } else {
+        setError(err.message || 'Failed to load school information');
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [tenantKey, isOnline]);
 
   const scrollToAbout = () => {
     setActiveSection('home');
@@ -139,6 +167,10 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
 
   const newsItems = branding.newsItems || [];
   const galleryImages = branding.galleryImages || [];
+  const programmes = branding.programmes || [];
+  const staffProfiles = branding.staffProfiles || [];
+  const upcomingEvents = branding.upcomingEvents || [];
+  const testimonials = branding.testimonials || [];
 
   return (
     <View style={s.homeScreen}>
@@ -173,6 +205,9 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
             <TouchableOpacity style={[s.headerCtaBtn, { backgroundColor: primary }, IS_NARROW && { paddingVertical: spacing.sm, paddingHorizontal: spacing.md + 4 }]} onPress={() => setActiveSection('admissions')}>
               <Text style={s.headerCtaText}>Apply</Text>
             </TouchableOpacity>
+            {isOfflineMode && (
+              <View style={s.offlineBadge}><Text style={s.offlineBadgeText}>● Offline</Text></View>
+            )}
           </View>
         </View>
 
@@ -282,6 +317,115 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
                   <Image key={i} source={{ uri: img }} style={s.galleryImg} resizeMode="cover" />
                 ))}
               </ScrollView>
+            </View>
+          </View>
+        )}
+
+        {/* ── Programmes Section ── */}
+        {programmes.length > 0 && (
+          <View style={[s.section, s.aboutBg, IS_NARROW && { paddingHorizontal: spacing.md }]}>
+            <View style={s.sectionNarrow}>
+              <Text style={[s.sectionTitle, { color: primary }]}>Our <Text style={[s.sectionTitleAccent, { color: colors.accentDark }]}>Programmes</Text></Text>
+              <Text style={s.sectionSubtitle}>Academic programmes offered at {schoolName}</Text>
+              <View style={s.featuresGrid}>
+                {programmes.map((prog, i) => (
+                  <View key={i} style={[s.featureCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
+                    <View style={[s.featureIconWrap, { backgroundColor: `${primary}1A` }]}>
+                      <Text style={s.featureIcon}>{prog.icon || '📚'}</Text>
+                    </View>
+                    <Text style={[s.featureTitle, { color: primary }]}>{prog.name}</Text>
+                    <Text style={s.featureText}>{prog.description}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* ── Staff / Leadership Showcase ── */}
+        {staffProfiles.length > 0 && (
+          <View style={[s.section, s.featuresBg, IS_NARROW && { paddingHorizontal: spacing.md }]}>
+            <View style={s.sectionNarrow}>
+              <Text style={[s.sectionTitle, { color: primary }]}>Our <Text style={[s.sectionTitleAccent, { color: colors.accentDark }]}>Leadership</Text></Text>
+              <Text style={s.sectionSubtitle}>Meet the dedicated team behind {schoolName}</Text>
+              <View style={s.featuresGrid}>
+                {staffProfiles.map((staff, i) => (
+                  <View key={i} style={[s.featureCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
+                    {staff.photoUrl ? (
+                      <Image source={{ uri: staff.photoUrl }} style={s.staffPhoto} resizeMode="cover" />
+                    ) : (
+                      <View style={[s.staffPhotoPlaceholder, { backgroundColor: `${primary}1A` }]}>
+                        <Text style={[s.staffPhotoInitial, { color: primary }]}>{staff.name.charAt(0).toUpperCase()}</Text>
+                      </View>
+                    )}
+                    <Text style={[s.featureTitle, { color: primary, marginTop: spacing.md }]}>{staff.name}</Text>
+                    <Text style={[s.featureText, { fontWeight: fontWeight.semibold, color: colors.textSecondary }]}>{staff.title}</Text>
+                    {staff.bio && <Text style={[s.featureText, { marginTop: spacing.xs }]}>{staff.bio}</Text>}
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* ── Events Calendar ── */}
+        {upcomingEvents.length > 0 && (
+          <View style={[s.section, s.aboutBg, IS_NARROW && { paddingHorizontal: spacing.md }]}>
+            <View style={s.sectionNarrow}>
+              <Text style={[s.sectionTitle, { color: primary }]}>Upcoming <Text style={[s.sectionTitleAccent, { color: colors.accentDark }]}>Events</Text></Text>
+              <Text style={s.sectionSubtitle}>Stay informed about what's happening at {schoolName}</Text>
+              <View style={{ marginTop: spacing.lg }}>
+                {upcomingEvents.map((event, i) => {
+                  const eventDate = new Date(event.date);
+                  const day = eventDate.getDate().toString().padStart(2, '0');
+                  const month = eventDate.toLocaleString('en', { month: 'short' }).toUpperCase();
+                  return (
+                    <View key={i} style={[s.eventRow, IS_NARROW && { padding: spacing.md }]}>
+                      <View style={[s.eventDateBadge, { backgroundColor: primary }]}>
+                        <Text style={s.eventDateDay}>{day}</Text>
+                        <Text style={s.eventDateMonth}>{month}</Text>
+                      </View>
+                      <View style={s.eventInfo}>
+                        <Text style={[s.eventTitle, { color: primary }]}>{event.title}</Text>
+                        <Text style={s.eventDescription}>{event.description}</Text>
+                        <View style={[s.eventTypeBadge, { backgroundColor: `${primary}1A` }]}>
+                          <Text style={[s.eventTypeText, { color: primary }]}>{event.type}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* ── Testimonials ── */}
+        {testimonials.length > 0 && (
+          <View style={[s.section, s.featuresBg, IS_NARROW && { paddingHorizontal: spacing.md }]}>
+            <View style={s.sectionNarrow}>
+              <Text style={[s.sectionTitle, { color: primary }]}>What People <Text style={[s.sectionTitleAccent, { color: colors.accentDark }]}>Say</Text></Text>
+              <Text style={s.sectionSubtitle}>Testimonials from our students and parents</Text>
+              <View style={s.featuresGrid}>
+                {testimonials.map((testimonial, i) => (
+                  <View key={i} style={[s.featureCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
+                    <Text style={s.testimonialStars}>
+                      {'★'.repeat(Math.min(testimonial.rating || 5, 5))}
+                      {'☆'.repeat(Math.max(0, 5 - (testimonial.rating || 5)))}
+                    </Text>
+                    <Text style={[s.featureText, { fontStyle: 'italic', marginBottom: spacing.md }]}>"{testimonial.content}"</Text>
+                    <View style={s.testimonialAuthorRow}>
+                      <View style={[s.testimonialAvatar, { backgroundColor: `${primary}1A` }]}>
+                        <Text style={[s.testimonialAvatarText, { color: primary }]}>{testimonial.author.charAt(0).toUpperCase()}</Text>
+                      </View>
+                      <View>
+                        <Text style={[s.featureTitle, { color: primary, fontSize: fontSize.sm }]}>{testimonial.author}</Text>
+                        <Text style={[s.featureText, { fontSize: 10 }]}>{testimonial.role}</Text>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </View>
             </View>
           </View>
         )}
@@ -476,4 +620,26 @@ const s = StyleSheet.create({
   footerContactText: { fontSize: fontSize.sm, color: 'rgba(255, 255, 255, 0.6)' },
   footerBottom: { borderTopWidth: 1, borderTopColor: 'rgba(255, 255, 255, 0.1)', marginTop: spacing.xl, paddingTop: spacing.lg, alignItems: 'center' },
   footerCopyright: { fontSize: fontSize.xs, color: 'rgba(255, 255, 255, 0.4)', letterSpacing: 0.3 },
+  // Offline badge
+  offlineBadge: { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderRadius: 12, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)' },
+  offlineBadgeText: { fontSize: 10, fontWeight: fontWeight.bold, color: '#ef4444' },
+  // Staff photos
+  staffPhoto: { width: 80, height: 80, borderRadius: 40, alignSelf: 'center' },
+  staffPhotoPlaceholder: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', alignSelf: 'center' },
+  staffPhotoInitial: { fontSize: 28, fontWeight: fontWeight.bold },
+  // Events
+  eventRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, padding: spacing.lg, backgroundColor: 'rgba(240, 244, 255, 0.6)', borderRadius: radius.md, marginBottom: spacing.md, borderWidth: 1, borderColor: 'rgba(15, 76, 117, 0.06)' },
+  eventDateBadge: { width: 56, height: 56, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  eventDateDay: { fontSize: 22, fontWeight: fontWeight.extrabold, color: colors.white },
+  eventDateMonth: { fontSize: 10, fontWeight: fontWeight.bold, color: 'rgba(255, 255, 255, 0.8)', letterSpacing: 1 },
+  eventInfo: { flex: 1 },
+  eventTitle: { fontSize: fontSize.md, fontWeight: fontWeight.bold, marginBottom: 4 },
+  eventDescription: { fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: fontSize.sm * 1.5, marginBottom: spacing.xs },
+  eventTypeBadge: { alignSelf: 'flex-start', borderRadius: 8, paddingHorizontal: spacing.sm, paddingVertical: 2 },
+  eventTypeText: { fontSize: 10, fontWeight: fontWeight.semibold, letterSpacing: 0.5 },
+  // Testimonials
+  testimonialStars: { fontSize: 16, color: '#FFC93C', marginBottom: spacing.sm, letterSpacing: 2 },
+  testimonialAuthorRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  testimonialAvatar: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+  testimonialAvatarText: { fontSize: 16, fontWeight: fontWeight.bold },
 });

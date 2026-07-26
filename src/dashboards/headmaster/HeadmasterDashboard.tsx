@@ -129,7 +129,12 @@ export function HeadmasterDashboard() {
     bannerImage: '', logoUrl: '', aboutText: '', mission: '', vision: '',
     principalsMessage: '', admissionsInfo: '', facebookUrl: '', instagramUrl: '', twitterUrl: '',
     newsItems: [], galleryImages: [],
+    programmes: [], staffProfiles: [], upcomingEvents: [], testimonials: [],
   });
+  const [newProgramme, setNewProgramme] = useState({ name: '', description: '', icon: '📚' });
+  const [newStaff, setNewStaff] = useState({ name: '', title: '', photoUrl: '', bio: '' });
+  const [newEvent, setNewEvent] = useState({ title: '', date: '', description: '', type: 'Event' });
+  const [newTestimonial, setNewTestimonial] = useState({ author: '', role: '', content: '', rating: 5 });
   const [websiteTenantId, setWebsiteTenantId] = useState<string>('');
   const [isSavingWebsite, setIsSavingWebsite] = useState(false);
   const [websiteError, setWebsiteError] = useState<string | null>(null);
@@ -899,6 +904,81 @@ export function HeadmasterDashboard() {
             <Text style={styles.inputLabel}>Twitter URL</Text>
             <TextInput style={styles.textInput} value={websiteForm.twitterUrl || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, twitterUrl: v })} placeholder="https://twitter.com/..." autoCapitalize="none" />
 
+            <Text style={styles.sectionTitle}>Programmes Offered</Text>
+            {(websiteForm.programmes || []).map((prog, i) => (
+              <View key={i} style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                <Text style={{ flex: 1, fontSize: 13 }}>{prog.icon} {prog.name} — {prog.description}</Text>
+                <TouchableOpacity onPress={() => setWebsiteForm({ ...websiteForm, programmes: (websiteForm.programmes || []).filter((_, idx) => idx !== i) })}>
+                  <Text style={{ color: '#ef4444', fontWeight: '700' }}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+              <TextInput style={[styles.textInput, { flex: 0.15 }]} value={newProgramme.icon} onChangeText={(v) => setNewProgramme({ ...newProgramme, icon: v })} placeholder="📚" />
+              <TextInput style={[styles.textInput, { flex: 0.3 }]} value={newProgramme.name} onChangeText={(v) => setNewProgramme({ ...newProgramme, name: v })} placeholder="Programme name" />
+              <TextInput style={[styles.textInput, { flex: 0.55 }]} value={newProgramme.description} onChangeText={(v) => setNewProgramme({ ...newProgramme, description: v })} placeholder="Short description" />
+            </View>
+            <TouchableOpacity style={styles.saveBtn} onPress={() => { if (newProgramme.name) { setWebsiteForm({ ...websiteForm, programmes: [...(websiteForm.programmes || []), newProgramme] }); setNewProgramme({ name: '', description: '', icon: '📚' }); } }}>
+              <Text style={styles.saveBtnText}>+ Add Programme</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.sectionTitle}>Staff / Leadership Profiles</Text>
+            {(websiteForm.staffProfiles || []).map((staff, i) => (
+              <View key={i} style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                <Text style={{ flex: 1, fontSize: 13 }}>{staff.name} — {staff.title}</Text>
+                <TouchableOpacity onPress={() => setWebsiteForm({ ...websiteForm, staffProfiles: (websiteForm.staffProfiles || []).filter((_, idx) => idx !== i) })}>
+                  <Text style={{ color: '#ef4444', fontWeight: '700' }}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+              <TextInput style={[styles.textInput, { flex: 0.4 }]} value={newStaff.name} onChangeText={(v) => setNewStaff({ ...newStaff, name: v })} placeholder="Staff name" />
+              <TextInput style={[styles.textInput, { flex: 0.4 }]} value={newStaff.title} onChangeText={(v) => setNewStaff({ ...newStaff, title: v })} placeholder="Title (e.g. Headmaster)" />
+              <TextInput style={[styles.textInput, { flex: 0.2 }]} value={newStaff.photoUrl} onChangeText={(v) => setNewStaff({ ...newStaff, photoUrl: v })} placeholder="Photo URL" autoCapitalize="none" />
+            </View>
+            <TextInput style={[styles.textInput, { height: 60, marginBottom: 8 }]} multiline value={newStaff.bio} onChangeText={(v) => setNewStaff({ ...newStaff, bio: v })} placeholder="Short bio (optional)" />
+            <TouchableOpacity style={styles.saveBtn} onPress={() => { if (newStaff.name) { setWebsiteForm({ ...websiteForm, staffProfiles: [...(websiteForm.staffProfiles || []), { ...newStaff, photoUrl: newStaff.photoUrl || null, bio: newStaff.bio || null }] }); setNewStaff({ name: '', title: '', photoUrl: '', bio: '' }); } }}>
+              <Text style={styles.saveBtnText}>+ Add Staff</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.sectionTitle}>Upcoming Events</Text>
+            {(websiteForm.upcomingEvents || []).map((event, i) => (
+              <View key={i} style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                <Text style={{ flex: 1, fontSize: 13 }}>{event.date} — {event.title} ({event.type})</Text>
+                <TouchableOpacity onPress={() => setWebsiteForm({ ...websiteForm, upcomingEvents: (websiteForm.upcomingEvents || []).filter((_, idx) => idx !== i) })}>
+                  <Text style={{ color: '#ef4444', fontWeight: '700' }}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+              <TextInput style={[styles.textInput, { flex: 0.3 }]} value={newEvent.title} onChangeText={(v) => setNewEvent({ ...newEvent, title: v })} placeholder="Event title" />
+              <TextInput style={[styles.textInput, { flex: 0.25 }]} value={newEvent.date} onChangeText={(v) => setNewEvent({ ...newEvent, date: v })} placeholder="YYYY-MM-DD" />
+              <TextInput style={[styles.textInput, { flex: 0.2 }]} value={newEvent.type} onChangeText={(v) => setNewEvent({ ...newEvent, type: v })} placeholder="Type" />
+              <TextInput style={[styles.textInput, { flex: 0.25 }]} value={newEvent.description} onChangeText={(v) => setNewEvent({ ...newEvent, description: v })} placeholder="Description" />
+            </View>
+            <TouchableOpacity style={styles.saveBtn} onPress={() => { if (newEvent.title && newEvent.date) { setWebsiteForm({ ...websiteForm, upcomingEvents: [...(websiteForm.upcomingEvents || []), newEvent] }); setNewEvent({ title: '', date: '', description: '', type: 'Event' }); } }}>
+              <Text style={styles.saveBtnText}>+ Add Event</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.sectionTitle}>Testimonials</Text>
+            {(websiteForm.testimonials || []).map((test, i) => (
+              <View key={i} style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                <Text style={{ flex: 1, fontSize: 13 }}>"{test.content.substring(0, 40)}..." — {test.author} ({test.role})</Text>
+                <TouchableOpacity onPress={() => setWebsiteForm({ ...websiteForm, testimonials: (websiteForm.testimonials || []).filter((_, idx) => idx !== i) })}>
+                  <Text style={{ color: '#ef4444', fontWeight: '700' }}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+              <TextInput style={[styles.textInput, { flex: 0.3 }]} value={newTestimonial.author} onChangeText={(v) => setNewTestimonial({ ...newTestimonial, author: v })} placeholder="Author name" />
+              <TextInput style={[styles.textInput, { flex: 0.3 }]} value={newTestimonial.role} onChangeText={(v) => setNewTestimonial({ ...newTestimonial, role: v })} placeholder="Role (e.g. Parent)" />
+              <TextInput style={[styles.textInput, { flex: 0.1 }]} value={String(newTestimonial.rating)} onChangeText={(v) => setNewTestimonial({ ...newTestimonial, rating: parseInt(v) || 5 })} placeholder="5" keyboardType="numeric" />
+            </View>
+            <TextInput style={[styles.textInput, { height: 60, marginBottom: 8 }]} multiline value={newTestimonial.content} onChangeText={(v) => setNewTestimonial({ ...newTestimonial, content: v })} placeholder="Testimonial content" />
+            <TouchableOpacity style={styles.saveBtn} onPress={() => { if (newTestimonial.author && newTestimonial.content) { setWebsiteForm({ ...websiteForm, testimonials: [...(websiteForm.testimonials || []), newTestimonial] }); setNewTestimonial({ author: '', role: '', content: '', rating: 5 }); } }}>
+              <Text style={styles.saveBtnText}>+ Add Testimonial</Text>
+            </TouchableOpacity>
+
             {websiteError && (
               <View style={styles.errorBanner}>
                 <Text style={styles.errorBannerText}>{websiteError}</Text>
@@ -931,6 +1011,10 @@ export function HeadmasterDashboard() {
                     facebookUrl: websiteForm.facebookUrl,
                     instagramUrl: websiteForm.instagramUrl,
                     twitterUrl: websiteForm.twitterUrl,
+                    programmes: websiteForm.programmes,
+                    staffProfiles: websiteForm.staffProfiles,
+                    upcomingEvents: websiteForm.upcomingEvents,
+                    testimonials: websiteForm.testimonials,
                   } as any);
                   Alert.alert('Saved', 'Website settings saved successfully.');
                 } catch (err: any) {
