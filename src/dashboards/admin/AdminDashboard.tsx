@@ -11,8 +11,8 @@ import { useSecurityStore } from '@store/securityStore';
 import { useExeatStore } from '@store/exeatStore';
 import { useBursarStore } from '@store/bursarStore';
 import { useAdminStore } from '@store/adminStore';
-import type { FacilityIssue } from '@store/adminStore';
-import type { AnnouncementPriority, AnnouncementAudience } from '@store/adminStore';
+import type { FacilityIssue, AnnouncementPriority, AnnouncementAudience, DocumentType, DisciplineSeverity, SRCRequestType, CorrespondenceDirection } from '@store/adminStore';
+import { DOCUMENT_TYPES, DISCIPLINE_SEVERITIES, SRC_REQUEST_TYPES, CORRESPONDENCE_DIRECTIONS } from '@store/adminStore';
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'Admin Overview' },
@@ -26,6 +26,12 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'id-cards', label: 'Student ID Cards' },
   { key: 'staff', label: 'Staff Management' },
   { key: 'facilities', label: 'Facilities' },
+  { key: 'correspondence', label: 'Correspondence' },
+  { key: 'board', label: 'Board of Governors' },
+  { key: 'documents', label: 'Document Drafting' },
+  { key: 'functions', label: 'Official Functions' },
+  { key: 'src', label: 'SRC Affairs' },
+  { key: 'discipline', label: 'Discipline Oversight' },
   { key: 'meetings', label: 'Meetings' },
   { key: 'tasks', label: 'Task Assignments' },
   { key: 'communication', label: 'Communication' },
@@ -46,6 +52,21 @@ const STATUS_COLORS: Record<string, string> = {
   'Scheduled': colors.info,
   'Completed': colors.success,
   'Cancelled': colors.danger,
+  'Received': colors.warning,
+  'Minuted': colors.info,
+  'Forwarded': colors.info,
+  'Actioned': colors.success,
+  'Filed': colors.success,
+  'Draft': colors.warning,
+  'Issued': colors.success,
+  'Planning': colors.warning,
+  'Confirmed': colors.info,
+  'Under Review': colors.info,
+  'Escalated': colors.danger,
+  'Minor': colors.textSecondary,
+  'Moderate': colors.warning,
+  'Major': colors.warning,
+  'Critical': colors.danger,
 };
 
 const FACILITY_CATEGORY_OPTIONS: ('Electrical' | 'Plumbing' | 'Furniture' | 'Building' | 'Equipment' | 'Grounds' | 'Other')[] = ['Electrical', 'Plumbing', 'Furniture', 'Building', 'Equipment', 'Grounds', 'Other'];
@@ -66,6 +87,18 @@ function formatDate(d: string): string {
 
 function formatCurrency(amount: number): string {
   return `GH₵ ${amount.toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function todayISO(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function renderBadge(text: string, color: string) {
+  return (
+    <View style={{ backgroundColor: color + '20', borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2, marginBottom: 4 }}>
+      <Text style={{ fontSize: fontSize.xs, fontWeight: fontWeight.semibold, color }}>{text}</Text>
+    </View>
+  );
 }
 
 export function AdminDashboard() {
@@ -155,6 +188,37 @@ export function AdminDashboard() {
   const [announcementForm, setAnnouncementForm] = useState({ title: '', body: '', priority: 'Normal' as AnnouncementPriority, audience: 'All Staff' as AnnouncementAudience });
   const [meetingMinutesForm, setMeetingMinutesForm] = useState({ minutes: '', keyDecisions: '', actionItems: '', attendees: '0' });
   const [studentForm, setStudentForm] = useState({ firstName: '', lastName: '', dateOfBirth: '', gender: 'Male' as 'Male' | 'Female', programme: 'Science' as Programme, guardianName: '', guardianPhone: '', guardianAddress: '', photoUrl: '' as string | null, csspsRef: '' });
+
+  // ── New GES Feature Form States ──
+  const [correspondenceForm, setCorrespondenceForm] = useState({ refNo: '', direction: 'Incoming' as CorrespondenceDirection, date: todayISO(), from: '', to: '', subject: '', notes: '' });
+  const [minuteForm, setMinuteForm] = useState({ minutedTo: '', minuteNote: '' });
+  const [selectedCorrespondenceId, setSelectedCorrespondenceId] = useState<string | null>(null);
+  const [showCorrespondenceModal, setShowCorrespondenceModal] = useState(false);
+  const [showMinuteModal, setShowMinuteModal] = useState(false);
+
+  const [boardMeetingForm, setBoardMeetingForm] = useState({ title: '', date: '', time: '', location: '', chairperson: '', agenda: '' });
+  const [boardMinutesForm, setBoardMinutesForm] = useState({ minutes: '', keyDecisions: '', actionItems: '', attendees: '0', policyDocuments: '' });
+  const [selectedBoardMeetingId, setSelectedBoardMeetingId] = useState<string | null>(null);
+  const [showBoardMeetingModal, setShowBoardMeetingModal] = useState(false);
+  const [showBoardDetailModal, setShowBoardDetailModal] = useState(false);
+
+  const [documentForm, setDocumentForm] = useState({ type: 'Testimonial' as DocumentType, recipient: '', subject: '', body: '' });
+  const [showDocumentModal, setShowDocumentModal] = useState(false);
+
+  const [functionForm, setFunctionForm] = useState({ title: '', date: '', time: '', venue: '', type: 'Speech Day', expectedAttendees: '0', logistics: '', budget: '0', coordinator: '', notes: '' });
+  const [showFunctionModal, setShowFunctionModal] = useState(false);
+
+  const [srcForm, setSrcForm] = useState({ type: 'Event' as SRCRequestType, title: '', description: '', requestedBy: '', amount: '0' });
+  const [showSrcModal, setShowSrcModal] = useState(false);
+  const [srcReviewNote, setSrcReviewNote] = useState('');
+  const [selectedSrcId, setSelectedSrcId] = useState<string | null>(null);
+  const [showSrcReviewModal, setShowSrcReviewModal] = useState(false);
+
+  const [disciplineForm, setDisciplineForm] = useState({ studentName: '', admissionNo: '', class: '', house: '', incident: '', severity: 'Minor' as DisciplineSeverity, reportedBy: '', actionTaken: '', notes: '' });
+  const [showDisciplineModal, setShowDisciplineModal] = useState(false);
+  const [selectedDisciplineId, setSelectedDisciplineId] = useState<string | null>(null);
+  const [showDisciplineDetailModal, setShowDisciplineDetailModal] = useState(false);
+  const [escalateTo, setEscalateTo] = useState('');
 
   // ── PDF Generation ──
   const generatePDF = useCallback((reportType: string) => {
@@ -1388,6 +1452,314 @@ export function AdminDashboard() {
           </ScrollView>
         );
 
+      case 'correspondence':
+        return (
+          <ScrollView>
+            <View style={styles.rowBetween}>
+              <View>
+                <Text style={styles.pageTitle}>Correspondence Management</Text>
+                <Text style={styles.pageSubtitle}>Incoming &amp; outgoing letters — minute to schedule officers</Text>
+              </View>
+              <TouchableOpacity style={styles.addBtn} onPress={() => { setCorrespondenceForm({ refNo: '', direction: 'Incoming', date: todayISO(), from: '', to: '', subject: '', notes: '' }); setShowCorrespondenceModal(true); }}>
+                <Text style={styles.addBtnText}>+ Log Letter</Text>
+              </TouchableOpacity>
+            </View>
+            <CardGrid>
+              <StatCard label="Incoming" value={String(adminStore.correspondence.filter((c) => c.direction === 'Incoming').length)} accentColor={colors.info} />
+              <StatCard label="Outgoing" value={String(adminStore.correspondence.filter((c) => c.direction === 'Outgoing').length)} accentColor={colors.primary} />
+              <StatCard label="Pending Action" value={String(adminStore.getPendingCorrespondence().length)} accentColor={adminStore.getPendingCorrespondence().length > 0 ? colors.warning : colors.success} />
+              <StatCard label="Filed" value={String(adminStore.correspondence.filter((c) => c.status === 'Filed').length)} accentColor={colors.success} />
+            </CardGrid>
+            {adminStore.correspondence.length === 0 && <Text style={styles.emptyText}>No correspondence logged yet.</Text>}
+            {adminStore.correspondence.map((c) => (
+              <View key={c.id} style={styles.meetingCard}>
+                <View style={styles.rowBetween}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.meetingTitle}>{c.direction === 'Incoming' ? '↘ Incoming' : '↗ Outgoing'} — {c.subject}</Text>
+                    <Text style={styles.meetingMeta}>Ref: {c.refNo || '—'} | Date: {formatDate(c.date)}</Text>
+                    <Text style={styles.meetingMeta}>From: {c.from} → To: {c.to}</Text>
+                    {c.minutedTo && <Text style={styles.meetingMeta}>Minuted to: {c.minutedTo} — {c.minuteNote}</Text>}
+                    {c.notes && <Text style={styles.meetingMeta}>Notes: {c.notes}</Text>}
+                  </View>
+                  <View style={styles.badgeColumn}>
+                    {renderBadge(c.status, statusColor(c.status))}
+                  </View>
+                </View>
+                {c.status === 'Received' && (
+                  <View style={styles.modalActions}>
+                    <TouchableOpacity style={[styles.modalApproveBtn, { flex: 1 }]} onPress={() => { setSelectedCorrespondenceId(c.id); setMinuteForm({ minutedTo: '', minuteNote: '' }); setShowMinuteModal(true); }}>
+                      <Text style={styles.modalBtnTextWhite}>Minute to Officer</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.modalCancelBtn, { flex: 1 }]} onPress={() => adminStore.updateCorrespondence(c.id, { status: 'Filed', filedBy: adminName })}>
+                      <Text style={styles.modalBtnTextSecondary}>File</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+                {c.status === 'Minuted' && (
+                  <View style={styles.modalActions}>
+                    <TouchableOpacity style={[styles.modalApproveBtn, { flex: 1 }]} onPress={() => adminStore.updateCorrespondence(c.id, { status: 'Actioned' })}>
+                      <Text style={styles.modalBtnTextWhite}>Mark Actioned</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.modalCancelBtn, { flex: 1 }]} onPress={() => adminStore.updateCorrespondence(c.id, { status: 'Filed', filedBy: adminName })}>
+                      <Text style={styles.modalBtnTextSecondary}>File</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            ))}
+          </ScrollView>
+        );
+
+      case 'board':
+        return (
+          <ScrollView>
+            <View style={styles.rowBetween}>
+              <View>
+                <Text style={styles.pageTitle}>Board of Governors</Text>
+                <Text style={styles.pageSubtitle}>Secretary functions — meetings, minutes &amp; policy documents</Text>
+              </View>
+              <TouchableOpacity style={styles.addBtn} onPress={() => { setBoardMeetingForm({ title: '', date: '', time: '', location: '', chairperson: '', agenda: '' }); setShowBoardMeetingModal(true); }}>
+                <Text style={styles.addBtnText}>+ Schedule Board Meeting</Text>
+              </TouchableOpacity>
+            </View>
+            <CardGrid>
+              <StatCard label="Scheduled" value={String(adminStore.boardMeetings.filter((m) => m.status === 'Scheduled').length)} accentColor={colors.info} />
+              <StatCard label="Completed" value={String(adminStore.boardMeetings.filter((m) => m.status === 'Completed').length)} accentColor={colors.success} />
+              <StatCard label="Cancelled" value={String(adminStore.boardMeetings.filter((m) => m.status === 'Cancelled').length)} accentColor={colors.danger} />
+            </CardGrid>
+            {adminStore.boardMeetings.length === 0 && <Text style={styles.emptyText}>No board meetings scheduled yet.</Text>}
+            {adminStore.boardMeetings.map((m) => (
+              <View key={m.id} style={styles.meetingCard}>
+                <View style={styles.rowBetween}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.meetingTitle}>{m.title}</Text>
+                    <Text style={styles.meetingMeta}>Date: {formatDate(m.date)} at {m.time} | Venue: {m.location}</Text>
+                    <Text style={styles.meetingMeta}>Chairperson: {m.chairperson}</Text>
+                    <Text style={styles.meetingMeta}>Agenda: {m.agenda}</Text>
+                    {m.status === 'Completed' && m.minutes && <Text style={styles.meetingMeta}>Minutes: {m.minutes}</Text>}
+                    {m.status === 'Completed' && m.keyDecisions && <Text style={styles.meetingMeta}>Decisions: {m.keyDecisions}</Text>}
+                    {m.status === 'Completed' && m.policyDocuments && <Text style={styles.meetingMeta}>Policy Docs: {m.policyDocuments}</Text>}
+                  </View>
+                  <View style={styles.badgeColumn}>
+                    {renderBadge(m.status, statusColor(m.status))}
+                  </View>
+                </View>
+                {m.status === 'Scheduled' && (
+                  <View style={styles.modalActions}>
+                    <TouchableOpacity style={[styles.modalApproveBtn, { flex: 1 }]} onPress={() => { setSelectedBoardMeetingId(m.id); setBoardMinutesForm({ minutes: '', keyDecisions: '', actionItems: '', attendees: '0', policyDocuments: '' }); setShowBoardDetailModal(true); }}>
+                      <Text style={styles.modalBtnTextWhite}>Record Minutes</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.modalCancelBtn, { flex: 1 }]} onPress={() => adminStore.cancelBoardMeeting(m.id)}>
+                      <Text style={styles.modalBtnTextSecondary}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            ))}
+          </ScrollView>
+        );
+
+      case 'documents':
+        return (
+          <ScrollView>
+            <View style={styles.rowBetween}>
+              <View>
+                <Text style={styles.pageTitle}>Document Drafting</Text>
+                <Text style={styles.pageSubtitle}>Testimonials, letters of consent, introductory letters &amp; assurances</Text>
+              </View>
+              <TouchableOpacity style={styles.addBtn} onPress={() => { setDocumentForm({ type: 'Testimonial', recipient: '', subject: '', body: '' }); setShowDocumentModal(true); }}>
+                <Text style={styles.addBtnText}>+ Draft Document</Text>
+              </TouchableOpacity>
+            </View>
+            <CardGrid>
+              <StatCard label="Drafts" value={String(adminStore.documents.filter((d) => d.status === 'Draft').length)} accentColor={colors.warning} />
+              <StatCard label="Approved" value={String(adminStore.documents.filter((d) => d.status === 'Approved').length)} accentColor={colors.info} />
+              <StatCard label="Issued" value={String(adminStore.documents.filter((d) => d.status === 'Issued').length)} accentColor={colors.success} />
+            </CardGrid>
+            {adminStore.documents.length === 0 && <Text style={styles.emptyText}>No documents drafted yet.</Text>}
+            {adminStore.documents.map((d) => (
+              <View key={d.id} style={styles.meetingCard}>
+                <View style={styles.rowBetween}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.meetingTitle}>{d.type} — {d.subject}</Text>
+                    <Text style={styles.meetingMeta}>To: {d.recipient} | Date: {formatDate(d.date)}</Text>
+                    <Text style={styles.meetingMeta} numberOfLines={2}>{d.body}</Text>
+                    {d.approvedBy && <Text style={styles.meetingMeta}>Approved by: {d.approvedBy}</Text>}
+                    {d.issuedDate && <Text style={styles.meetingMeta}>Issued: {formatDate(d.issuedDate)}</Text>}
+                  </View>
+                  <View style={styles.badgeColumn}>
+                    {renderBadge(d.status, statusColor(d.status))}
+                  </View>
+                </View>
+                {d.status === 'Draft' && (
+                  <View style={styles.modalActions}>
+                    <TouchableOpacity style={[styles.modalApproveBtn, { flex: 1 }]} onPress={() => adminStore.approveDocument(d.id, adminName)}>
+                      <Text style={styles.modalBtnTextWhite}>Approve</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+                {d.status === 'Approved' && (
+                  <View style={styles.modalActions}>
+                    <TouchableOpacity style={[styles.modalApproveBtn, { flex: 1 }]} onPress={() => adminStore.issueDocument(d.id)}>
+                      <Text style={styles.modalBtnTextWhite}>Issue Document</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            ))}
+          </ScrollView>
+        );
+
+      case 'functions':
+        return (
+          <ScrollView>
+            <View style={styles.rowBetween}>
+              <View>
+                <Text style={styles.pageTitle}>Official Functions</Text>
+                <Text style={styles.pageSubtitle}>Organize ceremonies, speech days, graduations &amp; visitors' days</Text>
+              </View>
+              <TouchableOpacity style={styles.addBtn} onPress={() => { setFunctionForm({ title: '', date: '', time: '', venue: '', type: 'Speech Day', expectedAttendees: '0', logistics: '', budget: '0', coordinator: '', notes: '' }); setShowFunctionModal(true); }}>
+                <Text style={styles.addBtnText}>+ Plan Function</Text>
+              </TouchableOpacity>
+            </View>
+            <CardGrid>
+              <StatCard label="Planning" value={String(adminStore.functions.filter((f) => f.status === 'Planning').length)} accentColor={colors.warning} />
+              <StatCard label="Confirmed" value={String(adminStore.functions.filter((f) => f.status === 'Confirmed').length)} accentColor={colors.info} />
+              <StatCard label="Completed" value={String(adminStore.functions.filter((f) => f.status === 'Completed').length)} accentColor={colors.success} />
+            </CardGrid>
+            {adminStore.functions.length === 0 && <Text style={styles.emptyText}>No official functions planned yet.</Text>}
+            {adminStore.functions.map((f) => (
+              <View key={f.id} style={styles.meetingCard}>
+                <View style={styles.rowBetween}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.meetingTitle}>{f.title}</Text>
+                    <Text style={styles.meetingMeta}>Type: {f.type} | Date: {formatDate(f.date)} at {f.time}</Text>
+                    <Text style={styles.meetingMeta}>Venue: {f.venue} | Expected: {f.expectedAttendees}</Text>
+                    <Text style={styles.meetingMeta}>Coordinator: {f.coordinator}</Text>
+                    <Text style={styles.meetingMeta}>Logistics: {f.logistics}</Text>
+                    <Text style={styles.meetingMeta}>Budget: {formatCurrency(f.budget)}</Text>
+                    {f.notes && <Text style={styles.meetingMeta}>Notes: {f.notes}</Text>}
+                  </View>
+                  <View style={styles.badgeColumn}>
+                    {renderBadge(f.status, statusColor(f.status))}
+                  </View>
+                </View>
+                {f.status === 'Planning' && (
+                  <View style={styles.modalActions}>
+                    <TouchableOpacity style={[styles.modalApproveBtn, { flex: 1 }]} onPress={() => adminStore.updateFunction(f.id, { status: 'Confirmed' })}>
+                      <Text style={styles.modalBtnTextWhite}>Confirm</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.modalCancelBtn, { flex: 1 }]} onPress={() => adminStore.updateFunction(f.id, { status: 'Cancelled' })}>
+                      <Text style={styles.modalBtnTextSecondary}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+                {f.status === 'Confirmed' && (
+                  <View style={styles.modalActions}>
+                    <TouchableOpacity style={[styles.modalApproveBtn, { flex: 1 }]} onPress={() => adminStore.updateFunction(f.id, { status: 'Completed' })}>
+                      <Text style={styles.modalBtnTextWhite}>Mark Completed</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            ))}
+          </ScrollView>
+        );
+
+      case 'src':
+        return (
+          <ScrollView>
+            <View style={styles.rowBetween}>
+              <View>
+                <Text style={styles.pageTitle}>SRC Affairs</Text>
+                <Text style={styles.pageSubtitle}>Oversight of Student Representative Council activities</Text>
+              </View>
+              <TouchableOpacity style={styles.addBtn} onPress={() => { setSrcForm({ type: 'Event', title: '', description: '', requestedBy: '', amount: '0' }); setShowSrcModal(true); }}>
+                <Text style={styles.addBtnText}>+ Log SRC Activity</Text>
+              </TouchableOpacity>
+            </View>
+            <CardGrid>
+              <StatCard label="Pending" value={String(adminStore.getPendingSRC().length)} accentColor={adminStore.getPendingSRC().length > 0 ? colors.warning : colors.success} />
+              <StatCard label="Approved" value={String(adminStore.srcActivities.filter((a) => a.status === 'Approved').length)} accentColor={colors.success} />
+              <StatCard label="Rejected" value={String(adminStore.srcActivities.filter((a) => a.status === 'Rejected').length)} accentColor={colors.danger} />
+            </CardGrid>
+            {adminStore.srcActivities.length === 0 && <Text style={styles.emptyText}>No SRC activities logged yet.</Text>}
+            {adminStore.srcActivities.map((a) => (
+              <View key={a.id} style={styles.meetingCard}>
+                <View style={styles.rowBetween}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.meetingTitle}>{a.type} — {a.title}</Text>
+                    <Text style={styles.meetingMeta}>Requested by: {a.requestedBy} | Date: {formatDate(a.date)}</Text>
+                    <Text style={styles.meetingMeta}>{a.description}</Text>
+                    {a.amount && a.amount > 0 && <Text style={styles.meetingMeta}>Amount: {formatCurrency(a.amount)}</Text>}
+                    {a.reviewedBy && <Text style={styles.meetingMeta}>Reviewed by: {a.reviewedBy} — {a.reviewNote}</Text>}
+                  </View>
+                  <View style={styles.badgeColumn}>
+                    {renderBadge(a.status, statusColor(a.status))}
+                  </View>
+                </View>
+                {a.status === 'Pending' && (
+                  <View style={styles.modalActions}>
+                    <TouchableOpacity style={[styles.modalApproveBtn, { flex: 1 }]} onPress={() => { setSelectedSrcId(a.id); setSrcReviewNote(''); setShowSrcReviewModal(true); }}>
+                      <Text style={styles.modalBtnTextWhite}>Review</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            ))}
+          </ScrollView>
+        );
+
+      case 'discipline':
+        return (
+          <ScrollView>
+            <View style={styles.rowBetween}>
+              <View>
+                <Text style={styles.pageTitle}>Discipline Oversight</Text>
+                <Text style={styles.pageSubtitle}>School-wide discipline cases &amp; escalation tracking</Text>
+              </View>
+              <TouchableOpacity style={styles.addBtn} onPress={() => { setDisciplineForm({ studentName: '', admissionNo: '', class: '', house: '', incident: '', severity: 'Minor', reportedBy: '', actionTaken: '', notes: '' }); setShowDisciplineModal(true); }}>
+                <Text style={styles.addBtnText}>+ Log Case</Text>
+              </TouchableOpacity>
+            </View>
+            <CardGrid>
+              <StatCard label="Total Cases" value={String(adminStore.disciplineCases.length)} accentColor={colors.primary} />
+              <StatCard label="Escalated" value={String(adminStore.getEscalatedCases().length)} accentColor={adminStore.getEscalatedCases().length > 0 ? colors.danger : colors.success} />
+              <StatCard label="Resolved" value={String(adminStore.disciplineCases.filter((d) => d.status === 'Resolved').length)} accentColor={colors.success} />
+              <StatCard label="Critical" value={String(adminStore.disciplineCases.filter((d) => d.severity === 'Critical').length)} accentColor={colors.danger} />
+            </CardGrid>
+            {adminStore.disciplineCases.length === 0 && <Text style={styles.emptyText}>No discipline cases logged yet.</Text>}
+            {adminStore.disciplineCases.map((d) => (
+              <View key={d.id} style={styles.meetingCard}>
+                <View style={styles.rowBetween}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.meetingTitle}>{d.studentName} ({d.admissionNo})</Text>
+                    <Text style={styles.meetingMeta}>Class: {d.class} | House: {d.house} | Date: {formatDate(d.date)}</Text>
+                    <Text style={styles.meetingMeta}>Incident: {d.incident}</Text>
+                    <Text style={styles.meetingMeta}>Reported by: {d.reportedBy} | Action: {d.actionTaken}</Text>
+                    {d.escalatedTo && <Text style={styles.meetingMeta}>Escalated to: {d.escalatedTo}</Text>}
+                    {d.notes && <Text style={styles.meetingMeta}>Notes: {d.notes}</Text>}
+                  </View>
+                  <View style={styles.badgeColumn}>
+                    {renderBadge(d.severity, d.severity === 'Critical' ? colors.danger : d.severity === 'Major' ? colors.warning : colors.textSecondary)}
+                    {renderBadge(d.status, statusColor(d.status))}
+                  </View>
+                </View>
+                {d.status !== 'Resolved' && d.status !== 'Escalated' && (
+                  <View style={styles.modalActions}>
+                    <TouchableOpacity style={[styles.modalApproveBtn, { flex: 1 }]} onPress={() => { setSelectedDisciplineId(d.id); setEscalateTo(''); setShowDisciplineDetailModal(true); }}>
+                      <Text style={styles.modalBtnTextWhite}>Escalate</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.modalCancelBtn, { flex: 1 }]} onPress={() => adminStore.updateDisciplineCase(d.id, { status: 'Resolved' })}>
+                      <Text style={styles.modalBtnTextSecondary}>Resolve</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            ))}
+          </ScrollView>
+        );
+
       case 'meetings':
         return (
           <ScrollView>
@@ -2307,6 +2679,364 @@ export function AdminDashboard() {
         </View>
       </Modal>
 
+      {/* ── Correspondence Modal ── */}
+      <Modal visible={showCorrespondenceModal} transparent animationType="fade" onRequestClose={() => setShowCorrespondenceModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Log Correspondence</Text>
+            <ScrollView>
+              <Text style={styles.inputLabel}>Reference No.</Text>
+              <TextInput style={styles.textInput} value={correspondenceForm.refNo} onChangeText={(v) => setCorrespondenceForm({ ...correspondenceForm, refNo: v })} placeholder="e.g. GES/ADM/2026/001" />
+              <Text style={styles.inputLabel}>Direction</Text>
+              <View style={styles.pickerRow}>
+                {CORRESPONDENCE_DIRECTIONS.map((d) => (
+                  <TouchableOpacity key={d} style={[styles.pickerChip, correspondenceForm.direction === d && styles.pickerChipActive]} onPress={() => setCorrespondenceForm({ ...correspondenceForm, direction: d })}>
+                    <Text style={[styles.pickerChipText, correspondenceForm.direction === d && styles.pickerChipTextActive]}>{d}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={styles.inputLabel}>Date</Text>
+              <TextInput style={styles.textInput} value={correspondenceForm.date} onChangeText={(v) => setCorrespondenceForm({ ...correspondenceForm, date: v })} placeholder="YYYY-MM-DD" />
+              <Text style={styles.inputLabel}>From</Text>
+              <TextInput style={styles.textInput} value={correspondenceForm.from} onChangeText={(v) => setCorrespondenceForm({ ...correspondenceForm, from: v })} placeholder="Sender / Organization" />
+              <Text style={styles.inputLabel}>To</Text>
+              <TextInput style={styles.textInput} value={correspondenceForm.to} onChangeText={(v) => setCorrespondenceForm({ ...correspondenceForm, to: v })} placeholder="Recipient" />
+              <Text style={styles.inputLabel}>Subject *</Text>
+              <TextInput style={styles.textInput} value={correspondenceForm.subject} onChangeText={(v) => setCorrespondenceForm({ ...correspondenceForm, subject: v })} placeholder="Letter subject" />
+              <Text style={styles.inputLabel}>Notes</Text>
+              <TextInput style={styles.textArea} value={correspondenceForm.notes} onChangeText={(v) => setCorrespondenceForm({ ...correspondenceForm, notes: v })} placeholder="Additional notes..." multiline />
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.modalApproveBtn} onPress={() => {
+                  if (!correspondenceForm.subject.trim()) { Alert.alert('Error', 'Subject is required.'); return; }
+                  adminStore.addCorrespondence({ ...correspondenceForm, status: 'Received' });
+                  setShowCorrespondenceModal(false);
+                }}>
+                  <Text style={styles.modalBtnTextWhite}>Save</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowCorrespondenceModal(false)}>
+                  <Text style={styles.modalBtnTextSecondary}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Minute Correspondence Modal ── */}
+      <Modal visible={showMinuteModal} transparent animationType="fade" onRequestClose={() => setShowMinuteModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Minute to Officer</Text>
+            <ScrollView>
+              <Text style={styles.inputLabel}>Minute To (Officer) *</Text>
+              <TextInput style={styles.textInput} value={minuteForm.minutedTo} onChangeText={(v) => setMinuteForm({ ...minuteForm, minutedTo: v })} placeholder="e.g. Housemaster, Bursar, Domestic" />
+              <Text style={styles.inputLabel}>Minute Note</Text>
+              <TextInput style={styles.textArea} value={minuteForm.minuteNote} onChangeText={(v) => setMinuteForm({ ...minuteForm, minuteNote: v })} placeholder="Instructions for the officer..." multiline />
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.modalApproveBtn} onPress={() => {
+                  if (!minuteForm.minutedTo.trim()) { Alert.alert('Error', 'Officer name is required.'); return; }
+                  if (selectedCorrespondenceId) adminStore.minuteCorrespondence(selectedCorrespondenceId, minuteForm.minutedTo, minuteForm.minuteNote, adminName);
+                  setShowMinuteModal(false);
+                }}>
+                  <Text style={styles.modalBtnTextWhite}>Forward</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowMinuteModal(false)}>
+                  <Text style={styles.modalBtnTextSecondary}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Board Meeting Modal ── */}
+      <Modal visible={showBoardMeetingModal} transparent animationType="fade" onRequestClose={() => setShowBoardMeetingModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Schedule Board Meeting</Text>
+            <ScrollView>
+              <Text style={styles.inputLabel}>Title *</Text>
+              <TextInput style={styles.textInput} value={boardMeetingForm.title} onChangeText={(v) => setBoardMeetingForm({ ...boardMeetingForm, title: v })} placeholder="e.g. Board Meeting Q1 2026" />
+              <Text style={styles.inputLabel}>Date</Text>
+              <TextInput style={styles.textInput} value={boardMeetingForm.date} onChangeText={(v) => setBoardMeetingForm({ ...boardMeetingForm, date: v })} placeholder="YYYY-MM-DD" />
+              <Text style={styles.inputLabel}>Time</Text>
+              <TextInput style={styles.textInput} value={boardMeetingForm.time} onChangeText={(v) => setBoardMeetingForm({ ...boardMeetingForm, time: v })} placeholder="e.g. 10:00 AM" />
+              <Text style={styles.inputLabel}>Location</Text>
+              <TextInput style={styles.textInput} value={boardMeetingForm.location} onChangeText={(v) => setBoardMeetingForm({ ...boardMeetingForm, location: v })} placeholder="e.g. Conference Hall" />
+              <Text style={styles.inputLabel}>Chairperson</Text>
+              <TextInput style={styles.textInput} value={boardMeetingForm.chairperson} onChangeText={(v) => setBoardMeetingForm({ ...boardMeetingForm, chairperson: v })} placeholder="Board Chairperson name" />
+              <Text style={styles.inputLabel}>Agenda</Text>
+              <TextInput style={styles.textArea} value={boardMeetingForm.agenda} onChangeText={(v) => setBoardMeetingForm({ ...boardMeetingForm, agenda: v })} placeholder="Meeting agenda items..." multiline />
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.modalApproveBtn} onPress={() => {
+                  if (!boardMeetingForm.title.trim()) { Alert.alert('Error', 'Title is required.'); return; }
+                  adminStore.addBoardMeeting(boardMeetingForm);
+                  setShowBoardMeetingModal(false);
+                }}>
+                  <Text style={styles.modalBtnTextWhite}>Schedule</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowBoardMeetingModal(false)}>
+                  <Text style={styles.modalBtnTextSecondary}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Board Meeting Minutes Modal ── */}
+      <Modal visible={showBoardDetailModal} transparent animationType="fade" onRequestClose={() => setShowBoardDetailModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Record Board Minutes</Text>
+            <ScrollView>
+              <Text style={styles.inputLabel}>Minutes</Text>
+              <TextInput style={styles.textArea} value={boardMinutesForm.minutes} onChangeText={(v) => setBoardMinutesForm({ ...boardMinutesForm, minutes: v })} placeholder="Meeting minutes..." multiline numberOfLines={6} />
+              <Text style={styles.inputLabel}>Key Decisions</Text>
+              <TextInput style={styles.textArea} value={boardMinutesForm.keyDecisions} onChangeText={(v) => setBoardMinutesForm({ ...boardMinutesForm, keyDecisions: v })} placeholder="Key decisions made..." multiline />
+              <Text style={styles.inputLabel}>Action Items</Text>
+              <TextInput style={styles.textArea} value={boardMinutesForm.actionItems} onChangeText={(v) => setBoardMinutesForm({ ...boardMinutesForm, actionItems: v })} placeholder="Action items..." multiline />
+              <Text style={styles.inputLabel}>Policy Documents</Text>
+              <TextInput style={styles.textArea} value={boardMinutesForm.policyDocuments} onChangeText={(v) => setBoardMinutesForm({ ...boardMinutesForm, policyDocuments: v })} placeholder="Policy documents referenced or adopted..." multiline />
+              <Text style={styles.inputLabel}>Attendees</Text>
+              <TextInput style={styles.textInput} value={boardMinutesForm.attendees} onChangeText={(v) => setBoardMinutesForm({ ...boardMinutesForm, attendees: v })} placeholder="Number of attendees" keyboardType="numeric" />
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.modalApproveBtn} onPress={() => {
+                  if (selectedBoardMeetingId) adminStore.completeBoardMeeting(selectedBoardMeetingId, boardMinutesForm.minutes, boardMinutesForm.keyDecisions, boardMinutesForm.actionItems, parseInt(boardMinutesForm.attendees) || 0, boardMinutesForm.policyDocuments);
+                  setShowBoardDetailModal(false);
+                }}>
+                  <Text style={styles.modalBtnTextWhite}>Save Minutes</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowBoardDetailModal(false)}>
+                  <Text style={styles.modalBtnTextSecondary}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Document Drafting Modal ── */}
+      <Modal visible={showDocumentModal} transparent animationType="fade" onRequestClose={() => setShowDocumentModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Draft Document</Text>
+            <ScrollView>
+              <Text style={styles.inputLabel}>Document Type</Text>
+              <View style={styles.pickerRow}>
+                {DOCUMENT_TYPES.map((t) => (
+                  <TouchableOpacity key={t} style={[styles.pickerChip, documentForm.type === t && styles.pickerChipActive]} onPress={() => setDocumentForm({ ...documentForm, type: t })}>
+                    <Text style={[styles.pickerChipText, documentForm.type === t && styles.pickerChipTextActive]}>{t}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={styles.inputLabel}>Recipient *</Text>
+              <TextInput style={styles.textInput} value={documentForm.recipient} onChangeText={(v) => setDocumentForm({ ...documentForm, recipient: v })} placeholder="Recipient name / organization" />
+              <Text style={styles.inputLabel}>Subject *</Text>
+              <TextInput style={styles.textInput} value={documentForm.subject} onChangeText={(v) => setDocumentForm({ ...documentForm, subject: v })} placeholder="Document subject" />
+              <Text style={styles.inputLabel}>Body</Text>
+              <TextInput style={styles.textArea} value={documentForm.body} onChangeText={(v) => setDocumentForm({ ...documentForm, body: v })} placeholder="Document content..." multiline numberOfLines={8} />
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.modalApproveBtn} onPress={() => {
+                  if (!documentForm.recipient.trim() || !documentForm.subject.trim()) { Alert.alert('Error', 'Recipient and subject are required.'); return; }
+                  adminStore.addDocument({ ...documentForm, draftedBy: adminName });
+                  setShowDocumentModal(false);
+                }}>
+                  <Text style={styles.modalBtnTextWhite}>Save Draft</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowDocumentModal(false)}>
+                  <Text style={styles.modalBtnTextSecondary}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Official Function Modal ── */}
+      <Modal visible={showFunctionModal} transparent animationType="fade" onRequestClose={() => setShowFunctionModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Plan Official Function</Text>
+            <ScrollView>
+              <Text style={styles.inputLabel}>Title *</Text>
+              <TextInput style={styles.textInput} value={functionForm.title} onChangeText={(v) => setFunctionForm({ ...functionForm, title: v })} placeholder="e.g. Speech Day 2026" />
+              <Text style={styles.inputLabel}>Type</Text>
+              <TextInput style={styles.textInput} value={functionForm.type} onChangeText={(v) => setFunctionForm({ ...functionForm, type: v })} placeholder="e.g. Speech Day, Graduation, Visitors' Day" />
+              <Text style={styles.inputLabel}>Date</Text>
+              <TextInput style={styles.textInput} value={functionForm.date} onChangeText={(v) => setFunctionForm({ ...functionForm, date: v })} placeholder="YYYY-MM-DD" />
+              <Text style={styles.inputLabel}>Time</Text>
+              <TextInput style={styles.textInput} value={functionForm.time} onChangeText={(v) => setFunctionForm({ ...functionForm, time: v })} placeholder="e.g. 2:00 PM" />
+              <Text style={styles.inputLabel}>Venue</Text>
+              <TextInput style={styles.textInput} value={functionForm.venue} onChangeText={(v) => setFunctionForm({ ...functionForm, venue: v })} placeholder="e.g. Assembly Hall" />
+              <Text style={styles.inputLabel}>Expected Attendees</Text>
+              <TextInput style={styles.textInput} value={functionForm.expectedAttendees} onChangeText={(v) => setFunctionForm({ ...functionForm, expectedAttendees: v })} placeholder="0" keyboardType="numeric" />
+              <Text style={styles.inputLabel}>Coordinator</Text>
+              <TextInput style={styles.textInput} value={functionForm.coordinator} onChangeText={(v) => setFunctionForm({ ...functionForm, coordinator: v })} placeholder="Coordinator name" />
+              <Text style={styles.inputLabel}>Logistics Plan</Text>
+              <TextInput style={styles.textArea} value={functionForm.logistics} onChangeText={(v) => setFunctionForm({ ...functionForm, logistics: v })} placeholder="Seating, catering, decorations, security..." multiline />
+              <Text style={styles.inputLabel}>Budget (GH₵)</Text>
+              <TextInput style={styles.textInput} value={functionForm.budget} onChangeText={(v) => setFunctionForm({ ...functionForm, budget: v })} placeholder="0.00" keyboardType="numeric" />
+              <Text style={styles.inputLabel}>Notes</Text>
+              <TextInput style={styles.textArea} value={functionForm.notes} onChangeText={(v) => setFunctionForm({ ...functionForm, notes: v })} placeholder="Additional notes..." multiline />
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.modalApproveBtn} onPress={() => {
+                  if (!functionForm.title.trim()) { Alert.alert('Error', 'Title is required.'); return; }
+                  adminStore.addFunction({ ...functionForm, expectedAttendees: parseInt(functionForm.expectedAttendees) || 0, budget: parseFloat(functionForm.budget) || 0 });
+                  setShowFunctionModal(false);
+                }}>
+                  <Text style={styles.modalBtnTextWhite}>Create</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowFunctionModal(false)}>
+                  <Text style={styles.modalBtnTextSecondary}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── SRC Activity Modal ── */}
+      <Modal visible={showSrcModal} transparent animationType="fade" onRequestClose={() => setShowSrcModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Log SRC Activity</Text>
+            <ScrollView>
+              <Text style={styles.inputLabel}>Type</Text>
+              <View style={styles.pickerRow}>
+                {SRC_REQUEST_TYPES.map((t) => (
+                  <TouchableOpacity key={t} style={[styles.pickerChip, srcForm.type === t && styles.pickerChipActive]} onPress={() => setSrcForm({ ...srcForm, type: t })}>
+                    <Text style={[styles.pickerChipText, srcForm.type === t && styles.pickerChipTextActive]}>{t}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={styles.inputLabel}>Title *</Text>
+              <TextInput style={styles.textInput} value={srcForm.title} onChangeText={(v) => setSrcForm({ ...srcForm, title: v })} placeholder="Activity title" />
+              <Text style={styles.inputLabel}>Description</Text>
+              <TextInput style={styles.textArea} value={srcForm.description} onChangeText={(v) => setSrcForm({ ...srcForm, description: v })} placeholder="Activity description..." multiline />
+              <Text style={styles.inputLabel}>Requested By</Text>
+              <TextInput style={styles.textInput} value={srcForm.requestedBy} onChangeText={(v) => setSrcForm({ ...srcForm, requestedBy: v })} placeholder="SRC representative name" />
+              <Text style={styles.inputLabel}>Amount (if budget request)</Text>
+              <TextInput style={styles.textInput} value={srcForm.amount} onChangeText={(v) => setSrcForm({ ...srcForm, amount: v })} placeholder="0.00" keyboardType="numeric" />
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.modalApproveBtn} onPress={() => {
+                  if (!srcForm.title.trim()) { Alert.alert('Error', 'Title is required.'); return; }
+                  adminStore.addSRCActivity({ ...srcForm, amount: parseFloat(srcForm.amount) || 0 });
+                  setShowSrcModal(false);
+                }}>
+                  <Text style={styles.modalBtnTextWhite}>Submit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowSrcModal(false)}>
+                  <Text style={styles.modalBtnTextSecondary}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── SRC Review Modal ── */}
+      <Modal visible={showSrcReviewModal} transparent animationType="fade" onRequestClose={() => setShowSrcReviewModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Review SRC Request</Text>
+            <ScrollView>
+              <Text style={styles.inputLabel}>Review Note</Text>
+              <TextInput style={styles.textArea} value={srcReviewNote} onChangeText={setSrcReviewNote} placeholder="Add review comments..." multiline />
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.modalApproveBtn} onPress={() => {
+                  if (selectedSrcId) adminStore.reviewSRCActivity(selectedSrcId, 'Approved', adminName, srcReviewNote);
+                  setShowSrcReviewModal(false);
+                }}>
+                  <Text style={styles.modalBtnTextWhite}>Approve</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalRejectBtn} onPress={() => {
+                  if (selectedSrcId) adminStore.reviewSRCActivity(selectedSrcId, 'Rejected', adminName, srcReviewNote);
+                  setShowSrcReviewModal(false);
+                }}>
+                  <Text style={styles.modalBtnTextDanger}>Reject</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowSrcReviewModal(false)}>
+                  <Text style={styles.modalBtnTextSecondary}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Discipline Case Modal ── */}
+      <Modal visible={showDisciplineModal} transparent animationType="fade" onRequestClose={() => setShowDisciplineModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Log Discipline Case</Text>
+            <ScrollView>
+              <Text style={styles.inputLabel}>Student Name *</Text>
+              <TextInput style={styles.textInput} value={disciplineForm.studentName} onChangeText={(v) => setDisciplineForm({ ...disciplineForm, studentName: v })} placeholder="Student full name" />
+              <Text style={styles.inputLabel}>Admission No.</Text>
+              <TextInput style={styles.textInput} value={disciplineForm.admissionNo} onChangeText={(v) => setDisciplineForm({ ...disciplineForm, admissionNo: v })} placeholder="e.g. ADM/2026/001" />
+              <Text style={styles.inputLabel}>Class</Text>
+              <TextInput style={styles.textInput} value={disciplineForm.class} onChangeText={(v) => setDisciplineForm({ ...disciplineForm, class: v })} placeholder="e.g. Science 1A" />
+              <Text style={styles.inputLabel}>House</Text>
+              <TextInput style={styles.textInput} value={disciplineForm.house} onChangeText={(v) => setDisciplineForm({ ...disciplineForm, house: v })} placeholder="e.g. House 1" />
+              <Text style={styles.inputLabel}>Incident *</Text>
+              <TextInput style={styles.textArea} value={disciplineForm.incident} onChangeText={(v) => setDisciplineForm({ ...disciplineForm, incident: v })} placeholder="Description of the incident..." multiline />
+              <Text style={styles.inputLabel}>Severity</Text>
+              <View style={styles.pickerRow}>
+                {DISCIPLINE_SEVERITIES.map((s) => (
+                  <TouchableOpacity key={s} style={[styles.pickerChip, disciplineForm.severity === s && styles.pickerChipActive]} onPress={() => setDisciplineForm({ ...disciplineForm, severity: s })}>
+                    <Text style={[styles.pickerChipText, disciplineForm.severity === s && styles.pickerChipTextActive]}>{s}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={styles.inputLabel}>Reported By</Text>
+              <TextInput style={styles.textInput} value={disciplineForm.reportedBy} onChangeText={(v) => setDisciplineForm({ ...disciplineForm, reportedBy: v })} placeholder="Reporting officer name" />
+              <Text style={styles.inputLabel}>Action Taken</Text>
+              <TextInput style={styles.textArea} value={disciplineForm.actionTaken} onChangeText={(v) => setDisciplineForm({ ...disciplineForm, actionTaken: v })} placeholder="Disciplinary action taken..." multiline />
+              <Text style={styles.inputLabel}>Notes</Text>
+              <TextInput style={styles.textArea} value={disciplineForm.notes} onChangeText={(v) => setDisciplineForm({ ...disciplineForm, notes: v })} placeholder="Additional notes..." multiline />
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.modalApproveBtn} onPress={() => {
+                  if (!disciplineForm.studentName.trim() || !disciplineForm.incident.trim()) { Alert.alert('Error', 'Student name and incident are required.'); return; }
+                  adminStore.addDisciplineCase(disciplineForm);
+                  setShowDisciplineModal(false);
+                }}>
+                  <Text style={styles.modalBtnTextWhite}>Save</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowDisciplineModal(false)}>
+                  <Text style={styles.modalBtnTextSecondary}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Escalate Discipline Modal ── */}
+      <Modal visible={showDisciplineDetailModal} transparent animationType="fade" onRequestClose={() => setShowDisciplineDetailModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Escalate Discipline Case</Text>
+            <ScrollView>
+              <Text style={styles.inputLabel}>Escalate To *</Text>
+              <TextInput style={styles.textInput} value={escalateTo} onChangeText={setEscalateTo} placeholder="e.g. Headmaster, Board of Governors" />
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.modalApproveBtn} onPress={() => {
+                  if (!escalateTo.trim()) { Alert.alert('Error', 'Escalation target is required.'); return; }
+                  if (selectedDisciplineId) adminStore.escalateDisciplineCase(selectedDisciplineId, escalateTo);
+                  setShowDisciplineDetailModal(false);
+                }}>
+                  <Text style={styles.modalBtnTextWhite}>Escalate</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowDisciplineDetailModal(false)}>
+                  <Text style={styles.modalBtnTextSecondary}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
     </DashboardLayout>
   );
 }
@@ -2383,6 +3113,7 @@ const styles = StyleSheet.create({
   modalBtnTextWhite: { color: colors.white, fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
   modalBtnTextDanger: { color: colors.danger, fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
   modalBtnTextSecondary: { color: colors.textSecondary, fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
+  badgeColumn: { alignItems: 'flex-end', marginLeft: spacing.sm },
   logoutBtn: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   logoutText: { color: colors.danger, fontSize: fontSize.sm, fontWeight: fontWeight.medium },
   autoAssignHint: { fontSize: fontSize.xs, color: colors.info, marginBottom: spacing.xs, fontStyle: 'italic' },

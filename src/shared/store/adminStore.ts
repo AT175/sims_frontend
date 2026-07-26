@@ -75,6 +75,113 @@ export interface TaskAssignment {
   notes: string;
 }
 
+// ── New Types for GES Responsibilities ──
+
+export type CorrespondenceDirection = 'Incoming' | 'Outgoing';
+export type CorrespondenceStatus = 'Received' | 'Minuted' | 'Forwarded' | 'Actioned' | 'Filed';
+
+export interface Correspondence {
+  id: string;
+  refNo: string;
+  direction: CorrespondenceDirection;
+  date: string;
+  from: string;
+  to: string;
+  subject: string;
+  status: CorrespondenceStatus;
+  minutedTo?: string;
+  minuteNote?: string;
+  forwardedDate?: string;
+  filedBy?: string;
+  notes: string;
+}
+
+export type BoardMeetingStatus = 'Scheduled' | 'Completed' | 'Cancelled';
+
+export interface BoardMeeting {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  location: string;
+  chairperson: string;
+  agenda: string;
+  attendees: number;
+  status: BoardMeetingStatus;
+  minutes?: string;
+  keyDecisions?: string;
+  actionItems?: string;
+  policyDocuments?: string;
+}
+
+export type DocumentType = 'Testimonial' | 'Letter of Consent' | 'Introductory Letter' | 'Assurance' | 'Reference Letter' | 'Recommendation Letter';
+export type DocumentStatus = 'Draft' | 'Approved' | 'Issued';
+
+export interface DraftDocument {
+  id: string;
+  type: DocumentType;
+  date: string;
+  recipient: string;
+  subject: string;
+  body: string;
+  status: DocumentStatus;
+  draftedBy: string;
+  approvedBy?: string;
+  issuedDate?: string;
+}
+
+export type FunctionStatus = 'Planning' | 'Confirmed' | 'Completed' | 'Cancelled';
+
+export interface OfficialFunction {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  venue: string;
+  type: string;
+  status: FunctionStatus;
+  expectedAttendees: number;
+  logistics: string;
+  budget: number;
+  coordinator: string;
+  notes: string;
+}
+
+export type SRCRequestStatus = 'Pending' | 'Approved' | 'Rejected';
+export type SRCRequestType = 'Event' | 'Budget' | 'Grievance' | 'Initiative';
+
+export interface SRCActivity {
+  id: string;
+  date: string;
+  type: SRCRequestType;
+  title: string;
+  description: string;
+  requestedBy: string;
+  status: SRCRequestStatus;
+  amount?: number;
+  reviewedBy?: string;
+  reviewNote?: string;
+}
+
+export type DisciplineSeverity = 'Minor' | 'Moderate' | 'Major' | 'Critical';
+export type DisciplineStatus = 'Reported' | 'Under Review' | 'Actioned' | 'Escalated' | 'Resolved';
+
+export interface DisciplineCase {
+  id: string;
+  date: string;
+  studentName: string;
+  admissionNo: string;
+  class: string;
+  house: string;
+  incident: string;
+  severity: DisciplineSeverity;
+  status: DisciplineStatus;
+  reportedBy: string;
+  actionTaken: string;
+  escalatedTo?: string;
+  notes: string;
+}
+
 // ── Constants ──
 
 export const COMPLIANCE_STATUSES: ComplianceStatus[] = ['Not Started', 'In Progress', 'Submitted', 'Overdue'];
@@ -86,6 +193,17 @@ export const FACILITY_CATEGORIES = ['Electrical', 'Plumbing', 'Furniture', 'Buil
 export const ADMIN_MEETING_STATUSES: MeetingStatus[] = ['Scheduled', 'Completed', 'Cancelled'];
 export const TASK_PRIORITIES = ['Low', 'Normal', 'High', 'Urgent'];
 export const TASK_STATUSES = ['Pending', 'In Progress', 'Completed', 'Overdue'];
+
+export const CORRESPONDENCE_DIRECTIONS: CorrespondenceDirection[] = ['Incoming', 'Outgoing'];
+export const CORRESPONDENCE_STATUSES: CorrespondenceStatus[] = ['Received', 'Minuted', 'Forwarded', 'Actioned', 'Filed'];
+export const BOARD_MEETING_STATUSES: BoardMeetingStatus[] = ['Scheduled', 'Completed', 'Cancelled'];
+export const DOCUMENT_TYPES: DocumentType[] = ['Testimonial', 'Letter of Consent', 'Introductory Letter', 'Assurance', 'Reference Letter', 'Recommendation Letter'];
+export const DOCUMENT_STATUSES: DocumentStatus[] = ['Draft', 'Approved', 'Issued'];
+export const FUNCTION_STATUSES: FunctionStatus[] = ['Planning', 'Confirmed', 'Completed', 'Cancelled'];
+export const SRC_REQUEST_TYPES: SRCRequestType[] = ['Event', 'Budget', 'Grievance', 'Initiative'];
+export const SRC_REQUEST_STATUSES: SRCRequestStatus[] = ['Pending', 'Approved', 'Rejected'];
+export const DISCIPLINE_SEVERITIES: DisciplineSeverity[] = ['Minor', 'Moderate', 'Major', 'Critical'];
+export const DISCIPLINE_STATUSES: DisciplineStatus[] = ['Reported', 'Under Review', 'Actioned', 'Escalated', 'Resolved'];
 
 // ── Helpers ──
 
@@ -105,6 +223,13 @@ const INITIAL_MEETINGS: AdminMeeting[] = [];
 
 const INITIAL_TASKS: TaskAssignment[] = [];
 
+const INITIAL_CORRESPONDENCE: Correspondence[] = [];
+const INITIAL_BOARD_MEETINGS: BoardMeeting[] = [];
+const INITIAL_DOCUMENTS: DraftDocument[] = [];
+const INITIAL_FUNCTIONS: OfficialFunction[] = [];
+const INITIAL_SRC_ACTIVITIES: SRCActivity[] = [];
+const INITIAL_DISCIPLINE_CASES: DisciplineCase[] = [];
+
 // ── Store ──
 
 interface AdminState {
@@ -113,6 +238,12 @@ interface AdminState {
   facilities: FacilityIssue[];
   meetings: AdminMeeting[];
   tasks: TaskAssignment[];
+  correspondence: Correspondence[];
+  boardMeetings: BoardMeeting[];
+  documents: DraftDocument[];
+  functions: OfficialFunction[];
+  srcActivities: SRCActivity[];
+  disciplineCases: DisciplineCase[];
 
   // Compliance
   addCompliance: (item: Omit<ComplianceItem, 'id'>) => void;
@@ -142,6 +273,45 @@ interface AdminState {
   deleteTask: (id: string) => void;
   getOverdueTasks: () => TaskAssignment[];
   getPendingTasks: () => TaskAssignment[];
+
+  // Correspondence
+  addCorrespondence: (c: Omit<Correspondence, 'id'>) => void;
+  updateCorrespondence: (id: string, updates: Partial<Correspondence>) => void;
+  minuteCorrespondence: (id: string, minutedTo: string, minuteNote: string, by: string) => void;
+  deleteCorrespondence: (id: string) => void;
+  getPendingCorrespondence: () => Correspondence[];
+
+  // Board Meetings
+  addBoardMeeting: (m: Omit<BoardMeeting, 'id' | 'status' | 'attendees'>) => void;
+  completeBoardMeeting: (id: string, minutes: string, decisions: string, actions: string, attendees: number, policyDocs: string) => void;
+  cancelBoardMeeting: (id: string) => void;
+  deleteBoardMeeting: (id: string) => void;
+
+  // Documents
+  addDocument: (d: Omit<DraftDocument, 'id' | 'date' | 'status'>) => void;
+  approveDocument: (id: string, approvedBy: string) => void;
+  issueDocument: (id: string) => void;
+  deleteDocument: (id: string) => void;
+  getDraftDocuments: () => DraftDocument[];
+
+  // Official Functions
+  addFunction: (f: Omit<OfficialFunction, 'id' | 'status'>) => void;
+  updateFunction: (id: string, updates: Partial<OfficialFunction>) => void;
+  deleteFunction: (id: string) => void;
+  getUpcomingFunctions: () => OfficialFunction[];
+
+  // SRC Activities
+  addSRCActivity: (a: Omit<SRCActivity, 'id' | 'date' | 'status'>) => void;
+  reviewSRCActivity: (id: string, status: 'Approved' | 'Rejected', reviewedBy: string, note: string) => void;
+  deleteSRCActivity: (id: string) => void;
+  getPendingSRC: () => SRCActivity[];
+
+  // Discipline Cases
+  addDisciplineCase: (d: Omit<DisciplineCase, 'id' | 'date' | 'status'>) => void;
+  updateDisciplineCase: (id: string, updates: Partial<DisciplineCase>) => void;
+  escalateDisciplineCase: (id: string, escalatedTo: string) => void;
+  deleteDisciplineCase: (id: string) => void;
+  getEscalatedCases: () => DisciplineCase[];
 
   // Stats
   getAdminStats: () => {
@@ -289,6 +459,105 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       get().loadFacilities(),
       get().loadTasks(),
     ]);
+  },
+
+  // ── Correspondence ──
+  correspondence: INITIAL_CORRESPONDENCE,
+  addCorrespondence: (c) => {
+    set((s) => ({ correspondence: [{ ...c, id: nextId() }, ...s.correspondence] }));
+  },
+  updateCorrespondence: (id, updates) => {
+    set((s) => ({ correspondence: s.correspondence.map((c) => (c.id === id ? { ...c, ...updates } : c)) }));
+  },
+  minuteCorrespondence: (id, minutedTo, minuteNote, by) => {
+    set((s) => ({ correspondence: s.correspondence.map((c) => (c.id === id ? { ...c, status: 'Minuted', minutedTo, minuteNote, forwardedDate: todayISO(), filedBy: by } : c)) }));
+  },
+  deleteCorrespondence: (id) => {
+    set((s) => ({ correspondence: s.correspondence.filter((c) => c.id !== id) }));
+  },
+  getPendingCorrespondence: () => {
+    return get().correspondence.filter((c) => c.status === 'Received' || c.status === 'Minuted');
+  },
+
+  // ── Board Meetings ──
+  boardMeetings: INITIAL_BOARD_MEETINGS,
+  addBoardMeeting: (m) => {
+    set((s) => ({ boardMeetings: [...s.boardMeetings, { ...m, id: nextId(), status: 'Scheduled', attendees: 0 }] }));
+  },
+  completeBoardMeeting: (id, minutes, decisions, actions, attendees, policyDocs) => {
+    set((s) => ({ boardMeetings: s.boardMeetings.map((m) => (m.id === id ? { ...m, status: 'Completed', minutes, keyDecisions: decisions, actionItems: actions, attendees, policyDocuments: policyDocs } : m)) }));
+  },
+  cancelBoardMeeting: (id) => {
+    set((s) => ({ boardMeetings: s.boardMeetings.map((m) => (m.id === id ? { ...m, status: 'Cancelled' } : m)) }));
+  },
+  deleteBoardMeeting: (id) => {
+    set((s) => ({ boardMeetings: s.boardMeetings.filter((m) => m.id !== id) }));
+  },
+
+  // ── Documents ──
+  documents: INITIAL_DOCUMENTS,
+  addDocument: (d) => {
+    set((s) => ({ documents: [{ ...d, id: nextId(), date: todayISO(), status: 'Draft' }, ...s.documents] }));
+  },
+  approveDocument: (id, approvedBy) => {
+    set((s) => ({ documents: s.documents.map((d) => (d.id === id ? { ...d, status: 'Approved', approvedBy } : d)) }));
+  },
+  issueDocument: (id) => {
+    set((s) => ({ documents: s.documents.map((d) => (d.id === id ? { ...d, status: 'Issued', issuedDate: todayISO() } : d)) }));
+  },
+  deleteDocument: (id) => {
+    set((s) => ({ documents: s.documents.filter((d) => d.id !== id) }));
+  },
+  getDraftDocuments: () => {
+    return get().documents.filter((d) => d.status === 'Draft');
+  },
+
+  // ── Official Functions ──
+  functions: INITIAL_FUNCTIONS,
+  addFunction: (f) => {
+    set((s) => ({ functions: [{ ...f, id: nextId(), status: 'Planning' }, ...s.functions] }));
+  },
+  updateFunction: (id, updates) => {
+    set((s) => ({ functions: s.functions.map((f) => (f.id === id ? { ...f, ...updates } : f)) }));
+  },
+  deleteFunction: (id) => {
+    set((s) => ({ functions: s.functions.filter((f) => f.id !== id) }));
+  },
+  getUpcomingFunctions: () => {
+    return get().functions.filter((f) => f.status === 'Planning' || f.status === 'Confirmed');
+  },
+
+  // ── SRC Activities ──
+  srcActivities: INITIAL_SRC_ACTIVITIES,
+  addSRCActivity: (a) => {
+    set((s) => ({ srcActivities: [{ ...a, id: nextId(), date: todayISO(), status: 'Pending' }, ...s.srcActivities] }));
+  },
+  reviewSRCActivity: (id, status, reviewedBy, note) => {
+    set((s) => ({ srcActivities: s.srcActivities.map((a) => (a.id === id ? { ...a, status, reviewedBy, reviewNote: note } : a)) }));
+  },
+  deleteSRCActivity: (id) => {
+    set((s) => ({ srcActivities: s.srcActivities.filter((a) => a.id !== id) }));
+  },
+  getPendingSRC: () => {
+    return get().srcActivities.filter((a) => a.status === 'Pending');
+  },
+
+  // ── Discipline Cases ──
+  disciplineCases: INITIAL_DISCIPLINE_CASES,
+  addDisciplineCase: (d) => {
+    set((s) => ({ disciplineCases: [{ ...d, id: nextId(), date: todayISO(), status: 'Reported' }, ...s.disciplineCases] }));
+  },
+  updateDisciplineCase: (id, updates) => {
+    set((s) => ({ disciplineCases: s.disciplineCases.map((d) => (d.id === id ? { ...d, ...updates } : d)) }));
+  },
+  escalateDisciplineCase: (id, escalatedTo) => {
+    set((s) => ({ disciplineCases: s.disciplineCases.map((d) => (d.id === id ? { ...d, status: 'Escalated', escalatedTo } : d)) }));
+  },
+  deleteDisciplineCase: (id) => {
+    set((s) => ({ disciplineCases: s.disciplineCases.filter((d) => d.id !== id) }));
+  },
+  getEscalatedCases: () => {
+    return get().disciplineCases.filter((d) => d.status === 'Escalated');
   },
 
 }));
