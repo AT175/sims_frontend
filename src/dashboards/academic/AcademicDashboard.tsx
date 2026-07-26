@@ -69,8 +69,7 @@ export function AcademicDashboard() {
 
   useEffect(() => {
     academicApi.getTimetable().then(setBackendTimetable).catch(() => {});
-    useAcademicStore.getState().loadExams();
-    useAcademicStore.getState().loadTimetables();
+    useAcademicStore.getState().loadAll();
   }, []);
 
   // Modal states

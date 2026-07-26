@@ -80,40 +80,17 @@ const today = new Date().toISOString().slice(0, 10);
 
 // ── Initial Data ──
 
-const initialHouses: House[] = [
-  { id: 'h1', name: 'Aggrey', type: 'Boys', housemaster: 'Mr. Owusu', phone: '024-111-2222', capacity: 220, occupied: 210, since: 'Sep 2024' },
-  { id: 'h2', name: 'Danquah', type: 'Boys', housemaster: 'Mr. Tetteh', phone: '027-333-4444', capacity: 230, occupied: 215, since: 'Sep 2023' },
-];
+const initialHouses: House[] = [];
 
-const initialStudents: BoardingStudent[] = [
-  { id: 's1', admNo: '2026/001', name: 'Kwame Asante', class: 'SHS2 Sci A', house: 'Aggrey', room: 'A-12', bed: '1' },
-  { id: 's2', admNo: '2026/003', name: 'Yao Mensah', class: 'SHS3 Bus A', house: 'Aggrey', room: 'B-05', bed: '2' },
-  { id: 's3', admNo: '2026/015', name: 'Daniel Osei', class: 'SHS1 Sci A', house: 'Aggrey', room: 'C-08', bed: '1' },
-  { id: 's4', admNo: '2026/022', name: 'Patrick Agyei', class: 'SHS2 Arts B', house: 'Aggrey', room: 'A-14', bed: '3' },
-  { id: 's5', admNo: '2026/031', name: 'Kofi Baah', class: 'SHS1 Bus A', house: 'Aggrey', room: 'B-05', bed: '1' },
-  { id: 's6', admNo: '2026/040', name: 'Samuel Tuffour', class: 'SHS3 Sci B', house: 'Aggrey', room: 'A-12', bed: '2' },
-  { id: 's7', admNo: '2026/051', name: 'Ekow Mensah', class: 'SHS2 Arts A', house: 'Danquah', room: 'D-10', bed: '1' },
-  { id: 's8', admNo: '2026/055', name: 'Bernard Asiedu', class: 'SHS1 Sci B', house: 'Danquah', room: 'D-11', bed: '2' },
-];
+const initialStudents: BoardingStudent[] = [];
 
-const initialRooms: Room[] = [
-  { id: 'r1', house: 'Aggrey', room: 'A-12', beds: 4, occupied: 4, studentNames: ['K. Asante', 'S. Tuffour', 'P. Agyei', 'J. Mensah'] },
-  { id: 'r2', house: 'Aggrey', room: 'B-05', beds: 4, occupied: 3, studentNames: ['Y. Mensah', 'K. Baah', 'D. Osei'] },
-  { id: 'r3', house: 'Aggrey', room: 'C-08', beds: 2, occupied: 1, studentNames: ['D. Osei'] },
-  { id: 'r4', house: 'Aggrey', room: 'A-14', beds: 4, occupied: 2, studentNames: ['P. Agyei', 'F. Owusu'] },
-  { id: 'r5', house: 'Danquah', room: 'D-10', beds: 4, occupied: 3, studentNames: ['E. Mensah', 'B. Asiedu', 'K. Frimpong'] },
-  { id: 'r6', house: 'Danquah', room: 'D-11', beds: 4, occupied: 2, studentNames: ['B. Asiedu', 'A. Boateng'] },
-];
+const initialRooms: Room[] = [];
 
 const initialRollCalls: RollCallEntry[] = [];
 
 const initialDiscipline: DisciplineLog[] = [];
 
-const initialWelfare: WelfareNote[] = [
-  { id: 'w1', date: '2026-07-05', house: 'Aggrey', studentName: 'Patrick Agyei', note: 'Homesick, spoke with guardian. Monitoring mood.', recordedBy: 'Mr. Owusu', resolved: false },
-  { id: 'w2', date: '2026-07-03', house: 'Aggrey', studentName: 'Daniel Osei', note: 'Skipping meals, monitoring eating habits.', recordedBy: 'Mr. Owusu', resolved: false },
-  { id: 'w3', date: '2026-06-30', house: 'Danquah', studentName: 'Bernard Asiedu', note: 'Exam stress, referred to counselling unit.', recordedBy: 'Mr. Tetteh', resolved: true },
-];
+const initialWelfare: WelfareNote[] = [];
 
 // ── Store ──
 
@@ -165,6 +142,7 @@ interface BoardingState {
   // API
   loadRollCalls: () => Promise<void>;
   loadDiscipline: () => Promise<void>;
+  loadAll: () => Promise<void>;
 }
 
 let counter = 100;
@@ -251,5 +229,11 @@ export const useBoardingStore = create<BoardingState>((set, get) => ({
       const data = await apiClient.get<any[]>('/boarding/discipline');
       set({ discipline: (data || []).map((d) => ({ ...d, id: d.id || genId() })) });
     } catch {}
+  },
+  loadAll: async () => {
+    await Promise.all([
+      get().loadRollCalls(),
+      get().loadDiscipline(),
+    ]);
   },
 }));

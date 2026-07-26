@@ -18,9 +18,7 @@ export function GoverningBoardDashboard() {
   const { logout } = useAuthStore();
 
   useEffect(() => {
-    useDynamicDashboardStore.getState().loadBoardPolicies();
-    useDynamicDashboardStore.getState().loadBoardBudgets();
-    useDynamicDashboardStore.getState().loadBoardMinutes();
+    useDynamicDashboardStore.getState().loadAll();
   }, []);
 
   const renderPage = () => {

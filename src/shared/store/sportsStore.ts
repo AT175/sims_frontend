@@ -101,33 +101,13 @@ const INITIAL_CLUBS: Club[] = [];
 
 const INITIAL_FIXTURES: Fixture[] = [];
 
-const INITIAL_PARTICIPATION: ParticipationRecord[] = [
-  { id: '1', date: '2026-07-05', activity: 'Science Club meeting', participantCount: 58 },
-  { id: '2', date: '2026-07-04', activity: 'Football practice', participantCount: 32 },
-  { id: '3', date: '2026-07-03', activity: 'Debate practice', participantCount: 40 },
-];
+const INITIAL_PARTICIPATION: ParticipationRecord[] = [];
 
-const INITIAL_EQUIPMENT: SportsEquipment[] = [
-  { id: '1', item: 'Footballs', quantity: 15, condition: 'Good', location: 'Sports Store' },
-  { id: '2', item: 'Volleyballs', quantity: 8, condition: 'Good', location: 'Sports Store' },
-  { id: '3', item: 'Jerseys (sets)', quantity: 12, condition: 'Fair', location: 'Sports Store', notes: '6 good, 6 worn' },
-  { id: '4', item: 'Athletics spikes', quantity: 20, condition: 'Good', location: 'Equipment Room' },
-  { id: '5', item: 'Bib sets', quantity: 10, condition: 'Fair', location: 'Sports Store' },
-];
+const INITIAL_EQUIPMENT: SportsEquipment[] = [];
 
-const INITIAL_ACHIEVEMENTS: Achievement[] = [
-  { id: '1', date: '2026-06', achievement: 'Inter-school Football Champions', level: 'Regional', recipients: 'Football Team' },
-  { id: '2', date: '2026-05', achievement: 'National Science Quiz - 3rd Place', level: 'National', recipients: 'Science Club' },
-  { id: '3', date: '2026-03', achievement: 'Debate Competition Winners', level: 'Zonal', recipients: 'Debate Society' },
-];
+const INITIAL_ACHIEVEMENTS: Achievement[] = [];
 
-const INITIAL_ACCESS: AccessRecord[] = [
-  { id: '1', personName: 'Mr. Owusu', role: 'Sports Coordinator', resource: 'Sports Fixtures', accessLevel: 'Full', grantedDate: '2026-01-05', grantedBy: 'Headmaster' },
-  { id: '2', personName: 'Mr. Owusu', role: 'Sports Coordinator', resource: 'Equipment & Kits', accessLevel: 'Full', grantedDate: '2026-01-05', grantedBy: 'Headmaster' },
-  { id: '3', personName: 'All Patrons', role: 'Patron', resource: 'Clubs & Societies', accessLevel: 'Full', grantedDate: '2026-01-10', grantedBy: 'Sports Coordinator' },
-  { id: '4', personName: 'All Students', role: 'Student', resource: 'Sports Fixtures', accessLevel: 'Read Only', grantedDate: '2026-01-10', grantedBy: 'Sports Coordinator' },
-  { id: '5', personName: 'All Students', role: 'Student', resource: 'Equipment & Kits', accessLevel: 'No Access', grantedDate: '2026-01-10', grantedBy: 'Sports Coordinator' },
-];
+const INITIAL_ACCESS: AccessRecord[] = [];
 
 // ── Store ──
 
@@ -164,9 +144,10 @@ interface SportsState {
   // API
   loadClubs: () => Promise<void>;
   loadFixtures: () => Promise<void>;
+  loadAll: () => Promise<void>;
 }
 
-export const useSportsStore = create<SportsState>((set) => ({
+export const useSportsStore = create<SportsState>((set, get) => ({
   clubs: INITIAL_CLUBS,
   fixtures: INITIAL_FIXTURES,
   participation: INITIAL_PARTICIPATION,
@@ -272,4 +253,11 @@ export const useSportsStore = create<SportsState>((set) => ({
       set({ fixtures: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
     } catch {}
   },
+  loadAll: async () => {
+    await Promise.all([
+      get().loadClubs(),
+      get().loadFixtures(),
+    ]);
+  },
+
 }));

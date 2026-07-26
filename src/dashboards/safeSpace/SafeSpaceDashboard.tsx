@@ -21,8 +21,7 @@ export function SafeSpaceDashboard() {
   const store = useDynamicDashboardStore();
 
   useEffect(() => {
-    useDynamicDashboardStore.getState().loadSafetyIncidents();
-    useDynamicDashboardStore.getState().loadTrainingRecords();
+    useDynamicDashboardStore.getState().loadAll();
   }, []);
 
   const [incidentForm, setIncidentForm] = useState<{ date: string; location: string; severity: 'Low' | 'Medium' | 'High' | 'Critical'; status: 'Reported' | 'Investigating' | 'Resolved' | 'Escalated'; description: string; reportedBy: string; action: string }>({ date: '', location: '', severity: 'Medium', status: 'Reported', description: '', reportedBy: '', action: '' });

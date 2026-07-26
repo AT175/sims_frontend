@@ -109,27 +109,13 @@ const COUNSELLORS: Counsellor[] = [
 
 const INITIAL_CASES: CounsellingCase[] = [];
 
-const INITIAL_SESSIONS: SessionLog[] = [
-  { id: '1', caseId: '1', date: '2026-07-05', counsellor: 'Mr. Osei', type: 'Academic', summary: 'Initial assessment', notes: 'Student expressed anxiety about upcoming exams. Discussed study strategies and relaxation techniques.', nextAction: 'Follow-up session to review study plan', nextSessionDate: '2026-07-12' },
-  { id: '2', caseId: '2', date: '2026-07-03', counsellor: 'Mrs. Mensah', type: 'Psychosocial', summary: 'Initial counselling session', notes: 'Student shared feelings of loneliness. Explored coping mechanisms and social activities.', nextAction: 'Encourage participation in house activities', nextSessionDate: '2026-07-10' },
-  { id: '3', caseId: '2', date: '2026-07-08', counsellor: 'Mrs. Mensah', type: 'Psychosocial', summary: 'Follow-up session', notes: 'Student reports slightly better sleep. Joined the reading club.', nextAction: 'Continue monitoring, involve housemaster', nextSessionDate: '2026-07-15' },
-  { id: '4', caseId: '4', date: '2026-06-20', counsellor: 'Mr. Osei', type: 'Academic', summary: 'Career assessment', notes: 'Administered interest inventory. Student leans toward Science.', nextAction: 'None — case closed', nextSessionDate: '' },
-];
+const INITIAL_SESSIONS: SessionLog[] = [];
 
 const INITIAL_APPOINTMENTS: Appointment[] = [];
 
-const INITIAL_REFERRALS: Referral[] = [
-  { id: '1', date: '2026-07-02', studentName: 'Student C', studentClass: 'Form 3C', referredTo: 'Clinical Psychologist', reason: 'Behavioral assessment', type: 'Psychosocial', status: 'Ongoing', notes: 'Assessment in progress, awaiting report' },
-  { id: '2', date: '2026-06-15', studentName: 'Student F', studentClass: 'Form 1B', referredTo: 'Speech Therapist', reason: 'Speech evaluation', type: 'Psychosocial', status: 'Completed', notes: 'Evaluation complete, no issues found' },
-];
+const INITIAL_REFERRALS: Referral[] = [];
 
-const INITIAL_RESOURCES: CareerResource[] = [
-  { id: '1', title: 'KNUST Admission Requirements 2026/27', category: 'University', description: 'Comprehensive guide to KNUST admission requirements for all programmes', updated: 'Jun 2026', link: 'https://knust.edu.gh/admissions' },
-  { id: '2', title: 'Scholarship Opportunities - Ghana', category: 'Scholarship', description: 'List of available scholarships for Ghanaian students', updated: 'Jun 2026', link: 'https://scholarships.gov.gh' },
-  { id: '3', title: 'Engineering Programmes Guide', category: 'Course Guide', description: 'Overview of engineering programmes across Ghanaian universities', updated: 'May 2026', link: '' },
-  { id: '4', title: 'Nursing Schools Directory', category: 'Course Guide', description: 'Directory of accredited nursing schools in Ghana', updated: 'May 2026', link: '' },
-  { id: '5', title: 'WASSCE Subject Selection Guide', category: 'Academic', description: 'Guide to help students choose appropriate elective subjects', updated: 'Jun 2026', link: '' },
-];
+const INITIAL_RESOURCES: CareerResource[] = [];
 
 // ── Store ──
 
@@ -178,6 +164,7 @@ interface CounsellingState {
   // API
   loadCases: () => Promise<void>;
   loadAppointments: () => Promise<void>;
+  loadAll: () => Promise<void>;
 }
 
 export const useCounsellingStore = create<CounsellingState>((set, get) => ({
@@ -303,6 +290,12 @@ export const useCounsellingStore = create<CounsellingState>((set, get) => ({
       const data = await apiClient.get<any[]>('/counselling/appointments');
       set({ appointments: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
     } catch {}
+  },
+  loadAll: async () => {
+    await Promise.all([
+      get().loadCases(),
+      get().loadAppointments(),
+    ]);
   },
 }));
 

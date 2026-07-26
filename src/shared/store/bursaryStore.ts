@@ -160,51 +160,11 @@ const INITIAL_PAYROLL: PayrollEntry[] = [];
 
 const INITIAL_EXPENDITURE: ExpenditureRecord[] = [];
 
-const INITIAL_BUDGET_ITEMS: BudgetItem[] = [
-  { id: '1', department: 'Academic', allocated: 45000, spent: 28000, remaining: 17000, term: 'Term 3 2025/2026', status: 'Active', notes: 'Teaching materials, exam printing' },
-  { id: '2', department: 'Domestic/Boarding', allocated: 80000, spent: 52000, remaining: 28000, term: 'Term 3 2025/2026', status: 'Active', notes: 'Food, boarding supplies, utilities' },
-  { id: '3', department: 'Administration', allocated: 30000, spent: 18500, remaining: 11500, term: 'Term 3 2025/2026', status: 'Active', notes: 'Office supplies, communications' },
-  { id: '4', department: 'Sports & Clubs', allocated: 15000, spent: 4200, remaining: 10800, term: 'Term 3 2025/2026', status: 'Active', notes: 'Equipment, fixtures, competitions' },
-  { id: '5', department: 'Science Lab', allocated: 20000, spent: 8500, remaining: 11500, term: 'Term 3 2025/2026', status: 'Active', notes: 'Chemicals, apparatus, consumables' },
-  { id: '6', department: 'ICT', allocated: 25000, spent: 15000, remaining: 10000, term: 'Term 3 2025/2026', status: 'Active', notes: 'Computers, software, internet' },
-];
+const INITIAL_BUDGET_ITEMS: BudgetItem[] = [];
 
-const INITIAL_BUDGET_SUBMISSIONS: BudgetSubmission[] = [
-  { id: '1', department: 'Science Lab', submittedBy: 'G. Adjei (HOD Science)', supervisorName: 'Asst. Headmaster (Academic)', dateSubmitted: '2026-07-05', items: [
-    { description: 'Chemistry reagents (Term 1)', quantity: 20, unitCost: 150, total: 3000 },
-    { description: 'Biology specimens', quantity: 10, unitCost: 80, total: 800 },
-    { description: 'Physics apparatus set', quantity: 5, unitCost: 400, total: 2000 },
-  ], totalRequested: 5800, status: 'Accountant Approved', supervisorApprovedDate: '2026-07-06', supervisorNotes: 'Approved — essential for Term 1 labs.', accountantApprovedDate: '2026-07-07', accountantNotes: 'Approved. Allocate from Science Lab budget.', term: 'Term 1 2026/2027', justification: 'Required consumables for SHS1-3 practical lessons.' },
-  { id: '2', department: 'Sports & Clubs', submittedBy: 'C. Dankwah (Sports Coach)', supervisorName: 'Asst. Headmaster (Academic)', dateSubmitted: '2026-07-08', items: [
-    { description: 'Football jerseys (2 sets)', quantity: 2, unitCost: 1200, total: 2400 },
-    { description: 'Athletics equipment', quantity: 1, unitCost: 3500, total: 3500 },
-    { description: 'Trophies and medals', quantity: 1, unitCost: 800, total: 800 },
-  ], totalRequested: 6700, status: 'Pending Accountant', supervisorApprovedDate: '2026-07-09', supervisorNotes: 'Approved — inter-schools competition preparation.', term: 'Term 1 2026/2027', justification: 'Upcoming inter-schools sports competition in October.' },
-  { id: '3', department: 'Domestic/Boarding', submittedBy: 'Domestic Bursar', supervisorName: 'Senior Housemaster', dateSubmitted: '2026-07-09', items: [
-    { description: 'Mattresses (double)', quantity: 30, unitCost: 450, total: 13500 },
-    { description: 'Dining hall tables', quantity: 10, unitCost: 800, total: 8000 },
-  ], totalRequested: 21500, status: 'Pending Supervisor', term: 'Term 1 2026/2027', justification: 'Replacement of worn-out boarding supplies for new intake.' },
-  { id: '4', department: 'ICT', submittedBy: 'M. Owusu (ICT Teacher)', supervisorName: 'Asst. Headmaster (Academic)', dateSubmitted: '2026-07-07', items: [
-    { description: 'Projector', quantity: 2, unitCost: 3000, total: 6000 },
-    { description: 'Networking cables', quantity: 5, unitCost: 200, total: 1000 },
-  ], totalRequested: 7000, status: 'Supervisor Approved', supervisorApprovedDate: '2026-07-08', supervisorNotes: 'Approved — ICT lab needs upgrade.', term: 'Term 1 2026/2027', justification: 'ICT lab expansion for new academic year.' },
-  { id: '5', department: 'Library', submittedBy: 'L. Frimpong (Librarian)', supervisorName: 'Asst. Headmaster (Academic)', dateSubmitted: '2026-07-10', items: [
-    { description: 'Reference books (set)', quantity: 1, unitCost: 5000, total: 5000 },
-    { description: 'Fiction books', quantity: 50, unitCost: 40, total: 2000 },
-  ], totalRequested: 7000, status: 'Pending Supervisor', term: 'Term 1 2026/2027', justification: 'Stocking library for new academic year reading program.' },
-];
+const INITIAL_BUDGET_SUBMISSIONS: BudgetSubmission[] = [];
 
-const INITIAL_INVOICES: Invoice[] = [
-  { id: '1', invoiceNo: 'INV-2026/101', studentName: 'Kofi Boateng', admNo: '2025/146', class: 'SHS3 Sci A', guardianName: 'Mr. Samuel Boateng', term: 'Term 3 2025/2026', items: [
-    { description: 'Tuition Fee', amount: 1200 }, { description: 'Boarding Fee', amount: 800 }, { description: 'Examination Fee', amount: 150 },
-  ], totalAmount: 2150, amountPaid: 0, balance: 2150, status: 'Overdue', dateIssued: '2026-01-15', dueDate: '2026-02-15', issuedBy: 'Accountant' },
-  { id: '2', invoiceNo: 'INV-2026/102', studentName: 'Kojo Addo', admNo: '2024/098', class: 'SHS3 Arts A', guardianName: 'Mr. Peter Addo', term: 'Term 3 2025/2026', items: [
-    { description: 'Tuition Fee', amount: 1200 }, { description: 'Examination Fee', amount: 150 },
-  ], totalAmount: 1350, amountPaid: 0, balance: 1350, status: 'Overdue', dateIssued: '2026-01-15', dueDate: '2026-02-15', issuedBy: 'Accountant' },
-  { id: '3', invoiceNo: 'INV-2026/103', studentName: 'Ama Owusu', admNo: '2026/002', class: 'SHS1 Arts B', guardianName: 'Mrs. Akosua Owusu', term: 'Term 3 2025/2026', items: [
-    { description: 'Tuition Fee', amount: 1200 }, { description: 'Boarding Fee', amount: 800 },
-  ], totalAmount: 2000, amountPaid: 1400, balance: 600, status: 'Issued', dateIssued: '2026-01-15', dueDate: '2026-03-15', issuedBy: 'Accountant' },
-];
+const INITIAL_INVOICES: Invoice[] = [];
 
 // ── Store ──
 
@@ -268,6 +228,10 @@ interface BursaryState {
   loadReceipts: () => Promise<void>;
   loadPayroll: () => Promise<void>;
   loadExpenditure: () => Promise<void>;
+  loadBudgetItems: () => Promise<void>;
+  loadBudgetSubmissions: () => Promise<void>;
+  loadInvoices: () => Promise<void>;
+  loadAll: () => Promise<void>;
 }
 
 export const useBursaryStore = create<BursaryState>((set, get) => ({
@@ -447,5 +411,34 @@ export const useBursaryStore = create<BursaryState>((set, get) => ({
       const data = await apiClient.get<any[]>('/bursary/expenditure');
       set({ expenditure: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
     } catch {}
+  },
+  loadBudgetItems: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/bursary/budget-items');
+      set({ budgetItems: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadBudgetSubmissions: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/bursary/budget-submissions');
+      set({ budgetSubmissions: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadInvoices: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/bursary/invoices');
+      set({ invoices: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadAll: async () => {
+    await Promise.all([
+      get().loadFees(),
+      get().loadReceipts(),
+      get().loadPayroll(),
+      get().loadExpenditure(),
+      get().loadBudgetItems(),
+      get().loadBudgetSubmissions(),
+      get().loadInvoices(),
+    ]);
   },
 }));

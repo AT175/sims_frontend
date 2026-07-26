@@ -47,10 +47,7 @@ export function TransportDashboard() {
   } = useTransportStore();
 
   useEffect(() => {
-    useTransportStore.getState().loadVehicles();
-    useTransportStore.getState().loadTrips();
-    useTransportStore.getState().loadDrivers();
-    useTransportStore.getState().loadMaintenance();
+    useTransportStore.getState().loadAll();
   }, []);
 
   // ── Form state ──

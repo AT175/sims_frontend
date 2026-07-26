@@ -20,8 +20,7 @@ export function InternalAuditorDashboard() {
   const store = useDynamicDashboardStore();
 
   useEffect(() => {
-    useDynamicDashboardStore.getState().loadAudits();
-    useDynamicDashboardStore.getState().loadAuditFindings();
+    useDynamicDashboardStore.getState().loadAll();
   }, []);
 
   const [auditForm, setAuditForm] = useState<{ title: string; type: 'Financial' | 'Compliance' | 'Operational' | 'IT'; startDate: string; endDate: string; auditor: string; status: 'Planned' | 'In Progress' | 'Completed' | 'Flagged' }>({ title: '', type: 'Financial', startDate: '', endDate: '', auditor: '', status: 'Planned' });

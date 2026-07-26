@@ -22,9 +22,7 @@ export function DiningHallDashboard() {
   const store = useDynamicDashboardStore();
 
   useEffect(() => {
-    useDynamicDashboardStore.getState().loadMenuItems();
-    useDynamicDashboardStore.getState().loadMealAttendance();
-    useDynamicDashboardStore.getState().loadSupplies();
+    useDynamicDashboardStore.getState().loadAll();
   }, []);
 
   const [hygieneForm, setHygieneForm] = useState<{ date: string; area: string; rating: 'Excellent' | 'Good' | 'Fair' | 'Poor'; inspector: string; notes: string }>({ date: '', area: '', rating: 'Good', inspector: '', notes: '' });

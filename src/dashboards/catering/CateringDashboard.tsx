@@ -97,9 +97,8 @@ export function CateringDashboard() {
   } = useKitchenStore();
 
   useEffect(() => {
-    useKitchenStore.getState().loadStock();
-    useKitchenStore.getState().loadMenus();
-    useRequisitionStore.getState().loadRequisitions();
+    useKitchenStore.getState().loadAll();
+    useRequisitionStore.getState().loadAll();
   }, []);
 
   const [showModal, setShowModal] = useState(false);

@@ -232,79 +232,26 @@ const todayISO = () => new Date().toISOString().slice(0, 10);
 
 // ── Initial Data ──
 
-const INITIAL_STUDENTS: StudentRecord[] = [
-  { id: '1', admNo: '2026/001', firstName: 'Kwame', lastName: 'Asante', dateOfBirth: '2008-05-14', gender: 'Male', programme: 'General Science', class: 'SHS2 Sci A', house: 'Aggrey', guardianName: 'Mr. Kofi Asante', guardianPhone: '024-555-1001', guardianAddress: 'Kumasi, Ashanti Region', admissionDate: '2025-09-10', status: 'Active', photoUrl: null, csspsRef: 'CSSPS/2025/0123' },
-  { id: '2', admNo: '2026/002', firstName: 'Ama', lastName: 'Owusu', dateOfBirth: '2009-03-22', gender: 'Female', programme: 'General Arts', class: 'SHS1 Arts B', house: 'Mensah', guardianName: 'Mrs. Akosua Owusu', guardianPhone: '027-555-1002', guardianAddress: 'Accra, Greater Accra', admissionDate: '2026-09-10', status: 'Active', photoUrl: null, csspsRef: 'CSSPS/2026/0456' },
-  { id: '3', admNo: '2026/003', firstName: 'Yao', lastName: 'Mensah', dateOfBirth: '2007-11-08', gender: 'Male', programme: 'Business', class: 'SHS3 Bus A', house: 'Aggrey', guardianName: 'Mr. Daniel Mensah', guardianPhone: '020-555-1003', guardianAddress: 'Tema, Greater Accra', admissionDate: '2024-09-10', status: 'Active', photoUrl: null, csspsRef: 'CSSPS/2024/0789' },
-  { id: '4', admNo: '2025/145', firstName: 'Efua', lastName: 'Darko', dateOfBirth: '2008-07-19', gender: 'Female', programme: 'General Science', class: 'SHS2 Sci B', house: 'Mensah', guardianName: 'Mrs. Grace Darko', guardianPhone: '055-555-1004', guardianAddress: 'Cape Coast, Central', admissionDate: '2025-09-10', status: 'Active', photoUrl: null, csspsRef: 'CSSPS/2025/0234' },
-  { id: '5', admNo: '2025/146', firstName: 'Kofi', lastName: 'Boateng', dateOfBirth: '2007-09-03', gender: 'Male', programme: 'General Science', class: 'SHS3 Sci A', house: 'Sarbah', guardianName: 'Mr. Samuel Boateng', guardianPhone: '024-555-1005', guardianAddress: 'Sekondi, Western', admissionDate: '2024-09-10', status: 'Active', photoUrl: null, csspsRef: 'CSSPS/2024/0567' },
-  { id: '6', admNo: '2025/147', firstName: 'Adwoa', lastName: 'Frimpong', dateOfBirth: '2009-01-15', gender: 'Female', programme: 'General Science', class: 'SHS1 Sci A', house: 'Barton', guardianName: 'Mr. Yaw Frimpong', guardianPhone: '027-555-1006', guardianAddress: 'Koforidua, Eastern', admissionDate: '2026-09-10', status: 'Active', photoUrl: null, csspsRef: 'CSSPS/2026/0382' },
-  { id: '7', admNo: '2024/098', firstName: 'Kojo', lastName: 'Addo', dateOfBirth: '2006-12-01', gender: 'Male', programme: 'General Arts', class: 'SHS3 Arts A', house: 'Sarbah', guardianName: 'Mr. Peter Addo', guardianPhone: '020-555-1007', guardianAddress: 'Accra, Greater Accra', admissionDate: '2024-09-10', status: 'Active', photoUrl: null, csspsRef: 'CSSPS/2024/0901' },
-  { id: '8', admNo: '2024/099', firstName: 'Grace', lastName: 'Opoku', dateOfBirth: '2006-08-25', gender: 'Female', programme: 'Business', class: 'SHS3 Bus A', house: 'Barton', guardianName: 'Mrs. Linda Opoku', guardianPhone: '055-555-1008', guardianAddress: 'Sunyani, Bono', admissionDate: '2024-09-10', status: 'Graduated', photoUrl: null, csspsRef: 'CSSPS/2024/0678' },
-];
+const INITIAL_STUDENTS: StudentRecord[] = [];
 
-const INITIAL_PLACEMENTS: PlacementRecord[] = [
-  { id: '1', fullName: 'Kofi Asante', csspsRef: 'CSSPS/2026/0451', intendedClass: 'SHS1 Sci A', programme: 'General Science', preloadedBy: 'Registry Clerk', datePreloaded: '2026-07-01', matched: true },
-  { id: '2', fullName: 'Adwoa Frimpong', csspsRef: 'CSSPS/2026/0382', intendedClass: 'SHS1 Sci A', programme: 'General Science', preloadedBy: 'Registry Clerk', datePreloaded: '2026-07-01', matched: true },
-  { id: '3', fullName: 'Selina Adjei', csspsRef: 'CSSPS/2026/0519', intendedClass: 'SHS1 Arts B', programme: 'General Arts', preloadedBy: 'Registry Clerk', datePreloaded: '2026-07-02', matched: false },
-  { id: '4', fullName: 'Daniel Osei', csspsRef: 'CSSPS/2026/0633', intendedClass: 'SHS1 Bus A', programme: 'Business', preloadedBy: 'Registry Clerk', datePreloaded: '2026-07-03', matched: false },
-];
+const INITIAL_PLACEMENTS: PlacementRecord[] = [];
 
-const DEFAULT_FEE: ApplicationFee = { amount: 50, method: null, status: 'Unpaid', reference: null, paidAt: null, verifiedBy: null };
+// @ts-expect-error - kept for future use
+const _DEFAULT_FEE: ApplicationFee = { amount: 50, method: null, status: 'Unpaid', reference: null, paidAt: null, verifiedBy: null };
 
-const INITIAL_ADMISSIONS: AdmissionApplication[] = [
-  { id: '1', applicantName: 'Kofi Asante', parentName: 'Mr. Kofi Asante Sr.', parentPhone: '024-555-2001', parentEmail: 'kofi.asante@email.com', dateApplied: '2026-07-06', status: 'Received', documentsVerified: false, documents: [
-    { type: 'Birth Certificate', submitted: true }, { type: 'JHS Result', submitted: true }, { type: 'CSSPS Placement', submitted: true }, { type: 'Medical Form', submitted: false }, { type: 'Passport Photo', submitted: true }, { type: 'Previous Report Card', submitted: false },
-  ], notes: 'Awaiting medical form and previous report card.', programme: 'General Science', photoUrl: null, csspsRef: 'CSSPS/2026/0451', fee: { ...DEFAULT_FEE, status: 'Paid', method: 'Mobile Money', reference: 'MM-REF-001', paidAt: '2026-07-06' }, credentialsExpired: false },
-  { id: '2', applicantName: 'Adwoa Frimpong', parentName: 'Mrs. Frimpong', parentPhone: '027-555-2002', parentEmail: 'frimpong@email.com', dateApplied: '2026-07-05', status: 'Under Review', documentsVerified: false, documents: [
-    { type: 'Birth Certificate', submitted: true }, { type: 'JHS Result', submitted: true }, { type: 'CSSPS Placement', submitted: true }, { type: 'Medical Form', submitted: true }, { type: 'Passport Photo', submitted: true }, { type: 'Previous Report Card', submitted: false },
-  ], notes: 'All docs except report card received. Reviewing.', programme: 'General Science', photoUrl: null, csspsRef: 'CSSPS/2026/0382', fee: { ...DEFAULT_FEE, status: 'Paid', method: 'Scratch Card', reference: 'SC-001', paidAt: '2026-07-05' }, credentialsExpired: false },
-  { id: '3', applicantName: 'Kojo Addo', parentName: 'Mr. Addo', parentPhone: '020-555-2003', parentEmail: 'addo@email.com', dateApplied: '2026-07-04', status: 'Approved', documentsVerified: true, documents: [
-    { type: 'Birth Certificate', submitted: true }, { type: 'JHS Result', submitted: true }, { type: 'CSSPS Placement', submitted: true }, { type: 'Medical Form', submitted: true }, { type: 'Passport Photo', submitted: true }, { type: 'Previous Report Card', submitted: true },
-  ], processedBy: 'Registrar', notes: 'All documents verified. Admission approved.', programme: 'General Arts', photoUrl: null, csspsRef: 'CSSPS/2024/0901', fee: { ...DEFAULT_FEE, status: 'Verified', method: 'Mobile Money', reference: 'MM-REF-002', paidAt: '2026-07-04', verifiedBy: 'Registrar' }, credentialsExpired: false },
-  { id: '4', applicantName: 'Selina Adjei', parentName: 'Mrs. Adjei', parentPhone: '055-555-2004', parentEmail: 'adjei@email.com', dateApplied: '2026-07-08', status: 'Received', documentsVerified: false, documents: [
-    { type: 'Birth Certificate', submitted: true }, { type: 'JHS Result', submitted: false }, { type: 'CSSPS Placement', submitted: false }, { type: 'Medical Form', submitted: false }, { type: 'Passport Photo', submitted: true }, { type: 'Previous Report Card', submitted: false },
-  ], notes: 'Only birth certificate and photo submitted. Placement not yet matched.', programme: 'General Arts', photoUrl: null, csspsRef: 'CSSPS/2026/0519', fee: { ...DEFAULT_FEE, status: 'Unpaid' }, credentialsExpired: false },
-];
+const INITIAL_ADMISSIONS: AdmissionApplication[] = [];
 
-const INITIAL_SCRATCH_CARDS: ScratchCard[] = [
-  { id: 'sc1', pin: '1234-5678', serial: 'SC-001', amount: 50, used: true, usedBy: 'Adwoa Frimpong', usedAt: '2026-07-05', batchId: 'batch1', generatedAt: '2026-06-01' },
-  { id: 'sc2', pin: '2345-6789', serial: 'SC-002', amount: 50, used: false, usedBy: null, usedAt: null, batchId: 'batch1', generatedAt: '2026-06-01' },
-  { id: 'sc3', pin: '3456-7890', serial: 'SC-003', amount: 50, used: false, usedBy: null, usedAt: null, batchId: 'batch1', generatedAt: '2026-06-01' },
-  { id: 'sc4', pin: '4567-8901', serial: 'SC-004', amount: 50, used: false, usedBy: null, usedAt: null, batchId: 'batch1', generatedAt: '2026-06-01' },
-  { id: 'sc5', pin: '5678-9012', serial: 'SC-005', amount: 50, used: false, usedBy: null, usedAt: null, batchId: 'batch1', generatedAt: '2026-06-01' },
-];
+const INITIAL_SCRATCH_CARDS: ScratchCard[] = [];
 
-const INITIAL_PARENT_ACCOUNTS: ParentAccount[] = [
-  { id: '1', username: 'parent_addo', password: 'parent123', parentName: 'Mr. Addo', parentPhone: '020-555-2003', parentEmail: 'addo@email.com', wardName: 'Kojo Addo', wardAdmNo: '2024/098', wardClass: 'SHS3 Arts A', wardHouse: 'Sarbah', wardProgramme: 'General Arts', createdAt: '2024-09-12', admissionId: '3' },
-];
+const INITIAL_PARENT_ACCOUNTS: ParentAccount[] = [];
 
-const INITIAL_PROSPECTUS: Prospectus[] = [
-  { id: '1', title: 'Welcome Prospectus 2026/2027', academicYear: '2026/2027', content: 'Dear Parent,\n\nWelcome to Ghana Senior High School! Your ward has been successfully admitted.\n\nKey Information:\n- School Fees: GH₵3,500 per term (boarding), GH₵2,000 (day)\n- Reporting Date: 10th September 2026\n- Items Required: Bedding, cutlery, toiletries, school uniform (2 sets), PE kit\n- House assignment and class allocation have been completed\n- First PTA meeting: 25th September 2026 at 10:00 AM\n\nPlease report to the school office on the reporting date with this prospectus and all required documents.\n\nRegards,\nHeadmaster', publishedBy: 'Headmaster', datePublished: '2026-07-10', targetedAdmissionIds: ['3'] },
-];
+const INITIAL_PROSPECTUS: Prospectus[] = [];
 
-const INITIAL_CERTIFICATES: Certificate[] = [
-  { id: '1', studentName: 'Yao Mensah', admNo: '2026/003', type: 'Transcript', dateIssued: '2026-06-28', issuedBy: 'Registrar', purpose: 'University application' },
-  { id: '2', studentName: 'Grace Opoku', admNo: '2024/099', type: 'Testimonial', dateIssued: '2026-06-15', issuedBy: 'Registrar', purpose: 'Graduation testimonial' },
-  { id: '3', studentName: 'Kofi Boateng', admNo: '2025/146', type: 'Transfer Letter', dateIssued: '2026-05-20', issuedBy: 'Registrar', purpose: 'School transfer' },
-  { id: '4', studentName: 'Kojo Addo', admNo: '2024/098', type: 'Character Reference', dateIssued: '2026-06-30', issuedBy: 'Headmaster', purpose: 'Scholarship application' },
-];
+const INITIAL_CERTIFICATES: Certificate[] = [];
 
-const INITIAL_CORRESPONDENCE: Correspondence[] = [
-  { id: '1', date: '2026-07-06', direction: 'Incoming', subject: 'GES Circular — Term 3 Calendar', counterparty: 'GES HQ', priority: 'Important', loggedBy: 'Registry Clerk', notes: 'Circular received via email. Circulated to all HODs.' },
-  { id: '2', date: '2026-07-04', direction: 'Outgoing', subject: 'Term 2 Academic Report', counterparty: 'Regional Education Office', priority: 'Normal', loggedBy: 'Registrar', notes: 'Submitted via regional portal.' },
-  { id: '3', date: '2026-06-28', direction: 'Incoming', subject: 'Scholarship Nomination Letter', counterparty: 'Ghana Scholarship Secretariat', priority: 'Urgent', loggedBy: 'Registry Clerk', notes: 'Nomination for 2 students. Forwarded to Headmaster.' },
-  { id: '4', date: '2026-06-20', direction: 'Outgoing', subject: 'Student Transfer Request — Kofi Boateng', counterparty: 'Mfantsipim School', priority: 'Normal', loggedBy: 'Registrar', notes: 'Transfer documents sent. Acknowledgment pending.' },
-  { id: '5', date: '2026-06-15', direction: 'Incoming', subject: 'Parent Appeal — Fee Adjustment', counterparty: 'PTA Chairman', priority: 'Important', loggedBy: 'Registry Clerk', notes: 'Appeal received and forwarded to Bursary.' },
-];
+const INITIAL_CORRESPONDENCE: Correspondence[] = [];
 
-const INITIAL_STAFF: RegistryStaffRecord[] = [
-  { id: '1', name: 'J. Mensah', position: 'Senior Teacher', role: 'hod_academic', department: 'Mathematics', dateOfEmployment: '2018-09-01', qualifications: 'B.Ed Mathematics, M.Ed Curriculum', phone: '024-100-2001', status: 'Active' },
-  { id: '2', name: 'G. Adjei', position: 'HOD Science', role: 'subject_hod', department: 'Science', dateOfEmployment: '2016-09-01', qualifications: 'B.Sc Chemistry, PGDE', phone: '027-100-2002', status: 'Active' },
-  { id: '3', name: 'A. Tetteh', position: 'Accountant', role: 'bursary', department: 'Finance', dateOfEmployment: '2015-01-15', qualifications: 'B.Com, ACA', phone: '055-100-2004', status: 'On Leave' },
-  { id: '4', name: 'R. Amponsah', position: 'Asst. Headmaster (Academic)', role: 'admin', department: 'Administration', dateOfEmployment: '2012-09-01', qualifications: 'B.Ed, M.Ed Administration', phone: '027-100-2010', status: 'Active' },
-  { id: '5', name: 'L. Frimpong', position: 'Librarian', role: 'library', department: 'Library', dateOfEmployment: '2019-09-01', qualifications: 'B.A Information Studies, MLIS', phone: '055-100-2008', status: 'Active' },
-];
+const INITIAL_STAFF: RegistryStaffRecord[] = [];
 
 // ── Store ──
 
@@ -384,6 +331,7 @@ interface RegistryState {
   loadStudents: () => Promise<void>;
   loadAdmissions: () => Promise<void>;
   loadPlacements: () => Promise<void>;
+  loadAll: () => Promise<void>;
 }
 
 export const useRegistryStore = create<RegistryState>((set, get) => ({
@@ -658,4 +606,12 @@ export const useRegistryStore = create<RegistryState>((set, get) => ({
       set({ placements: (data || []).map((d) => ({ ...d, id: d.id || `reg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` })) });
     } catch {}
   },
+  loadAll: async () => {
+    await Promise.all([
+      get().loadAdmissions(),
+      get().loadPlacements(),
+      get().loadStudents(),
+    ]);
+  },
+
 }));

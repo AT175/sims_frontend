@@ -30,10 +30,7 @@ export function RegistryDashboard() {
   const [backendStudents, setBackendStudents] = useState<any[]>([]);
   const [backendAdmissions, setBackendAdmissions] = useState<any[]>([]);
 
-  useEffect(() => {
-    useRegistryStore.getState().loadStudents();
-    useRegistryStore.getState().loadAdmissions();
-    useRegistryStore.getState().loadPlacements();
+  useEffect(() => {    useRegistryStore.getState().loadAll();
     fetchBackendData();
   }, []);
 

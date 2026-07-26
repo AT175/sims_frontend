@@ -32,8 +32,7 @@ export function SportsClubsDashboard() {
 
   useEffect(() => {
     loadClubs();
-    loadFixtures();
-    useRequisitionStore.getState().loadRequisitions();
+    loadFixtures();    useRequisitionStore.getState().loadAll();
   }, []);
 
   return (

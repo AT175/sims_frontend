@@ -66,6 +66,7 @@ interface AccessControlState {
 
   // Backend load methods
   loadGrants: () => Promise<void>;
+  loadAll: () => Promise<void>;
 }
 
 const nowISO = () => new Date().toISOString();
@@ -221,6 +222,11 @@ export const useAccessControlStore = create<AccessControlState>((set, get) => ({
       const data = await apiClient.get<any[]>('/access-control/grants');
       set({ grants: (data || []).map((d) => ({ ...d, id: d.id || String(Date.now()) })) });
     } catch {}
+  },
+  loadAll: async () => {
+    await Promise.all([
+      get().loadGrants(),
+    ]);
   },
 }));
 

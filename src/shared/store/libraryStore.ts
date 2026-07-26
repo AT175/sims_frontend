@@ -113,37 +113,13 @@ const INITIAL_BOOKS: Book[] = [];
 
 const INITIAL_CIRCULATION: CirculationRecord[] = [];
 
-const INITIAL_BOOKINGS: ICTBooking[] = [
-  { id: '1', date: '2026-07-08', timeSlot: '08:00 - 09:20', className: 'SHS2 Sci A', teacherName: 'Mr. Adjei', lab: 'ICT Lab 1', purpose: 'Practical: Spreadsheets', status: 'Booked' },
-  { id: '2', date: '2026-07-08', timeSlot: '10:00 - 11:20', className: 'SHS1 Arts B', teacherName: 'Mrs. Boateng', lab: 'ICT Lab 1', purpose: 'Intro to Word Processing', status: 'Booked' },
-  { id: '3', date: '2026-07-09', timeSlot: '08:00 - 09:20', className: 'SHS3 Sci A', teacherName: 'Mr. Owusu', lab: 'ICT Lab 2', purpose: 'Online Research', status: 'Booked' },
-];
+const INITIAL_BOOKINGS: ICTBooking[] = [];
 
-const INITIAL_EQUIPMENT: Equipment[] = [
-  { id: '1', item: 'Desktop PCs (Lab 1)', quantity: 30, condition: 'Good', location: 'ICT Lab 1', lastServiceDate: '2026-05-15' },
-  { id: '2', item: 'Desktop PCs (Lab 2)', quantity: 25, condition: 'Fair', location: 'ICT Lab 2', lastServiceDate: '2026-03-20' },
-  { id: '3', item: 'Projectors', quantity: 4, condition: 'Good', location: 'Store Room A', lastServiceDate: '2026-06-10' },
-  { id: '4', item: 'Printers', quantity: 3, condition: 'Needs Repair', location: 'Library Office', lastServiceDate: '2026-06-05', notes: '1 unit needs drum replacement' },
-  { id: '5', item: 'Library Scanner', quantity: 2, condition: 'Good', location: 'Library Front Desk', lastServiceDate: '2026-04-12' },
-];
+const INITIAL_EQUIPMENT: Equipment[] = [];
 
-const INITIAL_DIGITAL: DigitalResource[] = [
-  { id: '1', title: 'Core Math Past Questions (2015-2025)', type: 'Past Questions', downloads: 342, uploadDate: '2026-01-15', fileSize: '12.4 MB' },
-  { id: '2', title: 'Chemistry E-Book (SHS)', type: 'E-Book', downloads: 218, uploadDate: '2026-02-01', fileSize: '8.7 MB' },
-  { id: '3', title: 'English Literature Anthology', type: 'E-Book', downloads: 156, uploadDate: '2026-02-10', fileSize: '5.2 MB' },
-  { id: '4', title: 'Physics Past Questions (2018-2025)', type: 'Past Questions', downloads: 289, uploadDate: '2026-01-20', fileSize: '10.1 MB' },
-  { id: '5', title: 'ICT Practical Video Series', type: 'Video Tutorial', downloads: 97, uploadDate: '2026-03-05', fileSize: '245 MB' },
-];
+const INITIAL_DIGITAL: DigitalResource[] = [];
 
-const INITIAL_ACCESS: AccessRecord[] = [
-  { id: '1', personName: 'Mrs. Asante', role: 'Librarian', resource: 'Library Catalogue', accessLevel: 'Full', grantedDate: '2026-01-05', grantedBy: 'Headmaster' },
-  { id: '2', personName: 'Mr. Adjei', role: 'ICT Coordinator', resource: 'ICT Lab Bookings', accessLevel: 'Full', grantedDate: '2026-01-05', grantedBy: 'Headmaster' },
-  { id: '3', personName: 'Mr. Adjei', role: 'ICT Coordinator', resource: 'Equipment Inventory', accessLevel: 'Full', grantedDate: '2026-01-05', grantedBy: 'Headmaster' },
-  { id: '4', personName: 'Mrs. Asante', role: 'Librarian', resource: 'Digital Resources', accessLevel: 'Full', grantedDate: '2026-01-05', grantedBy: 'Headmaster' },
-  { id: '5', personName: 'All Teaching Staff', role: 'Teacher', resource: 'ICT Lab Bookings', accessLevel: 'Read Only', grantedDate: '2026-01-10', grantedBy: 'ICT Coordinator' },
-  { id: '6', personName: 'All Students', role: 'Student', resource: 'Digital Resources', accessLevel: 'Read Only', grantedDate: '2026-01-10', grantedBy: 'Librarian' },
-  { id: '7', personName: 'All Students', role: 'Student', resource: 'Equipment Inventory', accessLevel: 'No Access', grantedDate: '2026-01-10', grantedBy: 'ICT Coordinator' },
-];
+const INITIAL_ACCESS: AccessRecord[] = [];
 
 // ── Store ──
 
@@ -183,6 +159,7 @@ interface LibraryState {
   // API
   loadBooks: () => Promise<void>;
   loadCirculation: () => Promise<void>;
+  loadAll: () => Promise<void>;
 }
 
 export const useLibraryStore = create<LibraryState>((set, get) => ({
@@ -326,4 +303,11 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
       set({ circulation: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
     } catch {}
   },
+  loadAll: async () => {
+    await Promise.all([
+      get().loadBooks(),
+      get().loadCirculation(),
+    ]);
+  },
+
 }));

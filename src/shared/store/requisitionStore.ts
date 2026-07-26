@@ -66,15 +66,7 @@ let idCounter = 100;
 const nextId = () => String(++idCounter);
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
-const INITIAL_REQUISITIONS: Requisition[] = [
-  { id: '1', date: '2026-07-06', itemName: 'Cooking oil', quantity: 5, unit: 'gallons', department: 'Kitchen', status: 'Issued', requestedBy: 'Catering Officer', priority: 'Normal', notes: '', approvals: [{ step: 'stores', approver: 'Stores Officer', date: '2026-07-06', action: 'issued' }] },
-  { id: '2', date: '2026-07-05', itemName: 'Cleaning detergent', quantity: 2, unit: 'cartons', department: 'Cleaning', status: 'Issued', requestedBy: 'Cleaning Supervisor', priority: 'Normal', notes: '', approvals: [{ step: 'stores', approver: 'Stores Officer', date: '2026-07-05', action: 'issued' }] },
-  { id: '3', date: '2026-07-04', itemName: 'Chalk', quantity: 5, unit: 'boxes', department: 'Academic', status: 'Pending', requestedBy: 'Academic Office', priority: 'Normal', notes: 'For mid-sem exams', approvals: [] },
-  { id: '4', date: '2026-07-03', itemName: 'First aid supplies', quantity: 10, unit: 'units', department: 'Health Centre', status: 'Pending', requestedBy: 'Nurse Adjei', priority: 'Urgent', notes: 'Running low on bandages', approvals: [] },
-  { id: '5', date: '2026-07-02', itemName: 'Diesel', quantity: 50, unit: 'litres', department: 'Transport', status: 'Issued', requestedBy: 'Transport Officer', priority: 'Normal', notes: '', approvals: [{ step: 'stores', approver: 'Stores Officer', date: '2026-07-02', action: 'issued' }] },
-  { id: '6', date: '2026-07-07', itemName: 'Bedsheets', quantity: 20, unit: 'units', department: 'Boarding', status: 'Pending', requestedBy: 'Mr. Owusu', priority: 'Urgent', notes: 'For Aggrey House — damaged sheets', house: 'Aggrey', approvals: [] },
-  { id: '7', date: '2026-07-06', itemName: 'Dettol soap', quantity: 10, unit: 'cartons', department: 'Boarding', status: 'Senior Housemaster Approved', requestedBy: 'Mr. Tetteh', priority: 'Normal', notes: 'For Danquah House', house: 'Danquah', approvals: [{ step: 'senior_housemaster', approver: 'Senior Housemaster', date: '2026-07-06', action: 'approved' }] },
-];
+const INITIAL_REQUISITIONS: Requisition[] = [];
 
 // ── Store ──
 
@@ -98,6 +90,7 @@ interface RequisitionState {
 
   // Backend load methods
   loadRequisitions: () => Promise<void>;
+  loadAll: () => Promise<void>;
 }
 
 export const useRequisitionStore = create<RequisitionState>((set, get) => ({
@@ -232,4 +225,10 @@ export const useRequisitionStore = create<RequisitionState>((set, get) => ({
       set({ requisitions: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
     } catch {}
   },
+  loadAll: async () => {
+    await Promise.all([
+      get().loadRequisitions(),
+    ]);
+  },
+
 }));

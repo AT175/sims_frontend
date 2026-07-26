@@ -63,22 +63,11 @@ interface ResultEntry {
   lastUpdated: string;
 }
 
-const INITIAL_LESSON_PLANS: LessonPlanReview[] = [
-  { id: 'lp1', teacher: 'Mr. Mensah', subject: 'Core Mathematics', classForm: 'SHS2 Sci A', topic: 'Quadratic Equations', date: '2025-07-05', status: 'Approved', comments: 'Well structured' },
-  { id: 'lp2', teacher: 'Mrs. Adjei', subject: 'Core Mathematics', classForm: 'SHS1 Arts A', topic: 'Indices & Logarithms', date: '2025-07-04', status: 'Pending' },
-  { id: 'lp3', teacher: 'Mr. Owusu', subject: 'Elective Mathematics', classForm: 'SHS3 Sci A', topic: 'Differentiation', date: '2025-07-03', status: 'Pending' },
-];
+const INITIAL_LESSON_PLANS: LessonPlanReview[] = [];
 
-const INITIAL_EXAM_PAPERS: ExamPaper[] = [
-  { id: 'ep1', title: 'Core Math Mid-Sem 3', subject: 'Core Mathematics', classForm: 'SHS2 Sci A', term: 'Term 3', maxScore: 50, setter: 'Mr. Mensah', moderator: 'Mrs. Adjei', status: 'Moderated', dateCreated: '2025-07-01' },
-  { id: 'ep2', title: 'Elect. Math Mid-Sem 3', subject: 'Elective Mathematics', classForm: 'SHS3 Sci A', term: 'Term 3', maxScore: 50, setter: 'Mr. Owusu', moderator: 'Mr. Mensah', status: 'Under Moderation', dateCreated: '2025-06-28' },
-];
+const INITIAL_EXAM_PAPERS: ExamPaper[] = [];
 
-const INITIAL_RESULT_ENTRIES: ResultEntry[] = [
-  { id: 're1', classForm: 'SHS2 Sci A', subject: 'Core Mathematics', term: 'Term 3', entered: 38, total: 38, status: 'Complete', enteredBy: 'Mr. Mensah', lastUpdated: '2025-07-10' },
-  { id: 're2', classForm: 'SHS2 Sci B', subject: 'Core Mathematics', term: 'Term 3', entered: 20, total: 35, status: 'In Progress', enteredBy: 'Mrs. Adjei', lastUpdated: '2025-07-09' },
-  { id: 're3', classForm: 'SHS1 Sci A', subject: 'Core Mathematics', term: 'Term 3', entered: 0, total: 42, status: 'Not Started', enteredBy: '', lastUpdated: '' },
-];
+const INITIAL_RESULT_ENTRIES: ResultEntry[] = [];
 
 export function SubjectHODDashboard() {
   const [activePage, setActivePage] = useState('overview');
@@ -89,8 +78,7 @@ export function SubjectHODDashboard() {
   const { curriculum, addCurriculum, updateCurriculum } = academicStore;
 
   useEffect(() => {
-    useAcademicStore.getState().loadExams();
-    useAcademicStore.getState().loadTimetables();
+    useAcademicStore.getState().loadAll();
   }, []);
 
   const [lessonPlans, setLessonPlans] = useState<LessonPlanReview[]>(INITIAL_LESSON_PLANS);

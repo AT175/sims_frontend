@@ -43,8 +43,7 @@ export function CounsellingDashboard() {
   } = useCounsellingStore();
 
   useEffect(() => {
-    useCounsellingStore.getState().loadCases();
-    useCounsellingStore.getState().loadAppointments();
+    useCounsellingStore.getState().loadAll();
   }, []);
 
   // ── Form state ──

@@ -22,8 +22,7 @@ export function ExamCommitteeDashboard() {
   const store = useDynamicDashboardStore();
 
   useEffect(() => {
-    useDynamicDashboardStore.getState().loadExamSchedules();
-    useDynamicDashboardStore.getState().loadExamResults();
+    useDynamicDashboardStore.getState().loadAll();
   }, []);
 
   const [examForm, setExamForm] = useState<{ examName: string; subject: string; date: string; time: string; duration: string; venue: string; status: 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled' }>({ examName: '', subject: '', date: '', time: '08:00', duration: '2h', venue: '', status: 'Scheduled' });

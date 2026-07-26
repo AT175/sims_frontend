@@ -100,28 +100,9 @@ const INITIAL_TENANT: TenantConfig = {
   enabledModules: ['Academic', 'Bursary', 'Registry', 'Admissions', 'Boarding', 'Health', 'Transport', 'Catering', 'Security', 'Library', 'Sports', 'PTA', 'Counselling'],
 };
 
-const INITIAL_BACKUPS: BackupRecord[] = [
-  { id: '1', timestamp: '2026-07-12 23:00:00', type: 'Auto', size: '45.2 MB', status: 'Success', performedBy: 'system' },
-  { id: '2', timestamp: '2026-07-11 23:00:00', type: 'Auto', size: '44.8 MB', status: 'Success', performedBy: 'system' },
-  { id: '3', timestamp: '2026-07-10 23:00:00', type: 'Auto', size: '44.5 MB', status: 'Success', performedBy: 'system' },
-  { id: '4', timestamp: '2026-07-09 14:00:00', type: 'Manual', size: '44.3 MB', status: 'Success', performedBy: 'admin' },
-  { id: '5', timestamp: '2026-07-08 23:00:00', type: 'Auto', size: '44.1 MB', status: 'Success', performedBy: 'system' },
-];
+const INITIAL_BACKUPS: BackupRecord[] = [];
 
-const INITIAL_MODULES: ModuleStatus[] = [
-  { id: '1', name: 'Academic', enabled: true, version: '2.1.0', lastUpdated: '2026-07-12', health: 'Healthy' },
-  { id: '2', name: 'Bursary', enabled: true, version: '2.0.5', lastUpdated: '2026-06-28', health: 'Healthy' },
-  { id: '3', name: 'Registry', enabled: true, version: '2.1.0', lastUpdated: '2026-07-12', health: 'Healthy' },
-  { id: '4', name: 'Admissions', enabled: true, version: '1.5.0', lastUpdated: '2026-07-10', health: 'Healthy' },
-  { id: '5', name: 'Boarding', enabled: true, version: '1.8.0', lastUpdated: '2026-06-15', health: 'Healthy' },
-  { id: '6', name: 'Health', enabled: true, version: '1.3.0', lastUpdated: '2026-05-20', health: 'Healthy' },
-  { id: '7', name: 'Transport', enabled: true, version: '1.2.0', lastUpdated: '2026-05-10', health: 'Degraded' },
-  { id: '8', name: 'Catering', enabled: true, version: '1.4.0', lastUpdated: '2026-06-01', health: 'Healthy' },
-  { id: '9', name: 'Security', enabled: true, version: '1.6.0', lastUpdated: '2026-06-20', health: 'Healthy' },
-  { id: '10', name: 'Library & ICT', enabled: true, version: '1.1.0', lastUpdated: '2026-04-15', health: 'Healthy' },
-  { id: '11', name: 'Sports & Clubs', enabled: true, version: '1.0.5', lastUpdated: '2026-03-10', health: 'Healthy' },
-  { id: '12', name: 'Counselling', enabled: false, version: '0.9.0', lastUpdated: '2026-02-01', health: 'Offline' },
-];
+const INITIAL_MODULES: ModuleStatus[] = [];
 
 const INITIAL_DB_HEALTH: DatabaseHealth = {
   status: 'Healthy',

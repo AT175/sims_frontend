@@ -30,9 +30,7 @@ export function StaffDashboard() {
 
   useEffect(() => {
     staffApi.getDirectory().then((data) => setBackendDirectory(data)).catch(() => {});
-    staffApi.getLeaveRequests().then((data) => setBackendLeave(data)).catch(() => {});
-    useStaffStore.getState().loadDirectory();
-    useStaffStore.getState().loadLeaveRequests();
+    staffApi.getLeaveRequests().then((data) => setBackendLeave(data)).catch(() => {});    useStaffStore.getState().loadAll();
   }, []);
 
   const allDirectory = backendDirectory.length > 0 ? backendDirectory.map((s: any) => ({

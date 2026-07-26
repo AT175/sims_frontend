@@ -30,8 +30,7 @@ export function PTADashboard() {
   const parentName = user?.displayName ?? 'Parent';
 
   useEffect(() => {
-    usePTAStore.getState().loadAnnouncements();
-    usePTAStore.getState().loadMeetings();
+    usePTAStore.getState().loadAll();
   }, []);
 
   return (

@@ -1,0 +1,3 @@
+C:\Users\ATTA\Desktop\hall\SIMS\app\src\dashboards\student\StudentDashboard.tsx:89: sStore.loadAll();
+C:\Users\ATTA\Desktop\hall\SIMS\app\src\dashboards\teacher\TeacherDashboard.tsx:102: generateAILessonPlan, loadAll,
+C:\Users\ATTA\Desktop\hall\SIMS\app\src\dashboards\teacher\TeacherDashboard.tsx:306: loadAll();

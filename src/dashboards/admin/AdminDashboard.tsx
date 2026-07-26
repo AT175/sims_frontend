@@ -83,20 +83,12 @@ export function AdminDashboard() {
   const adminStore = useAdminStore();
 
   useEffect(() => {
-    useStaffStore.getState().loadDirectory();
-    useStaffStore.getState().loadLeaveRequests();
-    useSecurityStore.getState().loadIncidents();
-    useSecurityStore.getState().loadGateLogs();
-    useRegistryStore.getState().loadStudents();
-    useRegistryStore.getState().loadAdmissions();
-    useRegistryStore.getState().loadPlacements();
-    useExeatStore.getState().loadExeats();
-    useAdminStore.getState().loadCompliance();
-    useAdminStore.getState().loadFacilities();
-    useAdminStore.getState().loadTasks();
-    useBursarStore.getState().loadProcurement();
-    useBursarStore.getState().loadPettyCash();
-    useBursarStore.getState().loadCashTransactions();
+    useStaffStore.getState().loadAll();
+    useSecurityStore.getState().loadAll();
+    useRegistryStore.getState().loadAll();
+    useExeatStore.getState().loadAll();
+    useAdminStore.getState().loadAll();
+    useBursarStore.getState().loadAll();
   }, []);
 
   // Derived data

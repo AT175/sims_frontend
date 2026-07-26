@@ -303,9 +303,7 @@ export function TeacherDashboard() {
   }, []);
 
   useEffect(() => {
-    loadAll();
-    usePLCStore.getState().loadMeetings();
-    usePLCStore.getState().loadResources();
+    loadAll();    usePLCStore.getState().loadAll();
   }, []);
 
   const [showObsModal, setShowObsModal] = useState(false);

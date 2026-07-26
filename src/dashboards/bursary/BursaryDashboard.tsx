@@ -59,15 +59,9 @@ export function BursaryDashboard() {
 
   useEffect(() => {
     bursaryApi.getSummary().then(setBackendFeeSummary).catch(() => {});
-    useBursaryStore.getState().loadFees();
-    useBursaryStore.getState().loadReceipts();
-    useBursaryStore.getState().loadPayroll();
-    useBursaryStore.getState().loadExpenditure();
-    useBursarStore.getState().loadProcurement();
-    useBursarStore.getState().loadPettyCash();
-    useBursarStore.getState().loadCashTransactions();
-    useKitchenStore.getState().loadMenus();
-    useKitchenStore.getState().loadStock();
+    useBursaryStore.getState().loadAll();
+    useBursarStore.getState().loadAll();
+    useKitchenStore.getState().loadAll();
   }, []);
 
   const renderBadge = (text: string, color: string) => (

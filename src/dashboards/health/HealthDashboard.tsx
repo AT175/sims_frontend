@@ -22,7 +22,7 @@ export function HealthDashboard() {
   const reqStatusColor = (s: string) => s === 'Issued' ? colors.success : s === 'Approved' ? colors.info : s === 'Rejected' ? colors.danger : colors.warning;
 
   useEffect(() => {
-    useRequisitionStore.getState().loadRequisitions();
+    useRequisitionStore.getState().loadAll();
   }, []);
 
   const [patientName, setPatientName] = useState('');

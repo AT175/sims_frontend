@@ -36,14 +36,11 @@ export function DomesticDashboard() {
   const cleaningStore = useCleaningStore();
 
   useEffect(() => {
-    useBoardingStore.getState().loadRollCalls();
-    useBoardingStore.getState().loadDiscipline();
-    useKitchenStore.getState().loadStock();
-    useKitchenStore.getState().loadMenus();
-    useCleaningStore.getState().loadTasks();
-    useCleaningStore.getState().loadIssues();
-    useRequisitionStore.getState().loadRequisitions();
-    useTransportStore.getState().loadVehicles();
+    useBoardingStore.getState().loadAll();
+    useKitchenStore.getState().loadAll();
+    useCleaningStore.getState().loadAll();
+    useRequisitionStore.getState().loadAll();
+    useTransportStore.getState().loadAll();
   }, []);
 
   const pendingApprovals = getPendingDomestic();

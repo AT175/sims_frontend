@@ -80,39 +80,15 @@ const today = new Date().toISOString().slice(0, 10);
 
 // ── Initial Data ──
 
-const initialVehicles: Vehicle[] = [
-  { id: 'v1', plate: 'GV-1122-1', type: 'Coaster Bus (30-seater)', insuranceExpiry: '2026-12-31', roadworthinessExpiry: '2026-09-30', status: 'Active', assignedDriver: 'Mr. Kwabena' },
-  { id: 'v2', plate: 'GV-2233-1', type: 'Mini Bus (15-seater)', insuranceExpiry: '2026-08-31', roadworthinessExpiry: '2026-07-15', status: 'Active', assignedDriver: 'Mr. Fiifi' },
-  { id: 'v3', plate: 'GV-3344-1', type: 'Pickup Truck', insuranceExpiry: '2027-01-31', roadworthinessExpiry: '2026-11-30', status: 'Active', assignedDriver: 'Mr. Emma' },
-  { id: 'v4', plate: 'GV-4455-1', type: 'Coaster Bus (30-seater)', insuranceExpiry: '2026-10-31', roadworthinessExpiry: '2026-08-20', status: 'Maintenance', notes: 'Engine overhaul in progress' },
-  { id: 'v5', plate: 'GV-5566-1', type: 'Saloon Car', insuranceExpiry: '2026-09-30', roadworthinessExpiry: '2026-10-15', status: 'Active', assignedDriver: 'Mr. Kojo' },
-];
+const initialVehicles: Vehicle[] = [];
 
-const initialTrips: TripLog[] = [
-  { id: 't1', date: '2026-07-06', vehiclePlate: 'GV-1122-1', driverName: 'Mr. Kwabena', route: 'Campus -> Kumasi', mileage: 85, purpose: 'Stores procurement', departureTime: '08:00', returnTime: '14:30' },
-  { id: 't2', date: '2026-07-05', vehiclePlate: 'GV-2233-1', driverName: 'Mr. Fiifi', route: 'Campus -> Ejisu', mileage: 42, purpose: 'Sports event', departureTime: '09:00', returnTime: '13:00' },
-  { id: 't3', date: '2026-07-04', vehiclePlate: 'GV-3344-1', driverName: 'Mr. Emma', route: 'Campus -> KATH', mileage: 88, purpose: 'Student referral', departureTime: '10:00', returnTime: '16:00' },
-];
+const initialTrips: TripLog[] = [];
 
-const initialMaintenance: MaintenanceRecord[] = [
-  { id: 'm1', vehiclePlate: 'GV-1122-1', type: 'Oil Change', dueDate: '2026-07-15', status: 'Upcoming' },
-  { id: 'm2', vehiclePlate: 'GV-4455-1', type: 'Engine Repair', dueDate: '2026-07-10', status: 'In Progress', notes: 'Engine overhaul — parts ordered', cost: 3500 },
-  { id: 'm3', vehiclePlate: 'GV-2233-1', type: 'Tire Replacement', dueDate: '2026-08-01', status: 'Scheduled', cost: 1200 },
-  { id: 'm4', vehiclePlate: 'GV-3344-1', type: 'General Service', dueDate: '2026-07-20', status: 'Upcoming' },
-];
+const initialMaintenance: MaintenanceRecord[] = [];
 
-const initialFuelLogs: FuelLog[] = [
-  { id: 'f1', date: '2026-07-06', vehiclePlate: 'GV-1122-1', litres: 60, costPerLitre: 14, totalCost: 840, odometer: 45200, filledBy: 'Mr. Kwabena' },
-  { id: 'f2', date: '2026-07-05', vehiclePlate: 'GV-2233-1', litres: 40, costPerLitre: 14, totalCost: 560, odometer: 32100, filledBy: 'Mr. Fiifi' },
-  { id: 'f3', date: '2026-07-03', vehiclePlate: 'GV-3344-1', litres: 35, costPerLitre: 14, totalCost: 490, odometer: 28500, filledBy: 'Mr. Emma' },
-];
+const initialFuelLogs: FuelLog[] = [];
 
-const initialDrivers: Driver[] = [
-  { id: 'd1', name: 'Mr. Kwabena', phone: '024 111 2222', license: 'C', licenseExpiry: '2027-06-30', assignedVehicle: 'GV-1122-1', status: 'On Duty', dutyStart: '08:00', dutyEnd: '16:00' },
-  { id: 'd2', name: 'Mr. Fiifi', phone: '024 333 4444', license: 'C', licenseExpiry: '2026-11-30', assignedVehicle: 'GV-2233-1', status: 'Off Duty' },
-  { id: 'd3', name: 'Mr. Emma', phone: '024 555 6666', license: 'B', licenseExpiry: '2027-03-31', assignedVehicle: 'GV-3344-1', status: 'On Duty', dutyStart: '10:00', dutyEnd: '18:00' },
-  { id: 'd4', name: 'Mr. Kojo', phone: '024 777 8888', license: 'C', licenseExpiry: '2026-09-30', assignedVehicle: 'GV-5566-1', status: 'On Duty', dutyStart: '07:00', dutyEnd: '15:00' },
-];
+const initialDrivers: Driver[] = [];
 
 // ── Store ──
 
@@ -160,6 +136,7 @@ interface TransportState {
   loadTrips: () => Promise<void>;
   loadDrivers: () => Promise<void>;
   loadMaintenance: () => Promise<void>;
+  loadAll: () => Promise<void>;
 }
 
 let counter = 100;
@@ -240,5 +217,13 @@ export const useTransportStore = create<TransportState>((set, get) => ({
       const data = await apiClient.get<any[]>('/transport/maintenance');
       set({ maintenance: (data || []).map((d) => ({ ...d, id: d.id || genId() })) });
     } catch {}
+  },
+  loadAll: async () => {
+    await Promise.all([
+      get().loadVehicles(),
+      get().loadTrips(),
+      get().loadDrivers(),
+      get().loadMaintenance(),
+    ]);
   },
 }));

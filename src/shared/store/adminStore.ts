@@ -95,44 +95,15 @@ const todayISO = () => new Date().toISOString().slice(0, 10);
 
 // ── Initial Data ──
 
-const INITIAL_COMPLIANCE: ComplianceItem[] = [
-  { id: '1', document: 'Termly Enrollment Return', authority: 'GES', dueDate: '2026-07-15', status: 'Submitted', submittedDate: '2026-07-10', submittedBy: 'Registrar', notes: 'Submitted via GES portal.' },
-  { id: '2', document: 'Staff Establishment Report', authority: 'GES', dueDate: '2026-07-20', status: 'In Progress', notes: 'Awaiting updated staff list from HR.' },
-  { id: '3', document: 'School Improvement Plan (SIP)', authority: 'GES', dueDate: '2026-08-01', status: 'Not Started', notes: 'Draft to be prepared by Academic Office.' },
-  { id: '4', document: 'Annual Safety Audit', authority: 'Ghana Education Service', dueDate: '2026-08-15', status: 'Not Started', notes: 'External auditor to be engaged.' },
-  { id: '5', document: 'Free SHS Capitation Report', authority: 'Ministry of Education', dueDate: '2026-07-31', status: 'In Progress', notes: 'Bursary compiling expenditure data.' },
-  { id: '6', document: 'PTA Annual Report', authority: 'Internal', dueDate: '2026-09-05', status: 'Not Started', notes: 'To be presented at AGM.' },
-  { id: '7', document: 'Staff Performance Appraisal Summary', authority: 'GES', dueDate: '2026-07-25', status: 'In Progress', notes: 'HODs submitting appraisals.' },
-  { id: '8', document: 'Internal Audit Report — Q3', authority: 'Internal', dueDate: '2026-07-12', status: 'Overdue', notes: 'Audit committee meeting postponed.' },
-];
+const INITIAL_COMPLIANCE: ComplianceItem[] = [];
 
-const INITIAL_ANNOUNCEMENTS: Announcement[] = [
-  { id: '1', title: 'Staff General Meeting — July 12', body: 'All staff are required to attend the general meeting on Friday, July 12 at 3:00pm in the main hall. Agenda: Term 3 exam preparation, compliance deadlines, and budget review.', date: '2026-07-08', priority: 'Urgent', audience: 'All Staff', postedBy: 'Asst. Headmaster (Admin)' },
-  { id: '2', title: 'Compliance Deadline Reminder', body: 'Several GES compliance reports are due this month. Department heads should submit their inputs by July 18. See compliance tracker for details.', date: '2026-07-06', priority: 'Important', audience: 'All Staff', postedBy: 'Asst. Headmaster (Admin)' },
-  { id: '3', title: 'Facility Maintenance Window', body: 'Scheduled maintenance will take place July 15-19. Please report any outstanding facility issues to the admin office by July 12.', date: '2026-07-04', priority: 'Normal', audience: 'All Staff', postedBy: 'Admin Office' },
-];
+const INITIAL_ANNOUNCEMENTS: Announcement[] = [];
 
-const INITIAL_FACILITIES: FacilityIssue[] = [
-  { id: '1', title: 'Broken classroom door — Room B12', location: 'Block B, Room 12', category: 'Building', priority: 'Medium', status: 'Assigned', reportedDate: '2026-07-05', reportedBy: 'Mr. Mensah', assignedTo: 'Maintenance Team', description: 'Door hinge broken, door cannot close properly.' },
-  { id: '2', title: 'Electrical fault in Science Lab', location: 'Science Block, Lab 2', category: 'Electrical', priority: 'High', status: 'In Progress', reportedDate: '2026-07-03', reportedBy: 'Mr. Adjei', assignedTo: 'Electrician', description: 'Power outlets not working at demonstration bench. Electrician contacted.' },
-  { id: '3', title: 'Leaking pipe in boys washroom', location: 'Block A, Ground Floor', category: 'Plumbing', priority: 'High', status: 'Reported', reportedDate: '2026-07-08', reportedBy: 'Cleaning Supervisor', description: 'Water leaking from pipe joint, causing water pooling on floor.' },
-  { id: '4', title: 'Damaged desks — SHS1 Sci A', location: 'Block C, Room 5', category: 'Furniture', priority: 'Low', status: 'Reported', reportedDate: '2026-07-06', reportedBy: 'Mr. Owusu', description: '5 desks with broken legs need repair or replacement.' },
-  { id: '5', title: 'Projector not working — ICT Lab', location: 'ICT Block, Lab 1', category: 'Equipment', priority: 'Medium', status: 'Resolved', reportedDate: '2026-06-28', reportedBy: 'Mr. Owusu', assignedTo: 'ICT Technician', resolvedDate: '2026-07-02', resolutionNotes: 'Lamp replaced. Projector tested and working.', description: 'Projector lamp burned out during lesson.' },
-];
+const INITIAL_FACILITIES: FacilityIssue[] = [];
 
-const INITIAL_MEETINGS: AdminMeeting[] = [
-  { id: '1', title: 'Term 3 Mid-Term Review', date: '2026-07-12', time: '15:00', location: 'Main Hall', facilitator: 'Headmaster', agenda: '1. Academic performance review\n2. Compliance deadlines\n3. Budget status\n4. Facility maintenance\n5. Staff welfare', attendees: 0, status: 'Scheduled' },
-  { id: '2', title: 'Department Heads Strategy Meeting', date: '2026-07-15', time: '14:00', location: 'Conference Room', facilitator: 'Asst. Headmaster (Admin)', agenda: '1. Department budget submissions\n2. Staff appraisal progress\n3. Term 3 preparation', attendees: 0, status: 'Scheduled' },
-  { id: '3', title: 'End of Term 2 Staff Meeting', date: '2026-06-20', time: '15:00', location: 'Main Hall', facilitator: 'Headmaster', agenda: '1. Term 2 review\n2. Exam results analysis\n3. Holiday schedule', attendees: 62, status: 'Completed', minutes: 'Meeting opened at 3:00pm. Term 2 exams completed successfully with 92% pass rate. Discipline incidents down 15%. Financial report presented. Meeting adjourned at 4:30pm.', keyDecisions: 'Term 2 exams passed; 3 students flagged for support; appraisal timeline approved.', actionItems: 'HODs to submit term reports by June 25; Counselling to follow up on flagged students.' },
-];
+const INITIAL_MEETINGS: AdminMeeting[] = [];
 
-const INITIAL_TASKS: TaskAssignment[] = [
-  { id: '1', title: 'Compile Staff Establishment Report', description: 'Gather updated staff list, qualifications, and positions for GES submission.', assignedTo: 'Registrar', department: 'Registry', dueDate: '2026-07-18', priority: 'Urgent', status: 'In Progress', assignedBy: 'Asst. Headmaster (Admin)', notes: 'GES deadline July 20.' },
-  { id: '2', title: 'Prepare Safety Audit RFP', description: 'Draft request for proposal for external safety auditor.', assignedTo: 'Admin Officer', department: 'Administration', dueDate: '2026-07-25', priority: 'Normal', status: 'Pending', assignedBy: 'Asst. Headmaster (Admin)', notes: 'Audit due August 15.' },
-  { id: '3', title: 'Submit Capitation Report Data', description: 'Compile expenditure data for Free SHS capitation report.', assignedTo: 'Accountant', department: 'Finance', dueDate: '2026-07-20', priority: 'Urgent', status: 'In Progress', assignedBy: 'Asst. Headmaster (Admin)', notes: 'MoE deadline July 31.' },
-  { id: '4', title: 'Repair Science Lab Electrical Fault', description: 'Fix power outlets at demonstration bench in Lab 2.', assignedTo: 'Maintenance Team', department: 'Maintenance', dueDate: '2026-07-10', priority: 'High', status: 'In Progress', assignedBy: 'Asst. Headmaster (Admin)', notes: 'Electrician contacted, awaiting parts.' },
-  { id: '5', title: 'Update Staff Directory', description: 'Add new staff entries and update contact information.', assignedTo: 'HR Officer', department: 'Administration', dueDate: '2026-07-15', priority: 'Normal', status: 'Pending', assignedBy: 'Asst. Headmaster (Admin)', notes: '' },
-];
+const INITIAL_TASKS: TaskAssignment[] = [];
 
 // ── Store ──
 
@@ -191,6 +162,7 @@ interface AdminState {
   loadCompliance: () => Promise<void>;
   loadFacilities: () => Promise<void>;
   loadTasks: () => Promise<void>;
+  loadAll: () => Promise<void>;
 }
 
 export const useAdminStore = create<AdminState>((set, get) => ({
@@ -311,4 +283,12 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       set({ tasks: (data || []).map((d) => ({ ...d, id: d.id || `adm-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` })) });
     } catch {}
   },
+  loadAll: async () => {
+    await Promise.all([
+      get().loadCompliance(),
+      get().loadFacilities(),
+      get().loadTasks(),
+    ]);
+  },
+
 }));

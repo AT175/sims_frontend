@@ -31,11 +31,9 @@ export function ParentDashboard() {
   const parentName = user?.displayName ?? 'Parent';
 
   useEffect(() => {
-    usePTAStore.getState().loadAnnouncements();
-    usePTAStore.getState().loadMeetings();
-    useBoardingStore.getState().loadRollCalls();
-    useBoardingStore.getState().loadDiscipline();
-    useExeatStore.getState().loadExeats();
+    usePTAStore.getState().loadAll();
+    useBoardingStore.getState().loadAll();
+    useExeatStore.getState().loadAll();
   }, []);
 
   return (

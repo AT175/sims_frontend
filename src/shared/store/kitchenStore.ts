@@ -64,25 +64,13 @@ const todayISO = () => new Date().toISOString().slice(0, 10);
 
 const INITIAL_STOCK: KitchenStockItem[] = [];
 
-const INITIAL_ISSUES: IssueLog[] = [
-  { id: '1', date: '2026-07-08', itemName: 'Maize bags', quantity: 10, unit: 'bags', issuedTo: 'Kitchen - Breakfast', purpose: 'Porridge preparation' },
-  { id: '2', date: '2026-07-08', itemName: 'Cooking oil', quantity: 2, unit: 'gallons', issuedTo: 'Kitchen - Lunch', purpose: 'Jollof rice' },
-  { id: '3', date: '2026-07-07', itemName: 'Rice', quantity: 8, unit: 'bags', issuedTo: 'Kitchen - Lunch', purpose: 'Waakye preparation' },
-  { id: '4', date: '2026-07-07', itemName: 'Chicken', quantity: 5, unit: 'cartons', issuedTo: 'Kitchen - Dinner', purpose: 'Chicken stew' },
-];
+const INITIAL_ISSUES: IssueLog[] = [];
 
 const INITIAL_MENU: MenuDay[] = [];
 
-const INITIAL_CUSTOM_MENUS: CustomMenu[] = [
-  { id: 'c1', personName: 'Kwame Asante', personRole: 'Student', reason: 'Lactose intolerant', day: 'Monday', breakfast: 'Tea (no milk) + bread', lunch: 'Jollof rice (no butter)', dinner: 'Banku + tilapia', active: true },
-  { id: 'c2', personName: 'Mr. Osei', personRole: 'Teacher', reason: 'Diabetic diet', day: 'Tuesday', breakfast: 'Plain tea + eggs', lunch: 'Fufu + light soup (no palm oil)', dinner: 'Grilled chicken + salad', active: true },
-  { id: 'c3', personName: 'Ama Owusu', personRole: 'Student', reason: 'Vegetarian', day: 'Wednesday', breakfast: 'Hausa koko + bread', lunch: 'Kenkey + garden egg stew (no fish)', dinner: 'Yam + vegetable stew', active: true },
-];
+const INITIAL_CUSTOM_MENUS: CustomMenu[] = [];
 
-const INITIAL_FIN_REQS: FinancialRequisition[] = [
-  { id: 'f1', date: '2026-07-06', amount: 5000, purpose: 'Weekly foodstuff purchase', requestedBy: 'Catering Officer', status: 'Approved', notes: 'For week 2 supplies' },
-  { id: 'f2', date: '2026-07-01', amount: 2500, purpose: 'Cooking gas refill', requestedBy: 'Catering Officer', status: 'Disbursed', notes: '' },
-];
+const INITIAL_FIN_REQS: FinancialRequisition[] = [];
 
 // ── Store ──
 
@@ -124,6 +112,7 @@ interface KitchenState {
   // API
   loadStock: () => Promise<void>;
   loadMenus: () => Promise<void>;
+  loadAll: () => Promise<void>;
 }
 
 export const useKitchenStore = create<KitchenState>((set, get) => ({
@@ -257,4 +246,11 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
       set({ menu: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
     } catch {}
   },
+  loadAll: async () => {
+    await Promise.all([
+      get().loadMenus(),
+      get().loadStock(),
+    ]);
+  },
+
 }));

@@ -120,51 +120,21 @@ export const CHOIR_ROLES = ['Member', 'Lead', 'Director', 'Organist'] as const;
 
 // ── Initial Data ──
 
-const INITIAL_SERVICES: ServiceSchedule[] = [
-  { id: '1', type: 'Sunday', day: 'Sunday', time: '08:00', venue: 'Main Chapel', speaker: 'Rev. Fr. Owusu', topic: 'Faith and Perseverance', attendance: 850, notes: 'Whole school service' },
-  { id: '2', type: 'Devotion', day: 'Monday', time: '07:00', venue: 'Assembly Hall', speaker: 'Chaplain Mensah', topic: 'Weekly Devotion', attendance: 900, notes: 'Morning devotion' },
-  { id: '3', type: 'Friday Jumu\'ah', day: 'Friday', time: '12:30', venue: 'Prayer Room', speaker: 'Imam Yusuf', topic: 'Friday Prayers', attendance: 120, notes: 'Muslim students' },
-  { id: '4', type: 'Midweek', day: 'Wednesday', time: '18:00', venue: 'Chapel', speaker: 'Rev. Fr. Owusu', topic: 'Midweek Service', attendance: 300, notes: 'Optional evening service' },
-];
+const INITIAL_SERVICES: ServiceSchedule[] = [];
 
 const INITIAL_PRAYER_REQUESTS: PrayerRequest[] = [];
 
 const INITIAL_COUNSELLING: SpiritualCounselling[] = [];
 
-const INITIAL_EVENTS: ReligiousEvent[] = [
-  { id: '1', title: 'Annual Spiritual Renewal Week', type: 'Special', date: '2026-08-15', venue: 'Main Chapel', expectedAttendance: 1000, actualAttendance: null, status: 'Planned', coordinator: 'Chaplain Mensah', notes: 'Week-long program' },
-  { id: '2', title: 'Easter Cantata', type: 'Special', date: '2026-04-05', venue: 'Assembly Hall', expectedAttendance: 900, actualAttendance: 870, status: 'Completed', coordinator: 'Choir Director', notes: 'Very successful' },
-  { id: '3', title: 'Ramadan Iftar Gathering', type: 'Special', date: '2026-03-20', venue: 'Dining Hall', expectedAttendance: 150, actualAttendance: 140, status: 'Completed', coordinator: 'Imam Yusuf', notes: 'Muslim community event' },
-];
+const INITIAL_EVENTS: ReligiousEvent[] = [];
 
-const INITIAL_FELLOWSHIPS: FellowshipGroup[] = [
-  { id: '1', name: 'Scripture Union', leader: 'Grace Adjei', day: 'Friday', time: '18:00', venue: 'Classroom Block A', members: 45, description: 'Bible study and fellowship' },
-  { id: '2', name: 'Muslim Students Association', leader: 'Imam Yusuf', day: 'Friday', time: '12:30', venue: 'Prayer Room', members: 120, description: 'Islamic fellowship and Quran study' },
-  { id: '3', name: 'Catholic Students Movement', leader: 'Rev. Fr. Owusu', day: 'Sunday', time: '09:30', venue: 'Chapel', members: 80, description: 'Catholic faith formation' },
-  { id: '4', name: 'Pentecost Students Union', leader: 'Daniel Tuffour', day: 'Saturday', time: '16:00', venue: 'Assembly Hall', members: 60, description: 'Pentecostal fellowship' },
-];
+const INITIAL_FELLOWSHIPS: FellowshipGroup[] = [];
 
-const INITIAL_OUTREACH: OutreachProgram[] = [
-  { id: '1', title: 'Orphanage Visit - Hope Home', type: 'Visit', date: '2026-07-20', location: 'Hope Children\'s Home', beneficiaries: 50, coordinator: 'Chaplain Mensah', budget: 500, status: 'Planned', notes: 'Donation of food and clothing' },
-  { id: '2', title: 'Community Cleanup', type: 'Community Service', date: '2026-06-15', location: 'Tema Community 5', beneficiaries: 0, coordinator: 'SRC + Chaplaincy', budget: 100, status: 'Completed', notes: '50 students participated' },
-  { id: '3', title: 'Christmas Charity Drive', type: 'Donation', date: '2025-12-18', location: 'Various', beneficiaries: 200, coordinator: 'Chaplain Mensah', budget: 1500, status: 'Completed', notes: 'Distributed to 3 orphanages' },
-];
+const INITIAL_OUTREACH: OutreachProgram[] = [];
 
-const INITIAL_CHOIR: ChoirMember[] = [
-  { id: '1', name: 'Ama Serwaa', voicePart: 'Soprano', role: 'Lead', class: 'Form 3B', attendance: 95 },
-  { id: '2', name: 'Kwesi Mensah', voicePart: 'Tenor', role: 'Member', class: 'Form 2A', attendance: 88 },
-  { id: '3', name: 'Akosua Frimpong', voicePart: 'Alto', role: 'Member', class: 'Form 2C', attendance: 90 },
-  { id: '4', name: 'Yaw Boateng', voicePart: 'Bass', role: 'Director', class: 'Form 1A', attendance: 92 },
-  { id: '5', name: 'Kofi Asante', voicePart: 'Instrumentalist', role: 'Organist', class: 'Form 3A', attendance: 85 },
-]
+const INITIAL_CHOIR: ChoirMember[] = [];
 
-const INITIAL_BAPTISMS: BaptismRecord[] = [
-  { id: '1', name: 'Kwabena Osei', type: 'Baptism', date: '2026-05-12', officiant: 'Rev. Fr. Owusu', class: 'Form 2B', parentGuardian: 'Mr. Osei', certificateIssued: true, notes: 'Water baptism' },
-  { id: '2', name: 'Adwoa Nyamekye', type: 'Dedication', date: '2026-06-01', officiant: 'Chaplain Mensah', class: 'Form 1A', parentGuardian: 'Mrs. Nyamekye', certificateIssued: true, notes: 'Child dedication' },
-  { id: '3', name: 'Nana Kwame', type: 'Confirmation', date: '2026-04-20', officiant: 'Bishop Addo', class: 'Form 3C', parentGuardian: 'Mr. Kwame Sr.', certificateIssued: true, notes: 'Confirmation sacrament' },
-]
-
-// ── Store ──
+const INITIAL_BAPTISMS: BaptismRecord[] = [];
 
 interface ChaplainState {
   services: ServiceSchedule[];
@@ -209,11 +179,12 @@ interface ChaplainState {
   // API
   loadPrayerRequests: () => Promise<void>;
   loadCounselling: () => Promise<void>;
+  loadAll: () => Promise<void>;
 }
 
 const genId = (arr: { id: string }[]) => String(arr.length + 1);
 
-export const useChaplainStore = create<ChaplainState>((set) => ({
+export const useChaplainStore = create<ChaplainState>((set, get) => ({
   services: INITIAL_SERVICES,
   prayerRequests: INITIAL_PRAYER_REQUESTS,
   counselling: INITIAL_COUNSELLING,
@@ -283,4 +254,11 @@ export const useChaplainStore = create<ChaplainState>((set) => ({
       set({ counselling: (data || []).map((d) => ({ ...d, id: d.id || String(Math.random()) })) });
     } catch {}
   },
+  loadAll: async () => {
+    await Promise.all([
+      get().loadCounselling(),
+      get().loadPrayerRequests(),
+    ]);
+  },
+
 }));

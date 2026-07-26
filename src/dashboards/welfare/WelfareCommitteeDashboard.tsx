@@ -17,9 +17,7 @@ export function WelfareCommitteeDashboard() {
   const { logout } = useAuthStore();
 
   useEffect(() => {
-    useDynamicDashboardStore.getState().loadWelfareLedger();
-    useDynamicDashboardStore.getState().loadWelfareSupportRequests();
-    useDynamicDashboardStore.getState().loadWelfareMembers();
+    useDynamicDashboardStore.getState().loadAll();
   }, []);
 
   const renderPage = () => {

@@ -14,7 +14,8 @@ import { apiClient } from '@shared/api/apiClient';
 
 const isWeb = Platform.OS === 'web' || typeof navigator !== 'undefined';
 
-const DateInput = ({ value, onChange, style }: { value: string; onChange: (v: string) => void; style?: any }) => {
+// @ts-expect-error - kept for future use
+const _DateInput = ({ value, onChange, style }: { value: string; onChange: (v: string) => void; style?: any }) => {
   if (isWeb) {
     return (
       <input
@@ -87,14 +88,11 @@ export function StudentDashboard() {
 
   useEffect(() => {
     sStore.loadAll();
-    fetchElectionData();
-    useAcademicStore.getState().loadExams();
-    useAcademicStore.getState().loadTimetables();
-    useLibraryStore.getState().loadBooks();
-    useLibraryStore.getState().loadCirculation();
-    useBursaryStore.getState().loadFees();
-    useKitchenStore.getState().loadMenus();
-    useRegistryStore.getState().loadStudents();
+    fetchElectionData();    useAcademicStore.getState().loadAll();
+    useLibraryStore.getState().loadAll();
+    useBursaryStore.getState().loadAll();
+    useKitchenStore.getState().loadAll();
+    useRegistryStore.getState().loadAll();
   }, []);
 
   const fetchElectionData = async () => {

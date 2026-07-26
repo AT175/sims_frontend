@@ -64,36 +64,7 @@ const nextExeatNo = () => {
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const nowISO = () => new Date().toISOString();
 
-const INITIAL_EXEATS: Exeat[] = [
-  {
-    id: 'exeat-1', exeatNo: 'EX/2026/0001', date: '2026-07-07',
-    studentName: 'Kwame Asante', admissionNo: '2026/001', house: 'Aggrey', class: 'SHS2 Sci A',
-    reason: 'Medical', reasonDetail: 'Hospital appointment for eye checkup',
-    destination: 'Korle-Bu Teaching Hospital', departureDate: '2026-07-08', returnDate: '2026-07-09',
-    guardianName: 'Mr. K. Asante Sr.', guardianPhone: '024-111-2222', transportMode: 'Private Car',
-    status: 'Approved', issuedBy: 'Mr. Owusu', approvedBy: 'Senior Housemaster', approvedDate: '2026-07-07',
-    checkedOutAt: '', checkedOutBy: '', checkedInAt: '', checkedInBy: '',
-  },
-  {
-    id: 'exeat-2', exeatNo: 'EX/2026/0002', date: '2026-07-07',
-    studentName: 'Ama Mensah', admissionNo: '2026/045', house: 'Mensah', class: 'SHS1 Arts B',
-    reason: 'Family Emergency', reasonDetail: 'Father hospitalised',
-    destination: 'Home — Kumasi', departureDate: '2026-07-07', returnDate: '2026-07-10',
-    guardianName: 'Mrs. Mensah', guardianPhone: '020-333-4444', transportMode: 'Private Car',
-    status: 'Pending', issuedBy: 'Mrs. Adjei', approvedBy: '', approvedDate: '',
-    checkedOutAt: '', checkedOutBy: '', checkedInAt: '', checkedInBy: '',
-  },
-  {
-    id: 'exeat-3', exeatNo: 'EX/2026/0003', date: '2026-07-06',
-    studentName: 'Yaw Tetteh', admissionNo: '2026/078', house: 'Danquah', class: 'SHS3 Bus A',
-    reason: 'Funeral', reasonDetail: 'Grandmother\'s funeral',
-    destination: 'Home — Cape Coast', departureDate: '2026-07-06', returnDate: '2026-07-08',
-    guardianName: 'Mr. Tetteh Sr.', guardianPhone: '027-555-6666', transportMode: 'Taxi',
-    status: 'Checked Out', issuedBy: 'Mr. Tetteh', approvedBy: 'Senior Housemaster', approvedDate: '2026-07-06',
-    checkedOutAt: '2026-07-06T08:30:00.000Z', checkedOutBy: 'Sgt. Boateng',
-    checkedInAt: '', checkedInBy: '',
-  },
-];
+const INITIAL_EXEATS: Exeat[] = [];
 
 // ── Store ──
 
@@ -114,6 +85,7 @@ interface ExeatState {
 
   // Backend load methods
   loadExeats: () => Promise<void>;
+  loadAll: () => Promise<void>;
 }
 
 export const useExeatStore = create<ExeatState>((set, get) => ({
@@ -209,4 +181,10 @@ export const useExeatStore = create<ExeatState>((set, get) => ({
       set({ exeats: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
     } catch {}
   },
+  loadAll: async () => {
+    await Promise.all([
+      get().loadExeats(),
+    ]);
+  },
+
 }));

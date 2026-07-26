@@ -21,8 +21,7 @@ export function HeadmasterSecretaryDashboard() {
   const store = useDynamicDashboardStore();
 
   useEffect(() => {
-    useDynamicDashboardStore.getState().loadAppointments();
-    useDynamicDashboardStore.getState().loadSecretaryTasks();
+    useDynamicDashboardStore.getState().loadAll();
   }, []);
 
   const [appointmentForm, setAppointmentForm] = useState<{ date: string; time: string; visitorName: string; purpose: string; status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled'; notes: string }>({ date: '', time: '', visitorName: '', purpose: '', status: 'Pending', notes: '' });

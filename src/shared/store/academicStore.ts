@@ -250,142 +250,25 @@ const INITIAL_EXAMS: Exam[] = [];
 
 const INITIAL_TIMETABLES: Timetable[] = [];
 
-const INITIAL_HOD_APPROVALS: HODApproval[] = [
-  { id: 'h1', type: 'Teacher Assignment', from: 'Mr. Adjei', department: 'Science', detail: 'Assign Mr. Owusu to SHS1 Physics', date: '2025-07-08', status: 'Pending' },
-  { id: 'h2', type: 'Syllabus Coverage Report', from: 'Mrs. Boateng', department: 'Languages', detail: 'Term 2 coverage: 80%', date: '2025-07-05', status: 'Pending' },
-  { id: 'h3', type: 'Exam Paper Moderation', from: 'Mr. Mensah', department: 'Mathematics', detail: 'Core Math mid-sem paper for moderation', date: '2025-07-10', status: 'Pending' },
-  { id: 'h4', type: 'Curriculum Change', from: 'Mr. Adjei', department: 'Science', detail: 'Add practical component to SHS2 Chemistry', date: '2025-06-28', status: 'Approved', reviewedBy: 'Academic Office', reviewDate: '2025-07-01', reviewNotes: 'Approved with minor adjustments' },
-];
+const INITIAL_HOD_APPROVALS: HODApproval[] = [];
 
-const INITIAL_REPORT_CARDS: ReportCardEntry[] = [
-  { id: 'r1', classForm: 'SHS1 Sci A', studentName: 'Kwame Asante', admNo: 'SHS1001', term: 'Term 2', academicYear: '2024/2025', subjects: [{ subject: 'Core Math', classScore: 28, examScore: 42, total: 70, grade: 'B+', position: '5th', remark: 'Good' }], totalScore: 70, average: 70, classPosition: '5th', conduct: 'Very Good', attendance: '95%', remarks: 'Keep it up', status: 'Released', generatedDate: '2025-04-10', reviewedBy: 'Academic Office' },
-  { id: 'r2', classForm: 'SHS3 Sci A', studentName: 'Ama Serwaa', admNo: 'SHS3001', term: 'Term 2', academicYear: '2024/2025', subjects: [{ subject: 'Elective Math', classScore: 30, examScore: 45, total: 75, grade: 'A-', position: '3rd', remark: 'Excellent' }], totalScore: 75, average: 75, classPosition: '3rd', conduct: 'Excellent', attendance: '98%', remarks: 'Outstanding student', status: 'Under Review', generatedDate: '2025-04-12' },
-];
+const INITIAL_REPORT_CARDS: ReportCardEntry[] = [];
 
-const INITIAL_TRANSCRIPTS: Transcript[] = [
-  { id: 'tr1', studentName: 'Kwame Asante', admNo: 'SHS1001', classForm: 'SHS1 Sci A', academicYear: '2024/2025', termsCovered: ['Term 1', 'Term 2'], yearSummary: [{ term: 'Term 1', subjects: [{ subject: 'Core Math', total: 68, grade: 'B+', remark: 'Good' }], average: 68, position: '6th' }, { term: 'Term 2', subjects: [{ subject: 'Core Math', total: 70, grade: 'B+', remark: 'Good' }], average: 70, position: '5th' }], cumulativeAverage: 69, overallPosition: '5th', conduct: 'Very Good', attendance: '95%', status: 'Approved', generatedDate: '2025-04-15', approvedBy: 'Academic Office', approvedDate: '2025-04-16' },
-  { id: 'tr2', studentName: 'Yaa Mensimah', admNo: 'SHS3002', classForm: 'SHS3 Sci A', academicYear: '2024/2025', termsCovered: ['Term 1', 'Term 2'], yearSummary: [{ term: 'Term 1', subjects: [{ subject: 'Chemistry', total: 72, grade: 'A-', remark: 'Very Good' }], average: 72, position: '4th' }, { term: 'Term 2', subjects: [{ subject: 'Chemistry', total: 78, grade: 'A', remark: 'Excellent' }], average: 78, position: '2nd' }], cumulativeAverage: 75, overallPosition: '3rd', conduct: 'Excellent', attendance: '97%', status: 'Pending Review', generatedDate: '2025-07-08' },
-];
+const INITIAL_TRANSCRIPTS: Transcript[] = [];
 
-const INITIAL_SPIPS: SPIP[] = [
-  {
-    id: 's1',
-    title: '2024/2025 Academic Excellence Improvement Plan',
-    academicYear: '2024/2025',
-    planLead: 'Mr. Osei (Academic Officer)',
-    priority: 'High',
-    status: 'Active',
-    startDate: '2024-09-15',
-    endDate: '2025-08-08',
-    strengths: 'Strong science department results, dedicated teaching staff, good ICT infrastructure',
-    weaknesses: 'Below-average Core Maths pass rate (58%), low English essay scores, inconsistent syllabus coverage in SHS1',
-    rootCauses: 'Weak foundational skills from JHS in Mathematics, limited reading culture, uneven teacher pacing in SHS1 classes',
-    priorityAreas: '1. Core Mathematics pass rate 2. English Language writing skills 3. Syllabus coverage consistency 4. Teacher professional development',
-    goals: [
-      { id: 'g1', title: 'Raise Core Maths pass rate', focusArea: 'Instruction', description: 'Improve Core Mathematics pass rate across all forms', baseline: '58% pass rate (Term 1)', target: '75% pass rate by end of year', currentProgress: '67% (Term 2 exams)', status: 'On Track', responsible: 'Mr. Mensah (HOD Maths)', deadline: '2025-08-08' },
-      { id: 'g2', title: 'Improve English essay writing', focusArea: 'Instruction', description: 'Enhance student essay writing and comprehension skills', baseline: '50% average essay score', target: '65% average by Term 3', currentProgress: '57% (mid-Term 2)', status: 'On Track', responsible: 'Mrs. Boateng (HOD Languages)', deadline: '2025-08-08' },
-      { id: 'g3', title: 'Standardize syllabus coverage', focusArea: 'Structures', description: 'Ensure all subjects maintain ≥80% coverage by mid-term', baseline: '64% average coverage (SHS1)', target: '85% coverage across all forms', currentProgress: '72% average', status: 'At Risk', responsible: 'All HODs', deadline: '2025-06-30' },
-      { id: 'g4', title: 'Teacher PD on evidence-based practices', focusArea: 'People', description: 'Train all teachers on high-leverage instructional strategies', baseline: '0% trained', target: '100% of teaching staff trained by Term 3', currentProgress: '60% trained', status: 'On Track', responsible: 'Mr. Osei (Academic Officer)', deadline: '2025-07-31' },
-    ],
-    actionItems: [
-      { id: 'a1', description: 'After-school remedial Maths sessions twice weekly', focusArea: 'Instruction', responsible: 'Mr. Mensah', timeline: 'Term 2-3', completed: true },
-      { id: 'a2', description: 'Establish reading club and weekly essay assignments', focusArea: 'Instruction', responsible: 'Mrs. Boateng', timeline: 'Term 2-3', completed: true },
-      { id: 'a3', description: 'Monthly HOD syllabus coverage audits', focusArea: 'Structures', responsible: 'All HODs', timeline: 'Ongoing', completed: false },
-      { id: 'a4', description: 'PD workshop on metacognitive strategies', focusArea: 'People', responsible: 'Mr. Osei', timeline: 'Term 3', completed: false },
-      { id: 'a5', description: 'Peer observation program across departments', focusArea: 'People', responsible: 'PLC Coordinator', timeline: 'Term 3', completed: false },
-    ],
-    milestones: [
-      { id: 'm1', title: 'Term 2 exam pass rate ≥65%', targetDate: '2025-04-11', achievedDate: '2025-04-10', status: 'Achieved' },
-      { id: 'm2', title: 'All HODs submit coverage reports', targetDate: '2025-06-15', status: 'Pending' },
-      { id: 'm3', title: '80% teachers complete PD training', targetDate: '2025-07-15', status: 'Pending' },
-      { id: 'm4', title: 'Final exam pass rate ≥75%', targetDate: '2025-08-08', status: 'Pending' },
-    ],
-    progressReviews: [
-      { date: '2025-01-20', summary: 'Term 1 review: Maths pass rate improved from 58% to 62%. Reading club launched with 45 students.', recordedBy: 'Mr. Osei', outcomes: 'Continue remedial sessions. Add more reading materials to library.' },
-      { date: '2025-04-15', summary: 'Term 2 review: Maths pass rate at 67%. English essay scores at 57%. SHS1 coverage still lagging at 68%.', recordedBy: 'Mr. Osei', outcomes: 'Escalate coverage concerns to HODs. Schedule extra Maths sessions for SHS1.' },
-    ],
-    teamMembers: ['Mr. Osei (Academic Officer)', 'Mr. Mensah (HOD Maths)', 'Mrs. Boateng (HOD Languages)', 'Mr. Adjei (HOD Science)', 'Mr. Asante (Headmaster)', 'Mrs. Owusu (PTA Rep)'],
-    vision: 'To raise academic achievement across all subjects through targeted instruction, empowered teachers, and structured monitoring systems, ensuring every student reaches their full potential.',
-  },
-  {
-    id: 's2',
-    title: 'Digital Literacy & ICT Integration Plan',
-    academicYear: '2024/2025',
-    planLead: 'Mr. Adjei (HOD Science/ICT)',
-    priority: 'Medium',
-    status: 'Monitoring',
-    startDate: '2024-10-01',
-    endDate: '2025-08-08',
-    strengths: 'Two functional ICT labs, reliable internet, interested teaching staff',
-    weaknesses: 'Limited integration of ICT in non-ICT subjects, lack of digital resources for Science and Maths',
-    rootCauses: 'No formal ICT integration training, absence of subject-specific digital content',
-    priorityAreas: '1. ICT integration in Maths and Science 2. Digital resource creation 3. Teacher ICT skills training',
-    goals: [
-      { id: 'g1', title: 'Integrate ICT in 50% of Maths & Science lessons', focusArea: 'Instruction', description: 'Use ICT tools in at least half of Maths and Science classes', baseline: '10% of lessons use ICT', target: '50% of lessons by Term 3', currentProgress: '30%', status: 'Behind', responsible: 'Mr. Adjei', deadline: '2025-08-08' },
-      { id: 'g2', title: 'Create digital resource library', focusArea: 'Structures', description: 'Build a shared library of digital teaching resources', baseline: '0 resources', target: '100 resources by year end', currentProgress: '35 resources', status: 'On Track', responsible: 'Librarian + ICT Team', deadline: '2025-08-08' },
-    ],
-    actionItems: [
-      { id: 'a1', description: 'ICT integration workshop for Maths & Science teachers', focusArea: 'People', responsible: 'Mr. Adjei', timeline: 'Term 2', completed: true },
-      { id: 'a2', description: 'Source and upload digital resources to shared drive', focusArea: 'Structures', responsible: 'ICT Team', timeline: 'Ongoing', completed: false },
-      { id: 'a3', description: 'Peer observation of ICT-integrated lessons', focusArea: 'People', responsible: 'Mr. Adjei', timeline: 'Term 3', completed: false },
-    ],
-    milestones: [
-      { id: 'm1', title: 'Workshop completed for all Maths/Science teachers', targetDate: '2025-02-28', achievedDate: '2025-02-25', status: 'Achieved' },
-      { id: 'm2', title: '40% ICT integration in lessons', targetDate: '2025-06-30', status: 'Pending' },
-      { id: 'm3', title: '75 digital resources uploaded', targetDate: '2025-07-15', status: 'Pending' },
-    ],
-    progressReviews: [
-      { date: '2025-03-01', summary: 'Workshop completed. Teachers beginning to use ICT in lessons but adoption is slow.', recordedBy: 'Mr. Adjei', outcomes: 'Provide one-on-one support for struggling teachers. Set up peer mentoring.' },
-    ],
-    teamMembers: ['Mr. Adjei (HOD Science/ICT)', 'Mr. Mensah (HOD Maths)', 'Librarian', 'Mr. Osei (Academic Officer)'],
-    vision: 'To create a digitally-enabled learning environment where ICT enhances teaching and learning across all subjects, preparing students for a technology-driven world.',
-  },
-];
+const INITIAL_SPIPS: SPIP[] = [];
 
-const INITIAL_CURRICULUM: CurriculumSubject[] = [
-  { id: 'c1', subject: 'Elective Mathematics', department: 'Mathematics', hod: 'Mr. Mensah', classForm: 'SHS2 Sci A', syllabusTopics: 45, topicsCovered: 34, coveragePct: 76, status: 'In Progress', lastUpdated: '2025-07-08', notes: 'On track for term completion' },
-  { id: 'c2', subject: 'Chemistry', department: 'Science', hod: 'Mr. Adjei', classForm: 'SHS2 Sci A', syllabusTopics: 40, topicsCovered: 27, coveragePct: 68, status: 'In Progress', lastUpdated: '2025-07-06', notes: 'Slightly behind schedule' },
-  { id: 'c3', subject: 'English Language', department: 'Languages', hod: 'Mrs. Boateng', classForm: 'SHS2 Sci A', syllabusTopics: 38, topicsCovered: 30, coveragePct: 79, status: 'In Progress', lastUpdated: '2025-07-07', notes: 'Good progress' },
-  { id: 'c4', subject: 'Core Mathematics', department: 'Mathematics', hod: 'Mr. Mensah', classForm: 'SHS1 Sci A', syllabusTopics: 42, topicsCovered: 27, coveragePct: 64, status: 'In Progress', lastUpdated: '2025-07-05', notes: 'Needs acceleration' },
-  { id: 'c5', subject: 'Physics', department: 'Science', hod: 'Mr. Adjei', classForm: 'SHS3 Sci A', syllabusTopics: 50, topicsCovered: 45, coveragePct: 90, status: 'Completed', lastUpdated: '2025-06-28', notes: 'Syllabus completed, revision in progress' },
-];
+const INITIAL_CURRICULUM: CurriculumSubject[] = [];
 
-const INITIAL_CALENDAR: CalendarEvent[] = [
-  { id: 'ev1', title: 'Term 3 Begins', type: 'Term Start', date: '2025-05-12', description: 'Start of Term 3', term: 'Term 3' },
-  { id: 'ev2', title: 'Mid-Semester Exams', type: 'Exam', date: '2025-07-15', endDate: '2025-07-22', description: 'Term 3 mid-semester examinations', term: 'Term 3' },
-  { id: 'ev3', title: 'Republic Day Holiday', type: 'Holiday', date: '2025-07-01', description: 'Public holiday', term: 'Term 3' },
-  { id: 'ev4', title: 'End of Term 3', type: 'Term End', date: '2025-08-08', description: 'End of academic year', term: 'Term 3' },
-  { id: 'ev5', title: 'HOD Meeting', type: 'Meeting', date: '2025-07-12', description: 'Monthly HOD review meeting', term: 'Term 3' },
-  { id: 'ev6', title: 'Report Cards Due', type: 'Deadline', date: '2025-08-05', description: 'All report cards must be generated and reviewed', term: 'Term 3' },
-];
+const INITIAL_CALENDAR: CalendarEvent[] = [];
 
-const INITIAL_TERMS: AcademicTerm[] = [
-  { id: 'tm1', term: 'Term 1', academicYear: '2024/2025', startDate: '2024-09-10', endDate: '2024-12-13', midTermBreak: '2024-10-28', isCurrent: false },
-  { id: 'tm2', term: 'Term 2', academicYear: '2024/2025', startDate: '2025-01-13', endDate: '2025-04-11', midTermBreak: '2025-02-24', isCurrent: false },
-  { id: 'tm3', term: 'Term 3', academicYear: '2024/2025', startDate: '2025-05-12', endDate: '2025-08-08', midTermBreak: '2025-06-23', isCurrent: true },
-];
+const INITIAL_TERMS: AcademicTerm[] = [];
 
-const INITIAL_SUBJECT_PERFORMANCE: SubjectPerformance[] = [
-  { id: 'sp1', subject: 'Elective Mathematics', department: 'Mathematics', hod: 'Mr. Mensah', avgScore: 64, coveragePct: 76, teacherCount: 2, studentCount: 85, passRate: 72, trend: 'up' },
-  { id: 'sp2', subject: 'Chemistry', department: 'Science', hod: 'Mr. Adjei', avgScore: 61, coveragePct: 68, teacherCount: 2, studentCount: 85, passRate: 65, trend: 'stable' },
-  { id: 'sp3', subject: 'Physics', department: 'Science', hod: 'Mr. Adjei', avgScore: 67, coveragePct: 90, teacherCount: 1, studentCount: 35, passRate: 78, trend: 'up' },
-  { id: 'sp4', subject: 'English Language', department: 'Languages', hod: 'Mrs. Boateng', avgScore: 70, coveragePct: 79, teacherCount: 3, studentCount: 200, passRate: 82, trend: 'up' },
-  { id: 'sp5', subject: 'Core Mathematics', department: 'Mathematics', hod: 'Mr. Mensah', avgScore: 58, coveragePct: 64, teacherCount: 3, studentCount: 200, passRate: 60, trend: 'down' },
-];
+const INITIAL_SUBJECT_PERFORMANCE: SubjectPerformance[] = [];
 
-const INITIAL_TEACHER_ACTIVITY: TeacherActivity[] = [
-  { id: 'ta1', teacherName: 'Mr. Mensah', department: 'Mathematics', lessonPlansThisTerm: 28, materialsUploaded: 12, assignmentsCreated: 8, attendanceMarkedPct: 95, syllabusCoverage: 76, lastActive: '2025-07-10', status: 'Active' },
-  { id: 'ta2', teacherName: 'Mr. Adjei', department: 'Science', lessonPlansThisTerm: 24, materialsUploaded: 8, assignmentsCreated: 6, attendanceMarkedPct: 88, syllabusCoverage: 68, lastActive: '2025-07-09', status: 'Active' },
-  { id: 'ta3', teacherName: 'Mrs. Boateng', department: 'Languages', lessonPlansThisTerm: 30, materialsUploaded: 15, assignmentsCreated: 10, attendanceMarkedPct: 98, syllabusCoverage: 79, lastActive: '2025-07-10', status: 'Active' },
-  { id: 'ta4', teacherName: 'Mr. Owusu', department: 'Science', lessonPlansThisTerm: 5, materialsUploaded: 2, assignmentsCreated: 1, attendanceMarkedPct: 60, syllabusCoverage: 40, lastActive: '2025-07-03', status: 'On Leave' },
-];
+const INITIAL_TEACHER_ACTIVITY: TeacherActivity[] = [];
 
-const INITIAL_ADMISSION_INSIGHTS: AdmissionInsight[] = [
-  { id: 'ai1', classForm: 'SHS1 Sci A', applied: 120, admitted: 42, rejected: 65, pending: 13, capacity: 45, filled: 42 },
-  { id: 'ai2', classForm: 'SHS1 Arts B', applied: 95, admitted: 40, rejected: 48, pending: 7, capacity: 45, filled: 40 },
-  { id: 'ai3', classForm: 'SHS1 Bus C', applied: 70, admitted: 35, rejected: 30, pending: 5, capacity: 40, filled: 35 },
-  { id: 'ai4', classForm: 'SHS1 Gen D', applied: 55, admitted: 38, rejected: 12, pending: 5, capacity: 40, filled: 38 },
-];
+const INITIAL_ADMISSION_INSIGHTS: AdmissionInsight[] = [];
 
 // ── Store Interface ──
 
@@ -478,6 +361,17 @@ interface AcademicState {
   // API
   loadExams: () => Promise<void>;
   loadTimetables: () => Promise<void>;
+  loadHODApprovals: () => Promise<void>;
+  loadReportCards: () => Promise<void>;
+  loadTranscripts: () => Promise<void>;
+  loadSPIPs: () => Promise<void>;
+  loadCurriculum: () => Promise<void>;
+  loadCalendar: () => Promise<void>;
+  loadTerms: () => Promise<void>;
+  loadSubjectPerformance: () => Promise<void>;
+  loadTeacherActivity: () => Promise<void>;
+  loadAdmissionInsights: () => Promise<void>;
+  loadAll: () => Promise<void>;
 }
 
 // ── Store ──
@@ -596,8 +490,8 @@ export const useAcademicStore = create<AcademicState>((set, get) => ({
     const totalStudents = st.admissionInsights.reduce((s, a) => s + a.filled, 0);
     const totalTeachers = st.teacherActivity.length;
     const totalSubjects = st.subjectPerformance.length;
-    const avgCoverage = Math.round(st.subjectPerformance.reduce((s, p) => s + p.coveragePct, 0) / st.subjectPerformance.length);
-    const avgPassRate = Math.round(st.subjectPerformance.reduce((s, p) => s + p.passRate, 0) / st.subjectPerformance.length);
+    const avgCoverage = st.subjectPerformance.length > 0 ? Math.round(st.subjectPerformance.reduce((s, p) => s + p.coveragePct, 0) / st.subjectPerformance.length) : 0;
+    const avgPassRate = st.subjectPerformance.length > 0 ? Math.round(st.subjectPerformance.reduce((s, p) => s + p.passRate, 0) / st.subjectPerformance.length) : 0;
     const pendingReportCards = st.reportCards.filter((r) => r.status === 'Under Review' || r.status === 'Not Generated').length;
     const pendingTranscripts = st.transcripts.filter((t) => t.status === 'Pending Review' || t.status === 'Draft').length;
     const activeSPIPs = st.spips.filter((s) => s.status === 'Active' || s.status === 'Monitoring').length;
@@ -617,5 +511,81 @@ export const useAcademicStore = create<AcademicState>((set, get) => ({
       const data = await apiClient.get<any[]>('/academic/timetables');
       set({ timetables: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
     } catch {}
+  },
+  loadHODApprovals: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/academic/hod-approvals');
+      set({ hodApprovals: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadReportCards: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/academic/report-cards');
+      set({ reportCards: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadTranscripts: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/academic/transcripts');
+      set({ transcripts: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadSPIPs: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/academic/spips');
+      set({ spips: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadCurriculum: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/academic/curriculum');
+      set({ curriculum: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadCalendar: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/academic/calendar');
+      set({ calendar: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadTerms: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/academic/terms');
+      set({ terms: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadSubjectPerformance: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/academic/subject-performance');
+      set({ subjectPerformance: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadTeacherActivity: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/academic/teacher-activity');
+      set({ teacherActivity: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadAdmissionInsights: async () => {
+    try {
+      const data = await apiClient.get<any[]>('/academic/admission-insights');
+      set({ admissionInsights: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
+    } catch {}
+  },
+  loadAll: async () => {
+    await Promise.all([
+      get().loadExams(),
+      get().loadTimetables(),
+      get().loadHODApprovals(),
+      get().loadReportCards(),
+      get().loadTranscripts(),
+      get().loadSPIPs(),
+      get().loadCurriculum(),
+      get().loadCalendar(),
+      get().loadTerms(),
+      get().loadSubjectPerformance(),
+      get().loadTeacherActivity(),
+      get().loadAdmissionInsights(),
+    ]);
   },
 }));

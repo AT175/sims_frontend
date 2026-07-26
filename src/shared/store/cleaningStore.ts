@@ -77,44 +77,13 @@ const INITIAL_TASKS: CleaningTask[] = [];
 
 const INITIAL_ISSUES: MaintenanceIssue[] = [];
 
-const INITIAL_INSPECTIONS: InspectionReport[] = [
-  { id: '1', date: '2026-07-05', area: 'Dormitories', inspector: 'Mr. Tetteh', result: 'Passed', score: 92, notes: 'Generally clean, minor issues in Block B' },
-  { id: '2', date: '2026-07-03', area: 'Dining Hall', inspector: 'Mrs. Adjei', result: 'Passed', score: 88, notes: 'Good standard, floor needs more attention' },
-  { id: '3', date: '2026-06-28', area: 'Toilets (Block A)', inspector: 'Mr. Tetteh', result: 'Needs Attention', score: 65, notes: 'Soap dispensers empty, floor wet' },
-];
+const INITIAL_INSPECTIONS: InspectionReport[] = [];
 
-const INITIAL_STAFF: CleaningStaff[] = [
-  { id: '1', name: 'Mr. Kofi', role: 'Senior Cleaner', area: 'Assembly Hall + Lab', phone: '024 111 2222', status: 'Present', todayCheckedIn: true },
-  { id: '2', name: 'Ms. Esi', role: 'Cleaner', area: 'Dining Hall', phone: '024 333 4444', status: 'Present', todayCheckedIn: true },
-  { id: '3', name: 'Mr. Yaw', role: 'Cleaner', area: 'Dormitories', phone: '024 555 6666', status: 'Present', todayCheckedIn: false },
-  { id: '4', name: 'Ms. Adjoa', role: 'Cleaner', area: 'Admin Block + Library', phone: '024 777 8888', status: 'Present', todayCheckedIn: true },
-  { id: '5', name: 'Mr. Samuel', role: 'Groundskeeper', area: 'Grounds', phone: '024 999 0000', status: 'On Leave', todayCheckedIn: false },
-  { id: '6', name: 'Mr. Daniel', role: 'Cleaner', area: 'Toilets', phone: '020 111 3333', status: 'Present', todayCheckedIn: false },
-];
+const INITIAL_STAFF: CleaningStaff[] = [];
 
-const INITIAL_SUPPLIES: CleaningSupply[] = [
-  { id: '1', name: 'Bleach', quantity: 15, unit: 'gallons', reorderLevel: 8, category: 'Disinfectant' },
-  { id: '2', name: 'Detergent', quantity: 6, unit: 'cartons', reorderLevel: 10, category: 'Cleaning Agent' },
-  { id: '3', name: 'Mops', quantity: 12, unit: 'units', reorderLevel: 6, category: 'Equipment' },
-  { id: '4', name: 'Brooms', quantity: 8, unit: 'units', reorderLevel: 5, category: 'Equipment' },
-  { id: '5', name: 'Dustbins', quantity: 20, unit: 'units', reorderLevel: 10, category: 'Equipment' },
-  { id: '6', name: 'Soap dispensers refill', quantity: 4, unit: 'cartons', reorderLevel: 8, category: 'Hygiene' },
-  { id: '7', name: 'Toilet paper rolls', quantity: 45, unit: 'rolls', reorderLevel: 30, category: 'Hygiene' },
-  { id: '8', name: 'Gloves (pairs)', quantity: 18, unit: 'pairs', reorderLevel: 12, category: 'PPE' },
-  { id: '9', name: 'Dettol', quantity: 5, unit: 'gallons', reorderLevel: 6, category: 'Disinfectant' },
-  { id: '10', name: 'Trash bags', quantity: 30, unit: 'packs', reorderLevel: 15, category: 'Consumables' },
-];
+const INITIAL_SUPPLIES: CleaningSupply[] = [];
 
-const INITIAL_ROSTER: DutyRosterEntry[] = [
-  { id: '1', area: 'Assembly Hall', assignedTo: 'Mr. Kofi + 2', frequency: 'Daily', time: '06:00 - 07:00', status: 'Completed' },
-  { id: '2', area: 'Dining Hall', assignedTo: 'Ms. Esi + 3', frequency: 'Daily (3x)', time: 'After each meal', status: 'In Progress' },
-  { id: '3', area: 'Dormitories (A)', assignedTo: 'Mr. Yaw', frequency: 'Daily', time: '07:00 - 09:00', status: 'Completed' },
-  { id: '4', area: 'Administration Block', assignedTo: 'Ms. Adjoa', frequency: 'Daily', time: '06:00 - 08:00', status: 'Completed' },
-  { id: '5', area: 'Grounds/Lawns', assignedTo: 'Mr. Samuel + 2', frequency: 'Weekly', time: 'Saturdays', status: 'Pending' },
-  { id: '6', area: 'Toilets Block A', assignedTo: 'Mr. Daniel', frequency: 'Daily', time: '06:00 - 08:00', status: 'In Progress' },
-  { id: '7', area: 'Toilets Block B', assignedTo: 'Mr. Daniel', frequency: 'Daily', time: '08:00 - 10:00', status: 'Pending' },
-  { id: '8', area: 'Library', assignedTo: 'Ms. Adjoa', frequency: 'Daily', time: '10:00 - 11:00', status: 'Pending' },
-];
+const INITIAL_ROSTER: DutyRosterEntry[] = [];
 
 // ── Store ──
 
@@ -163,6 +132,7 @@ interface CleaningState {
   // API
   loadTasks: () => Promise<void>;
   loadIssues: () => Promise<void>;
+  loadAll: () => Promise<void>;
 }
 
 export const useCleaningStore = create<CleaningState>((set, get) => ({
@@ -299,6 +269,12 @@ export const useCleaningStore = create<CleaningState>((set, get) => ({
       const data = await apiClient.get<any[]>('/cleaning/issues');
       set({ issues: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
     } catch {}
+  },
+  loadAll: async () => {
+    await Promise.all([
+      get().loadTasks(),
+      get().loadIssues(),
+    ]);
   },
 }));
 

@@ -49,9 +49,7 @@ export function PLCDashboard() {
   } = usePLCStore();
 
   useEffect(() => {
-    usePLCStore.getState().loadMeetings();
-    usePLCStore.getState().loadRequisitions();
-    usePLCStore.getState().loadResources();
+    usePLCStore.getState().loadAll();
   }, []);
 
   const [meetingForm, setMeetingForm] = useState({

@@ -92,13 +92,7 @@ export function SRCDashboard() {
   const { logout } = useAuthStore();
 
   useEffect(() => {
-    useDynamicDashboardStore.getState().loadSRCAnnouncements();
-    useDynamicDashboardStore.getState().loadSRCGrievances();
-    useDynamicDashboardStore.getState().loadSRCInitiatives();
-    useDynamicDashboardStore.getState().loadSRCPrefects();
-    useDynamicDashboardStore.getState().loadSRCEvents();
-    useDynamicDashboardStore.getState().loadSRCTransactions();
-    useDynamicDashboardStore.getState().loadSRCFeedback();
+    useDynamicDashboardStore.getState().loadAll();
   }, []);
 
   const [announcements, setAnnouncements] = useState(INITIAL_ANNOUNCEMENTS);

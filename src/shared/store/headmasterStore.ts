@@ -48,20 +48,11 @@ export interface Broadcast {
 
 // ── Initial Data ──
 
-const INITIAL_APPROVALS: HeadmasterApproval[] = [
-  { id: '1', category: 'Procurement', requester: 'Stores Unit', department: 'Stores', date: '2026-07-04', details: 'Bulk purchase of textbooks and lab equipment for Term 3.', status: 'Pending' },
-  { id: '2', category: 'Budget Revision', requester: 'Bursary', department: 'Bursary', date: '2026-07-03', details: 'Revise Term 3 catering budget upward by GH₵5,000 due to price increases.', status: 'Pending' },
-  { id: '3', category: 'Discipline Escalation', requester: 'Aggrey House', department: 'Boarding', date: '2026-07-02', details: 'Repeated bullying incident requiring headmaster review for possible suspension.', status: 'Pending' },
-];
+const INITIAL_APPROVALS: HeadmasterApproval[] = [];
 
-const INITIAL_DISCIPLINE: DisciplineCase[] = [
-  { id: '1', student: 'Kwame Asante', house: 'Aggrey', incident: 'Bullying', date: '2026-07-05', severity: 'serious', status: 'Escalated', reportedBy: 'Housemaster' },
-  { id: '2', student: 'Ama Owusu', house: 'Mensah', incident: 'Repeated lateness', date: '2026-07-03', severity: 'minor', status: 'Open', reportedBy: 'Class Prefect' },
-];
+const INITIAL_DISCIPLINE: DisciplineCase[] = [];
 
-const INITIAL_BROADCASTS: Broadcast[] = [
-  { id: '1', title: 'Term 3 Mid-Semester Exam Schedule', body: 'All students should note the revised exam dates starting July 15.', audience: 'All Students', priority: 'Important', date: '2026-07-05', postedBy: 'Headmaster' },
-];
+const INITIAL_BROADCASTS: Broadcast[] = [];
 
 // ── Helpers ──
 
@@ -93,6 +84,7 @@ export interface HeadmasterState {
   loadApprovals: () => Promise<void>;
   loadDisciplineCases: () => Promise<void>;
   loadBroadcasts: () => Promise<void>;
+  loadAll: () => Promise<void>;
 }
 
 export const useHeadmasterStore = create<HeadmasterState>((set, get) => ({
@@ -157,4 +149,12 @@ export const useHeadmasterStore = create<HeadmasterState>((set, get) => ({
       set({ broadcasts: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
     } catch {}
   },
+  loadAll: async () => {
+    await Promise.all([
+      get().loadApprovals(),
+      get().loadBroadcasts(),
+      get().loadDisciplineCases(),
+    ]);
+  },
+
 }));

@@ -85,9 +85,8 @@ export function StoresDashboard() {
   const closeModal = () => setShowModal(false);
 
   useEffect(() => {
-    useKitchenStore.getState().loadStock();
-    useKitchenStore.getState().loadMenus();
-    useRequisitionStore.getState().loadRequisitions();
+    useKitchenStore.getState().loadAll();
+    useRequisitionStore.getState().loadAll();
   }, []);
 
   const lowStockItems = inventory.filter(i => i.quantity <= i.reorderLevel);

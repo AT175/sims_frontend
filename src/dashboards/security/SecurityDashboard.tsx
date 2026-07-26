@@ -49,8 +49,7 @@ export function SecurityDashboard() {
 
   useEffect(() => {
     loadIncidents();
-    loadGateLogs();
-    useExeatStore.getState().loadExeats();
+    loadGateLogs();    useExeatStore.getState().loadAll();
   }, []);
 
   const {

@@ -25,9 +25,8 @@ export function LibraryICTDashboard() {
   const librarianName = user?.displayName ?? 'Librarian';
 
   useEffect(() => {
-    useLibraryStore.getState().loadBooks();
-    useLibraryStore.getState().loadCirculation();
-    useRequisitionStore.getState().loadRequisitions();
+    useLibraryStore.getState().loadAll();
+    useRequisitionStore.getState().loadAll();
   }, []);
 
   return (

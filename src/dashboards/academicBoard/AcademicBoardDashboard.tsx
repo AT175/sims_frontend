@@ -23,8 +23,7 @@ export function AcademicBoardDashboard() {
   const store = useDynamicDashboardStore();
 
   useEffect(() => {
-    useDynamicDashboardStore.getState().loadBoardMeetings();
-    useDynamicDashboardStore.getState().loadDeptReports();
+    useDynamicDashboardStore.getState().loadAll();
   }, []);
 
   const [meetingForm, setMeetingForm] = useState<{ title: string; date: string; attendees: string; agenda: string; status: 'Scheduled' | 'Completed' | 'Cancelled'; minutes: string }>({ title: '', date: '', attendees: '', agenda: '', status: 'Scheduled', minutes: '' });

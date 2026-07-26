@@ -53,10 +53,8 @@ export function CleaningDashboard() {
 
   useEffect(() => {
     loadTasks();
-    loadIssues();
-    useRequisitionStore.getState().loadRequisitions();
-    useKitchenStore.getState().loadMenus();
-    useKitchenStore.getState().loadStock();
+    loadIssues();    useRequisitionStore.getState().loadAll();
+    useKitchenStore.getState().loadAll();
   }, []);
 
   const { getTodayMenu } = useKitchenStore();

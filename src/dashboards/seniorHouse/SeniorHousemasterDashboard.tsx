@@ -43,10 +43,9 @@ export function SeniorHousemasterDashboard() {
   } = useBoardingStore();
 
   useEffect(() => {
-    useBoardingStore.getState().loadRollCalls();
-    useBoardingStore.getState().loadDiscipline();
-    useRequisitionStore.getState().loadRequisitions();
-    useExeatStore.getState().loadExeats();
+    useBoardingStore.getState().loadAll();
+    useRequisitionStore.getState().loadAll();
+    useExeatStore.getState().loadAll();
   }, []);
 
   const {

@@ -37,12 +37,8 @@ export function AccountantDashboard() {
   const { fees, receipts, payroll, expenditure, budgetItems, budgetSubmissions, invoices } = store;
 
   useEffect(() => {
-    useBursaryStore.getState().loadFees();
-    useBursaryStore.getState().loadReceipts();
-    useBursaryStore.getState().loadPayroll();
-    useBursaryStore.getState().loadExpenditure();
-    useKitchenStore.getState().loadMenus();
-    useKitchenStore.getState().loadStock();
+    useBursaryStore.getState().loadAll();
+    useKitchenStore.getState().loadAll();
   }, []);
 
   const totalCollected = store.getTotalCollected();

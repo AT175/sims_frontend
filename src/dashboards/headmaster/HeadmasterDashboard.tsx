@@ -166,19 +166,11 @@ export function HeadmasterDashboard() {
   }, [user?.tenantId, websiteLoaded]);
 
   useEffect(() => {
-    sysAdminStore.loadUsers(user?.tenantId);
-    useBursaryStore.getState().loadFees();
-    useBursaryStore.getState().loadExpenditure();
-    useBursaryStore.getState().loadReceipts();
-    useBursaryStore.getState().loadPayroll();
-    useStaffStore.getState().loadDirectory();
-    useStaffStore.getState().loadLeaveRequests();
-    useRegistryStore.getState().loadStudents();
-    useRegistryStore.getState().loadAdmissions();
-    useHeadmasterStore.getState().loadApprovals();
-    useHeadmasterStore.getState().loadDisciplineCases();
-    useHeadmasterStore.getState().loadBroadcasts();
-    useAccessControlStore.getState().loadGrants();
+    sysAdminStore.loadUsers(user?.tenantId);    useBursaryStore.getState().loadAll();
+    useStaffStore.getState().loadAll();
+    useRegistryStore.getState().loadAll();
+    useHeadmasterStore.getState().loadAll();
+    useAccessControlStore.getState().loadAll();
   }, [user?.tenantId]);
 
   const [showAccessModal, setShowAccessModal] = useState(false);

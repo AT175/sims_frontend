@@ -100,39 +100,17 @@ const nowTime = new Date().toTimeString().slice(0, 5);
 
 // ── Initial Data ──
 
-const initialGuards: Guard[] = [
-  { id: 'g1', name: 'K. Asante', phone: '024 111 2222', shift: 'Morning', zone: 'Main gate + perimeter', onLeave: false },
-  { id: 'g2', name: 'S. Osei', phone: '024 333 4444', shift: 'Evening', zone: 'Dormitory area', onLeave: false },
-  { id: 'g3', name: 'D. Tetteh', phone: '024 555 6666', shift: 'Night', zone: 'Full perimeter', onLeave: false },
-  { id: 'g4', name: 'M. Boateng', phone: '024 777 8888', shift: 'Morning', zone: 'Academic block', onLeave: true },
-];
+const initialGuards: Guard[] = [];
 
 const initialGateLogs: GateLog[] = [];
 
 const initialIncidents: Incident[] = [];
 
-const initialPatrolShifts: PatrolShift[] = [
-  { id: 'ps1', shift: 'Morning', startTime: '06:00', endTime: '14:00', guardName: 'K. Asante', zone: 'Main gate + perimeter', notes: 'Routine patrol', completed: true },
-  { id: 'ps2', shift: 'Evening', startTime: '14:00', endTime: '22:00', guardName: 'S. Osei', zone: 'Dormitory area', notes: 'Focus on dormitory perimeter', completed: false },
-  { id: 'ps3', shift: 'Night', startTime: '22:00', endTime: '06:00', guardName: 'D. Tetteh', zone: 'Full perimeter', notes: 'Full campus patrol every 2 hours', completed: false },
-];
+const initialPatrolShifts: PatrolShift[] = [];
 
-const initialVisitors: PreRegisteredVisitor[] = [
-  { id: 'v1', name: 'GES Regional Director', expectedDate: '2026-07-10', expectedTime: '10:00', purpose: 'Inspection visit', host: 'Headmaster', phone: '020 123 4567', vehiclePlate: 'GV-0099-1', status: 'Expected' },
-  { id: 'v2', name: 'Dr. Frimpong', expectedDate: '2026-07-08', expectedTime: '14:00', purpose: 'Medical check-up', host: 'Sick Bay', phone: '024 987 6543', status: 'Expected' },
-  { id: 'v3', name: 'Mr. Oppong (PTA Chair)', expectedDate: today, expectedTime: '14:00', purpose: 'PTA meeting', host: 'Headmaster', phone: '024 555 1234', vehiclePlate: 'GE-2345-1', status: 'Arrived', actualArrivalTime: '14:30' },
-];
+const initialVisitors: PreRegisteredVisitor[] = [];
 
-const initialChecklist: ChecklistItem[] = [
-  { id: 'cl1', item: 'Main gate locked after 22:00', category: 'Gates', done: true, requiredTime: '22:00', completedTime: '22:05', completedBy: 'D. Tetteh' },
-  { id: 'cl2', item: 'Back fence inspected', category: 'Perimeter', done: true, requiredTime: '06:30', completedTime: '06:35', completedBy: 'K. Asante' },
-  { id: 'cl3', item: 'Dormitory doors secured', category: 'Dormitories', done: true, requiredTime: '21:00', completedTime: '21:10', completedBy: 'S. Osei' },
-  { id: 'cl4', item: 'Kitchen locked', category: 'Kitchen', done: false, requiredTime: '20:00' },
-  { id: 'cl5', item: 'Lab equipment checked', category: 'Academic Block', done: false, requiredTime: '17:00' },
-  { id: 'cl6', item: 'Generator room locked', category: 'Utilities', done: true, requiredTime: '18:00', completedTime: '18:02', completedBy: 'K. Asante' },
-  { id: 'cl7', item: 'Front gate barrier tested', category: 'Gates', done: true, requiredTime: '06:00', completedTime: '06:00', completedBy: 'K. Asante' },
-  { id: 'cl8', item: 'CCTV cameras operational check', category: 'Perimeter', done: false, requiredTime: '07:00' },
-];
+const initialChecklist: ChecklistItem[] = [];
 
 // ── Store ──
 
@@ -185,6 +163,7 @@ interface SecurityState {
   // API
   loadIncidents: () => Promise<void>;
   loadGateLogs: () => Promise<void>;
+  loadAll: () => Promise<void>;
 }
 
 let counter = 100;
@@ -285,4 +264,11 @@ export const useSecurityStore = create<SecurityState>((set, get) => ({
       set({ gateLogs: (data || []).map((d) => ({ ...d, id: d.id || genId() })) });
     } catch {}
   },
+  loadAll: async () => {
+    await Promise.all([
+      get().loadGateLogs(),
+      get().loadIncidents(),
+    ]);
+  },
+
 }));

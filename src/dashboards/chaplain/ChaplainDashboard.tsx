@@ -35,8 +35,7 @@ export function ChaplainDashboard() {
   const store = useChaplainStore();
 
   useEffect(() => {
-    useChaplainStore.getState().loadPrayerRequests();
-    useChaplainStore.getState().loadCounselling();
+    useChaplainStore.getState().loadAll();
   }, []);
 
   // ── Form state ──
