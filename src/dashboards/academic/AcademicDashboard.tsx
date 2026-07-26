@@ -11,6 +11,7 @@ import {
   RESULTS_ENTRY_STATUSES, SPIP_PRIORITIES, SPIP_FOCUS_AREAS, SPIP_GOAL_STATUSES,
   CURRICULUM_STATUSES, CALENDAR_EVENT_TYPES, TERM_NAMES,
 } from '@store/academicStore';
+import type { ReportSupervisionTask } from '@store/academicStore';
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'Academic Overview' },
@@ -24,6 +25,9 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'curriculum', label: 'Curriculum Tracker' },
   { key: 'calendar', label: 'Academic Calendar' },
   { key: 'hod', label: 'HOD Approvals' },
+  { key: 'subject-selection', label: 'Subject Selection' },
+  { key: 'class-list', label: 'Class Lists' },
+  { key: 'report-supervision', label: 'Report Supervision' },
   { key: 'supplies', label: 'Stationery Requests' },
   { key: 'plc', label: 'PLC Requisitions' },
   { key: 'academic-reports', label: 'Reports & PDF' },
@@ -61,6 +65,12 @@ export function AcademicDashboard() {
     addCalendarEvent, deleteCalendarEvent,
     setCurrentTerm,
     getOverallStats,
+    // Subject Selections
+    subjectSelections, addSubjectSelection, updateSubjectSelection, reviewSubjectSelection, getPendingSubjectSelections,
+    // Class Lists
+    classLists, addClassList, deleteClassList,
+    // Report Supervision
+    reportSupervisions, addReportSupervision, updateReportSupervision, verifyReportSupervision, deleteReportSupervision, getPendingSupervisions,
   } = aStore;
 
   const stats = getOverallStats();
@@ -88,6 +98,11 @@ export function AcademicDashboard() {
   const [reportClass, setReportClass] = useState('SHS1 Sci A');
   const [transcriptReject, setTranscriptReject] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [showSubjectSelectionModal, setShowSubjectSelectionModal] = useState(false);
+  const [showClassListModal, setShowClassListModal] = useState(false);
+  const [showReportSupervisionModal, setShowReportSupervisionModal] = useState(false);
+  const [subjectSelectionReview, setSubjectSelectionReview] = useState<{ id: string; action: 'approve' | 'reject' } | null>(null);
+  const [subjectSelectionNote, setSubjectSelectionNote] = useState('');
 
   // Form states
   const [examForm, setExamForm] = useState({ title: '', subject: '', classForm: '', date: '', startTime: '', endTime: '', venue: '', maxScore: 50, invigilator: '', term: 'Term 3' as any });
@@ -100,6 +115,9 @@ export function AcademicDashboard() {
   const [curriculumForm, setCurriculumForm] = useState({ subject: '', department: '', hod: '', classForm: '', syllabusTopics: 0, topicsCovered: 0, status: 'Not Started' as any, notes: '' });
   const [calendarForm, setCalendarForm] = useState({ title: '', type: 'Event' as any, date: '', endDate: '', description: '', term: 'Term 3' as any });
   const [transcriptForm, setTranscriptForm] = useState({ studentName: '', admNo: '', classForm: '', academicYear: '2024/2025', termsCovered: [] as any[], cumulativeAverage: 0, overallPosition: '', conduct: '', attendance: '' });
+  const [subjectSelectionForm, setSubjectSelectionForm] = useState({ studentName: '', admNo: '', classForm: '', programme: 'Science', electiveSubjects: '', coreSubjects: 'English, Mathematics, Social Studies, Core Science', hodConsultation: '', guidanceConsultation: '' });
+  const [classListForm, setClassListForm] = useState({ classForm: '', programme: 'Science', academicYear: '2024/2025', term: 'Term 3' as any, students: '' });
+  const [reportSupervisionForm, setReportSupervisionForm] = useState({ term: 'Term 3' as any, academicYear: '2024/2025', task: 'Preparation' as ReportSupervisionTask, assignedStaff: '', notes: '' });
 
   const statusColor = (s: string) => {
     const map: Record<string, string> = {
@@ -109,6 +127,8 @@ export function AcademicDashboard() {
       'Released': colors.success, 'Generated': colors.info, 'Under Review': colors.warning, 'Not Generated': colors.textLight,
       'Active': colors.success, 'Monitoring': colors.info, 'Discontinued': colors.danger,
       'Not Started': colors.textLight, 'In Progress': colors.warning, 'Revised': colors.info,
+      'HOD Consulted': colors.info, 'Guidance Consulted': colors.info,
+      'Assigned': colors.warning, 'Verified': colors.success,
     };
     return map[s] ?? colors.textSecondary;
   };
@@ -466,6 +486,143 @@ export function AcademicDashboard() {
             ))}
           </View>
         );
+      case 'subject-selection':
+        return (
+          <View>
+            <CardGrid>
+              <StatCard label="Total" value={subjectSelections.length} accentColor={colors.primary} />
+              <StatCard label="Pending" value={getPendingSubjectSelections().length} accentColor={colors.warning} />
+              <StatCard label="Approved" value={subjectSelections.filter((s) => s.status === 'Approved').length} accentColor={colors.success} />
+            </CardGrid>
+            <Text style={styles.pageTitle}>Subject Selection Guidance</Text>
+            <Text style={styles.pageSubtitle}>Guide students in choosing subjects after consulting HODs & Guidance Counselling</Text>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => setShowSubjectSelectionModal(true)}>
+              <Text style={styles.actionBtnText}>+ Log Subject Selection</Text>
+            </TouchableOpacity>
+            {subjectSelections.length === 0 && <Text style={styles.emptyText}>No subject selections logged yet.</Text>}
+            {subjectSelections.map((s) => (
+              <View key={s.id} style={styles.reqCard}>
+                <View style={styles.reqHeader}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.reqTitle}>{s.studentName} ({s.admNo})</Text>
+                    <Text style={styles.reqMeta}>{s.classForm} | {s.programme} | {s.date}</Text>
+                    <Text style={styles.reqMeta}>Electives: {s.electiveSubjects.join(', ')}</Text>
+                    <Text style={styles.reqMeta}>Core: {s.coreSubjects.join(', ')}</Text>
+                    {s.hodConsultation ? <Text style={styles.reqMeta}>HOD: {s.hodConsultation}</Text> : null}
+                    {s.guidanceConsultation ? <Text style={styles.reqMeta}>Guidance: {s.guidanceConsultation}</Text> : null}
+                    {s.reviewNote ? <Text style={[styles.reqMeta, { fontStyle: 'italic' as const }]}>Note: {s.reviewNote}</Text> : null}
+                  </View>
+                  {renderBadge(s.status, statusColor(s.status))}
+                </View>
+                {s.status === 'Pending' && (
+                  <View style={styles.approvalActions}>
+                    <TouchableOpacity style={styles.smallBtn} onPress={() => { updateSubjectSelection(s.id, { status: 'HOD Consulted' }); Alert.alert('Updated', 'Marked as HOD consulted.'); }}>
+                      <Text style={styles.smallBtnText}>HOD Consulted</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.smallBtn} onPress={() => { updateSubjectSelection(s.id, { status: 'Guidance Consulted' }); Alert.alert('Updated', 'Marked as Guidance consulted.'); }}>
+                      <Text style={styles.smallBtnText}>Guidance Consulted</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.approveBtn} onPress={() => { setSubjectSelectionReview({ id: s.id, action: 'approve' }); setSubjectSelectionNote(''); }}>
+                      <Text style={styles.approveText}>Approve</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.rejectBtn} onPress={() => { setSubjectSelectionReview({ id: s.id, action: 'reject' }); setSubjectSelectionNote(''); }}>
+                      <Text style={styles.rejectText}>Reject</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            ))}
+          </View>
+        );
+
+      case 'class-list':
+        return (
+          <View>
+            <CardGrid>
+              <StatCard label="Total Lists" value={classLists.length} accentColor={colors.primary} />
+              <StatCard label="Total Students" value={classLists.reduce((sum, c) => sum + c.students.length, 0)} accentColor={colors.info} />
+              <StatCard label="Classes" value={new Set(classLists.map((c) => c.classForm)).size} accentColor={colors.success} />
+            </CardGrid>
+            <Text style={styles.pageTitle}>Class List Preparation</Text>
+            <Text style={styles.pageSubtitle}>Generate and manage class lists by form and programme</Text>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => setShowClassListModal(true)}>
+              <Text style={styles.actionBtnText}>+ Generate Class List</Text>
+            </TouchableOpacity>
+            {classLists.length === 0 && <Text style={styles.emptyText}>No class lists generated yet.</Text>}
+            {classLists.map((c) => (
+              <View key={c.id} style={styles.reqCard}>
+                <View style={styles.reqHeader}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.reqTitle}>{c.classForm} — {c.programme}</Text>
+                    <Text style={styles.reqMeta}>{c.academicYear} | {c.term} | {c.students.length} students | Generated: {c.generatedDate} by {c.generatedBy}</Text>
+                  </View>
+                  <TouchableOpacity style={[styles.smallBtn, { backgroundColor: colors.danger }]} onPress={() => { deleteClassList(c.id); Alert.alert('Deleted', 'Class list removed.'); }}>
+                    <Text style={styles.smallBtnText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
+                {c.students.length > 0 && (
+                  <View style={{ marginTop: spacing.sm }}>
+                    {c.students.map((st, idx) => (
+                      <Text key={idx} style={styles.reqMeta}>{idx + 1}. {st.admNo} — {st.studentName} ({st.gender})</Text>
+                    ))}
+                  </View>
+                )}
+              </View>
+            ))}
+          </View>
+        );
+
+      case 'report-supervision':
+        return (
+          <View>
+            <CardGrid>
+              <StatCard label="Total Tasks" value={reportSupervisions.length} accentColor={colors.primary} />
+              <StatCard label="Pending" value={getPendingSupervisions().length} accentColor={colors.warning} />
+              <StatCard label="Verified" value={reportSupervisions.filter((r) => r.status === 'Verified').length} accentColor={colors.success} />
+            </CardGrid>
+            <Text style={styles.pageTitle}>Terminal Report Supervision</Text>
+            <Text style={styles.pageSubtitle}>Supervise office staff during preparation and posting of terminal reports</Text>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => setShowReportSupervisionModal(true)}>
+              <Text style={styles.actionBtnText}>+ Assign Supervision Task</Text>
+            </TouchableOpacity>
+            {reportSupervisions.length === 0 && <Text style={styles.emptyText}>No supervision tasks assigned yet.</Text>}
+            {reportSupervisions.map((r) => (
+              <View key={r.id} style={styles.reqCard}>
+                <View style={styles.reqHeader}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.reqTitle}>{r.task} — {r.assignedStaff}</Text>
+                    <Text style={styles.reqMeta}>{r.term} | {r.academicYear} | Assigned: {r.date} by {r.assignedBy}</Text>
+                    {r.completedDate ? <Text style={styles.reqMeta}>Completed: {r.completedDate}</Text> : null}
+                    {r.verifiedBy ? <Text style={styles.reqMeta}>Verified by: {r.verifiedBy}</Text> : null}
+                    {r.notes ? <Text style={styles.reqNotes}>{r.notes}</Text> : null}
+                  </View>
+                  {renderBadge(r.status, statusColor(r.status))}
+                </View>
+                <View style={styles.approvalActions}>
+                  {r.status === 'Assigned' && (
+                    <TouchableOpacity style={styles.smallBtn} onPress={() => { updateReportSupervision(r.id, { status: 'In Progress' }); Alert.alert('Updated', 'Task marked in progress.'); }}>
+                      <Text style={styles.smallBtnText}>Start</Text>
+                    </TouchableOpacity>
+                  )}
+                  {r.status === 'In Progress' && (
+                    <TouchableOpacity style={styles.smallBtn} onPress={() => { updateReportSupervision(r.id, { status: 'Completed', completedDate: new Date().toISOString().slice(0, 10) }); Alert.alert('Updated', 'Task marked completed.'); }}>
+                      <Text style={styles.smallBtnText}>Complete</Text>
+                    </TouchableOpacity>
+                  )}
+                  {r.status === 'Completed' && (
+                    <TouchableOpacity style={styles.approveBtn} onPress={() => { verifyReportSupervision(r.id, academicOfficer); Alert.alert('Verified', 'Task verified.'); }}>
+                      <Text style={styles.approveText}>Verify</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity style={[styles.smallBtn, { backgroundColor: colors.danger }]} onPress={() => { deleteReportSupervision(r.id); Alert.alert('Deleted', 'Task removed.'); }}>
+                    <Text style={styles.smallBtnText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </View>
+        );
+
       case 'supplies':
         return (
           <View>
@@ -1403,6 +1560,119 @@ export function AcademicDashboard() {
           </View>
         </View></View>
       </Modal>
+
+      {/* Subject Selection Modal */}
+      <Modal visible={showSubjectSelectionModal} transparent animationType="fade" onRequestClose={() => setShowSubjectSelectionModal(false)}>
+        <View style={styles.modalOverlay}><View style={styles.modalContent}><ScrollView showsVerticalScrollIndicator={false}>
+          <Text style={styles.modalTitle}>Log Subject Selection</Text>
+          <Text style={styles.inputLabel}>Student Name *</Text>
+          <TextInput style={styles.input} placeholder="e.g. Kwame Asante" placeholderTextColor={colors.textLight} value={subjectSelectionForm.studentName} onChangeText={(v) => setSubjectSelectionForm({ ...subjectSelectionForm, studentName: v })} />
+          <Text style={styles.inputLabel}>Admission No.</Text>
+          <TextInput style={styles.input} placeholder="e.g. ADM/2026/001" placeholderTextColor={colors.textLight} value={subjectSelectionForm.admNo} onChangeText={(v) => setSubjectSelectionForm({ ...subjectSelectionForm, admNo: v })} />
+          <Text style={styles.inputLabel}>Class</Text>
+          <TextInput style={styles.input} placeholder="e.g. SHS1 Sci A" placeholderTextColor={colors.textLight} value={subjectSelectionForm.classForm} onChangeText={(v) => setSubjectSelectionForm({ ...subjectSelectionForm, classForm: v })} />
+          <Text style={styles.inputLabel}>Programme</Text>
+          <View style={styles.pickerRow}>
+            {['Science', 'Business', 'General Arts', 'Visual Arts', 'Home Economics', 'Technical'].map((p) => (
+              <TouchableOpacity key={p} style={[styles.pickerChip, subjectSelectionForm.programme === p && styles.pickerChipActive]} onPress={() => setSubjectSelectionForm({ ...subjectSelectionForm, programme: p })}>
+                <Text style={[styles.pickerChipText, subjectSelectionForm.programme === p && styles.pickerChipTextActive]}>{p}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={styles.inputLabel}>Elective Subjects (comma-separated)</Text>
+          <TextInput style={[styles.input, styles.textArea]} placeholder="e.g. Physics, Chemistry, Elective Maths" placeholderTextColor={colors.textLight} value={subjectSelectionForm.electiveSubjects} onChangeText={(v) => setSubjectSelectionForm({ ...subjectSelectionForm, electiveSubjects: v })} multiline />
+          <Text style={styles.inputLabel}>Core Subjects</Text>
+          <TextInput style={styles.input} placeholder="English, Mathematics, Social Studies, Core Science" placeholderTextColor={colors.textLight} value={subjectSelectionForm.coreSubjects} onChangeText={(v) => setSubjectSelectionForm({ ...subjectSelectionForm, coreSubjects: v })} />
+          <Text style={styles.inputLabel}>HOD Consultation</Text>
+          <TextInput style={styles.input} placeholder="e.g. Mr. Adjei (HOD Science) — advised Physics + Chemistry" placeholderTextColor={colors.textLight} value={subjectSelectionForm.hodConsultation} onChangeText={(v) => setSubjectSelectionForm({ ...subjectSelectionForm, hodConsultation: v })} />
+          <Text style={styles.inputLabel}>Guidance & Counselling Consultation</Text>
+          <TextInput style={styles.input} placeholder="e.g. Mrs. Mensah — assessed aptitude for Science" placeholderTextColor={colors.textLight} value={subjectSelectionForm.guidanceConsultation} onChangeText={(v) => setSubjectSelectionForm({ ...subjectSelectionForm, guidanceConsultation: v })} />
+          <View style={styles.modalActions}>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowSubjectSelectionModal(false)}><Text style={styles.modalBtnTextDark}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={() => { if (!subjectSelectionForm.studentName.trim()) { Alert.alert('Error', 'Student name is required'); return; } addSubjectSelection({ ...subjectSelectionForm, electiveSubjects: subjectSelectionForm.electiveSubjects.split(',').map((s: string) => s.trim()).filter(Boolean), coreSubjects: subjectSelectionForm.coreSubjects.split(',').map((s: string) => s.trim()).filter(Boolean) }); setSubjectSelectionForm({ studentName: '', admNo: '', classForm: '', programme: 'Science', electiveSubjects: '', coreSubjects: 'English, Mathematics, Social Studies, Core Science', hodConsultation: '', guidanceConsultation: '' }); setShowSubjectSelectionModal(false); Alert.alert('Success', 'Subject selection logged.'); }}><Text style={styles.modalBtnTextLight}>Save</Text></TouchableOpacity>
+          </View>
+        </ScrollView></View></View>
+      </Modal>
+
+      {/* Subject Selection Review Modal */}
+      <Modal visible={!!subjectSelectionReview} transparent animationType="fade" onRequestClose={() => setSubjectSelectionReview(null)}>
+        <View style={styles.modalOverlay}><View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>{subjectSelectionReview?.action === 'approve' ? 'Approve Subject Selection' : 'Reject Subject Selection'}</Text>
+          <Text style={styles.inputLabel}>Review Note</Text>
+          <TextInput style={[styles.input, styles.textArea]} placeholder="Add review comments..." placeholderTextColor={colors.textLight} value={subjectSelectionNote} onChangeText={setSubjectSelectionNote} multiline />
+          <View style={styles.modalActions}>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setSubjectSelectionReview(null)}><Text style={styles.modalBtnTextDark}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.modalBtn, subjectSelectionReview?.action === 'approve' ? styles.modalBtnSubmit : { backgroundColor: colors.danger, borderRadius: radius.md, paddingVertical: spacing.sm + 2, alignItems: 'center', flex: 1 }]} onPress={() => { if (!subjectSelectionReview) return; reviewSubjectSelection(subjectSelectionReview.id, subjectSelectionReview.action === 'approve' ? 'Approved' : 'Rejected', academicOfficer, subjectSelectionNote); setSubjectSelectionReview(null); setSubjectSelectionNote(''); Alert.alert('Success', `Subject selection ${subjectSelectionReview.action === 'approve' ? 'approved' : 'rejected'}.`); }}><Text style={styles.modalBtnTextLight}>{subjectSelectionReview?.action === 'approve' ? 'Approve' : 'Reject'}</Text></TouchableOpacity>
+          </View>
+        </View></View>
+      </Modal>
+
+      {/* Class List Modal */}
+      <Modal visible={showClassListModal} transparent animationType="fade" onRequestClose={() => setShowClassListModal(false)}>
+        <View style={styles.modalOverlay}><View style={styles.modalContent}><ScrollView showsVerticalScrollIndicator={false}>
+          <Text style={styles.modalTitle}>Generate Class List</Text>
+          <Text style={styles.inputLabel}>Class *</Text>
+          <TextInput style={styles.input} placeholder="e.g. SHS1 Sci A" placeholderTextColor={colors.textLight} value={classListForm.classForm} onChangeText={(v) => setClassListForm({ ...classListForm, classForm: v })} />
+          <Text style={styles.inputLabel}>Programme</Text>
+          <View style={styles.pickerRow}>
+            {['Science', 'Business', 'General Arts', 'Visual Arts', 'Home Economics', 'Technical'].map((p) => (
+              <TouchableOpacity key={p} style={[styles.pickerChip, classListForm.programme === p && styles.pickerChipActive]} onPress={() => setClassListForm({ ...classListForm, programme: p })}>
+                <Text style={[styles.pickerChipText, classListForm.programme === p && styles.pickerChipTextActive]}>{p}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={styles.inputLabel}>Academic Year</Text>
+          <TextInput style={styles.input} placeholder="e.g. 2024/2025" placeholderTextColor={colors.textLight} value={classListForm.academicYear} onChangeText={(v) => setClassListForm({ ...classListForm, academicYear: v })} />
+          <Text style={styles.inputLabel}>Term</Text>
+          <View style={styles.pickerRow}>
+            {TERM_NAMES.map((t) => (
+              <TouchableOpacity key={t} style={[styles.pickerChip, classListForm.term === t && styles.pickerChipActive]} onPress={() => setClassListForm({ ...classListForm, term: t })}>
+                <Text style={[styles.pickerChipText, classListForm.term === t && styles.pickerChipTextActive]}>{t}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={styles.inputLabel}>Students (one per line: AdmNo, Name, Gender)</Text>
+          <TextInput style={[styles.input, styles.textArea]} placeholder="ADM/2026/001, Kwame Asante, Male&#10;ADM/2026/002, Ama Boateng, Female" placeholderTextColor={colors.textLight} value={classListForm.students} onChangeText={(v) => setClassListForm({ ...classListForm, students: v })} multiline numberOfLines={6} />
+          <View style={styles.modalActions}>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowClassListModal(false)}><Text style={styles.modalBtnTextDark}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={() => { if (!classListForm.classForm.trim()) { Alert.alert('Error', 'Class is required'); return; } const students = classListForm.students.split('\n').map((line: string) => { const parts = line.split(',').map((s: string) => s.trim()); return { admNo: parts[0] || '', studentName: parts[1] || '', gender: (parts[2] as 'Male' | 'Female') || 'Male' }; }).filter((s: any) => s.admNo && s.studentName); addClassList({ ...classListForm, students, generatedBy: academicOfficer }); setClassListForm({ classForm: '', programme: 'Science', academicYear: '2024/2025', term: 'Term 3', students: '' }); setShowClassListModal(false); Alert.alert('Success', `Class list generated with ${students.length} students.`); }}><Text style={styles.modalBtnTextLight}>Generate</Text></TouchableOpacity>
+          </View>
+        </ScrollView></View></View>
+      </Modal>
+
+      {/* Report Supervision Modal */}
+      <Modal visible={showReportSupervisionModal} transparent animationType="fade" onRequestClose={() => setShowReportSupervisionModal(false)}>
+        <View style={styles.modalOverlay}><View style={styles.modalContent}><ScrollView showsVerticalScrollIndicator={false}>
+          <Text style={styles.modalTitle}>Assign Supervision Task</Text>
+          <Text style={styles.inputLabel}>Term</Text>
+          <View style={styles.pickerRow}>
+            {TERM_NAMES.map((t) => (
+              <TouchableOpacity key={t} style={[styles.pickerChip, reportSupervisionForm.term === t && styles.pickerChipActive]} onPress={() => setReportSupervisionForm({ ...reportSupervisionForm, term: t })}>
+                <Text style={[styles.pickerChipText, reportSupervisionForm.term === t && styles.pickerChipTextActive]}>{t}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={styles.inputLabel}>Academic Year</Text>
+          <TextInput style={styles.input} placeholder="e.g. 2024/2025" placeholderTextColor={colors.textLight} value={reportSupervisionForm.academicYear} onChangeText={(v) => setReportSupervisionForm({ ...reportSupervisionForm, academicYear: v })} />
+          <Text style={styles.inputLabel}>Task</Text>
+          <View style={styles.pickerRow}>
+            {(['Preparation', 'Printing', 'Posting', 'Distribution'] as ReportSupervisionTask[]).map((t) => (
+              <TouchableOpacity key={t} style={[styles.pickerChip, reportSupervisionForm.task === t && styles.pickerChipActive]} onPress={() => setReportSupervisionForm({ ...reportSupervisionForm, task: t })}>
+                <Text style={[styles.pickerChipText, reportSupervisionForm.task === t && styles.pickerChipTextActive]}>{t}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={styles.inputLabel}>Assigned Staff *</Text>
+          <TextInput style={styles.input} placeholder="e.g. Mr. Osei (Office Clerk)" placeholderTextColor={colors.textLight} value={reportSupervisionForm.assignedStaff} onChangeText={(v) => setReportSupervisionForm({ ...reportSupervisionForm, assignedStaff: v })} />
+          <Text style={styles.inputLabel}>Notes</Text>
+          <TextInput style={[styles.input, styles.textArea]} placeholder="Instructions for the assigned staff..." placeholderTextColor={colors.textLight} value={reportSupervisionForm.notes} onChangeText={(v) => setReportSupervisionForm({ ...reportSupervisionForm, notes: v })} multiline />
+          <View style={styles.modalActions}>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowReportSupervisionModal(false)}><Text style={styles.modalBtnTextDark}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={() => { if (!reportSupervisionForm.assignedStaff.trim()) { Alert.alert('Error', 'Assigned staff is required'); return; } addReportSupervision({ ...reportSupervisionForm, assignedBy: academicOfficer }); setReportSupervisionForm({ term: 'Term 3', academicYear: '2024/2025', task: 'Preparation', assignedStaff: '', notes: '' }); setShowReportSupervisionModal(false); Alert.alert('Success', 'Supervision task assigned.'); }}><Text style={styles.modalBtnTextLight}>Assign</Text></TouchableOpacity>
+          </View>
+        </ScrollView></View></View>
+      </Modal>
+
     </DashboardLayout>
   );
 }

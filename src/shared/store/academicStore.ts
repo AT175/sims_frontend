@@ -239,6 +239,54 @@ export interface AdmissionInsight {
   filled: number;
 }
 
+// ── New Types for GES Responsibilities ──
+
+export type SubjectSelectionStatus = 'Pending' | 'HOD Consulted' | 'Guidance Consulted' | 'Approved' | 'Rejected';
+
+export interface SubjectSelection {
+  id: string;
+  date: string;
+ studentName: string;
+  admNo: string;
+  classForm: string;
+  programme: string;
+  electiveSubjects: string[];
+  coreSubjects: string[];
+  hodConsultation: string;
+  guidanceConsultation: string;
+  status: SubjectSelectionStatus;
+  reviewedBy?: string;
+  reviewNote?: string;
+}
+
+export interface ClassListEntry {
+  id: string;
+  classForm: string;
+  programme: string;
+  academicYear: string;
+  term: TermName;
+  students: { admNo: string; studentName: string; gender: 'Male' | 'Female' }[];
+  generatedDate: string;
+  generatedBy: string;
+}
+
+export type ReportSupervisionStatus = 'Assigned' | 'In Progress' | 'Completed' | 'Verified';
+export type ReportSupervisionTask = 'Preparation' | 'Printing' | 'Posting' | 'Distribution';
+
+export interface ReportSupervision {
+  id: string;
+  date: string;
+  term: TermName;
+  academicYear: string;
+  task: ReportSupervisionTask;
+  assignedStaff: string;
+  status: ReportSupervisionStatus;
+  assignedBy: string;
+  completedDate?: string;
+  verifiedBy?: string;
+  notes: string;
+}
+
 // ── Helpers ──
 
 const nextId = () => Math.random().toString(36).slice(2, 10);
@@ -270,6 +318,10 @@ const INITIAL_TEACHER_ACTIVITY: TeacherActivity[] = [];
 
 const INITIAL_ADMISSION_INSIGHTS: AdmissionInsight[] = [];
 
+const INITIAL_SUBJECT_SELECTIONS: SubjectSelection[] = [];
+const INITIAL_CLASS_LISTS: ClassListEntry[] = [];
+const INITIAL_REPORT_SUPERVISIONS: ReportSupervision[] = [];
+
 // ── Store Interface ──
 
 interface AcademicState {
@@ -285,6 +337,9 @@ interface AcademicState {
   subjectPerformance: SubjectPerformance[];
   teacherActivity: TeacherActivity[];
   admissionInsights: AdmissionInsight[];
+  subjectSelections: SubjectSelection[];
+  classLists: ClassListEntry[];
+  reportSupervisions: ReportSupervision[];
 
   // Exams
   addExam: (e: Omit<Exam, 'id'>) => void;
@@ -371,6 +426,26 @@ interface AcademicState {
   loadSubjectPerformance: () => Promise<void>;
   loadTeacherActivity: () => Promise<void>;
   loadAdmissionInsights: () => Promise<void>;
+
+  // Subject Selections
+  addSubjectSelection: (s: Omit<SubjectSelection, 'id' | 'date' | 'status'>) => void;
+  updateSubjectSelection: (id: string, updates: Partial<SubjectSelection>) => void;
+  reviewSubjectSelection: (id: string, status: 'Approved' | 'Rejected', reviewedBy: string, note: string) => void;
+  deleteSubjectSelection: (id: string) => void;
+  getPendingSubjectSelections: () => SubjectSelection[];
+
+  // Class Lists
+  addClassList: (c: Omit<ClassListEntry, 'id' | 'generatedDate'>) => void;
+  deleteClassList: (id: string) => void;
+  getClassListByClass: (classForm: string) => ClassListEntry[];
+
+  // Report Supervision
+  addReportSupervision: (r: Omit<ReportSupervision, 'id' | 'date' | 'status'>) => void;
+  updateReportSupervision: (id: string, updates: Partial<ReportSupervision>) => void;
+  verifyReportSupervision: (id: string, verifiedBy: string) => void;
+  deleteReportSupervision: (id: string) => void;
+  getPendingSupervisions: () => ReportSupervision[];
+
   loadAll: () => Promise<void>;
 }
 
@@ -389,6 +464,9 @@ export const useAcademicStore = create<AcademicState>((set, get) => ({
   subjectPerformance: INITIAL_SUBJECT_PERFORMANCE,
   teacherActivity: INITIAL_TEACHER_ACTIVITY,
   admissionInsights: INITIAL_ADMISSION_INSIGHTS,
+  subjectSelections: INITIAL_SUBJECT_SELECTIONS,
+  classLists: INITIAL_CLASS_LISTS,
+  reportSupervisions: INITIAL_REPORT_SUPERVISIONS,
 
   // Exams
   addExam: async (e) => {
@@ -572,6 +650,26 @@ export const useAcademicStore = create<AcademicState>((set, get) => ({
       set({ admissionInsights: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
     } catch {}
   },
+
+  // ── Subject Selections ──
+  addSubjectSelection: (s) => set((st) => ({ subjectSelections: [{ ...s, id: nextId(), date: todayISO(), status: 'Pending' }, ...st.subjectSelections] })),
+  updateSubjectSelection: (id, updates) => set((st) => ({ subjectSelections: st.subjectSelections.map((s) => s.id === id ? { ...s, ...updates } : s) })),
+  reviewSubjectSelection: (id, status, reviewedBy, note) => set((st) => ({ subjectSelections: st.subjectSelections.map((s) => s.id === id ? { ...s, status, reviewedBy, reviewNote: note } : s) })),
+  deleteSubjectSelection: (id) => set((st) => ({ subjectSelections: st.subjectSelections.filter((s) => s.id !== id) })),
+  getPendingSubjectSelections: () => get().subjectSelections.filter((s) => s.status === 'Pending' || s.status === 'HOD Consulted' || s.status === 'Guidance Consulted'),
+
+  // ── Class Lists ──
+  addClassList: (c) => set((st) => ({ classLists: [{ ...c, id: nextId(), generatedDate: todayISO() }, ...st.classLists] })),
+  deleteClassList: (id) => set((st) => ({ classLists: st.classLists.filter((c) => c.id !== id) })),
+  getClassListByClass: (classForm) => get().classLists.filter((c) => c.classForm === classForm),
+
+  // ── Report Supervision ──
+  addReportSupervision: (r) => set((st) => ({ reportSupervisions: [{ ...r, id: nextId(), date: todayISO(), status: 'Assigned' }, ...st.reportSupervisions] })),
+  updateReportSupervision: (id, updates) => set((st) => ({ reportSupervisions: st.reportSupervisions.map((r) => r.id === id ? { ...r, ...updates } : r) })),
+  verifyReportSupervision: (id, verifiedBy) => set((st) => ({ reportSupervisions: st.reportSupervisions.map((r) => r.id === id ? { ...r, status: 'Verified', verifiedBy, completedDate: todayISO() } : r) })),
+  deleteReportSupervision: (id) => set((st) => ({ reportSupervisions: st.reportSupervisions.filter((r) => r.id !== id) })),
+  getPendingSupervisions: () => get().reportSupervisions.filter((r) => r.status === 'Assigned' || r.status === 'In Progress'),
+
   loadAll: async () => {
     await Promise.all([
       get().loadExams(),
