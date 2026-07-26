@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, TextInput,
 import { DashboardLayout, NavItem, StatCard, CardGrid, DataTable } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
 import { useAuthStore } from '@store/authStore';
-import { apiClient } from '@shared/api/apiClient';
+import { apiClient, SchoolBranding } from '@shared/api/apiClient';
 import { useSystemAdminStore } from '@store/systemAdminStore';
 import type { SystemUser, UserStatus } from '@store/systemAdminStore';
 import { ROLE_LABELS } from '@shared/navigation/roleMap';
@@ -15,6 +15,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'users', label: 'User Management' },
   { key: 'tenants', label: 'Tenants (Schools)' },
   { key: 'tenant', label: 'School Configuration' },
+  { key: 'website', label: 'Website Settings' },
   { key: 'modules', label: 'Modules' },
   { key: 'database', label: 'Database & Sync' },
   { key: 'backups', label: 'Backups' },
@@ -126,6 +127,23 @@ export function SystemAdminDashboard() {
 
   // Tenant filter for user management
   const [tenantFilter, setTenantFilter] = useState<string>('all');
+
+  // Website Settings state
+  const [websiteForm, setWebsiteForm] = useState<Partial<SchoolBranding> & { tenantId?: string }>({
+    schoolName: '', motto: '', primaryColor: '#0F4C75', secondaryColor: '#FFFFFF',
+    bannerImage: '', logoUrl: '', aboutText: '', mission: '', vision: '',
+    principalsMessage: '', admissionsInfo: '', facebookUrl: '', instagramUrl: '', twitterUrl: '',
+    newsItems: [], galleryImages: [],
+    programmes: [], staffProfiles: [], upcomingEvents: [], testimonials: [],
+  });
+  const [newProgramme, setNewProgramme] = useState({ name: '', description: '', icon: '📚' });
+  const [newStaff, setNewStaff] = useState({ name: '', title: '', photoUrl: '', bio: '' });
+  const [newEvent, setNewEvent] = useState({ title: '', date: '', description: '', type: 'Event' });
+  const [newTestimonial, setNewTestimonial] = useState({ author: '', role: '', content: '', rating: 5 });
+  const [selectedTenantId, setSelectedTenantId] = useState<string>('');
+  const [isSavingWebsite, setIsSavingWebsite] = useState(false);
+  const [websiteError, setWebsiteError] = useState<string | null>(null);
+  const [websiteLoaded, setWebsiteLoaded] = useState(false);
 
   const handleAddUser = () => {
     setEditingUser(null);
@@ -363,6 +381,41 @@ export function SystemAdminDashboard() {
                   <Text style={styles.logMeta}>{t.active ? 'Active' : 'Inactive'} · {t.maxStudents} students max · {t.maxStaff} staff max</Text>
                 </View>
                 <View style={styles.userActionBtns}>
+                  <TouchableOpacity style={styles.miniBtn} onPress={async () => {
+                    setActivePage('website');
+                    setSelectedTenantId(t.id);
+                    setWebsiteLoaded(false);
+                    try {
+                      const branding = await apiClient.getPublicBranding(t.tenantKey);
+                      setWebsiteForm({
+                        schoolName: branding.schoolName || '',
+                        motto: branding.motto || '',
+                        primaryColor: branding.primaryColor || '#0F4C75',
+                        secondaryColor: branding.secondaryColor || '#FFFFFF',
+                        bannerImage: branding.bannerImage || '',
+                        logoUrl: branding.logoUrl || '',
+                        aboutText: branding.aboutText || '',
+                        mission: branding.mission || '',
+                        vision: branding.vision || '',
+                        principalsMessage: branding.principalsMessage || '',
+                        admissionsInfo: branding.admissionsInfo || '',
+                        facebookUrl: branding.facebookUrl || '',
+                        instagramUrl: branding.instagramUrl || '',
+                        twitterUrl: branding.twitterUrl || '',
+                        newsItems: branding.newsItems || [],
+                        galleryImages: branding.galleryImages || [],
+                        programmes: (branding as any).programmes || [],
+                        staffProfiles: (branding as any).staffProfiles || [],
+                        upcomingEvents: (branding as any).upcomingEvents || [],
+                        testimonials: (branding as any).testimonials || [],
+                      });
+                      setWebsiteLoaded(true);
+                    } catch (err: any) {
+                      setWebsiteError(err.message || 'Failed to load branding');
+                    }
+                  }}>
+                    <Text style={styles.miniBtnText}>Website</Text>
+                  </TouchableOpacity>
                   <TouchableOpacity style={styles.miniBtn} onPress={() => {
                     Alert.alert('Tenant Info', `School: ${t.schoolName}\nKey: ${t.tenantKey}\nCode: ${t.schoolCode ?? 'N/A'}\nRegion: ${t.region ?? 'N/A'}\nPlan: ${t.subscriptionPlan}\nExpiry: ${t.subscriptionExpiry ?? 'N/A'}\nModules: ${(t.enabledModules ?? []).join(', ') || 'None'}`);
                   }}>
@@ -504,6 +557,234 @@ export function SystemAdminDashboard() {
               <View style={styles.errorBanner}>
                 <Text style={styles.errorBannerText}>✕ {configSaveError}</Text>
               </View>
+            )}
+          </ScrollView>
+        );
+
+      case 'website':
+        return (
+          <ScrollView>
+            <Text style={styles.pageTitle}>Website Settings</Text>
+            <Text style={styles.pageSubtitle}>Configure the homepage for any tenant school</Text>
+
+            <Text style={styles.sectionTitle}>Select Tenant School</Text>
+            <View style={styles.rolePickerRow}>
+              {tenants.map((t) => (
+                <TouchableOpacity
+                  key={t.id}
+                  style={[styles.roleChip, selectedTenantId === t.id && styles.roleChipActive]}
+                  onPress={async () => {
+                    setSelectedTenantId(t.id);
+                    setWebsiteLoaded(false);
+                    try {
+                      const branding = await apiClient.getPublicBranding(t.tenantKey);
+                      setWebsiteForm({
+                        schoolName: branding.schoolName || '',
+                        motto: branding.motto || '',
+                        primaryColor: branding.primaryColor || '#0F4C75',
+                        secondaryColor: branding.secondaryColor || '#FFFFFF',
+                        bannerImage: branding.bannerImage || '',
+                        logoUrl: branding.logoUrl || '',
+                        aboutText: branding.aboutText || '',
+                        mission: branding.mission || '',
+                        vision: branding.vision || '',
+                        principalsMessage: branding.principalsMessage || '',
+                        admissionsInfo: branding.admissionsInfo || '',
+                        facebookUrl: branding.facebookUrl || '',
+                        instagramUrl: branding.instagramUrl || '',
+                        twitterUrl: branding.twitterUrl || '',
+                        newsItems: branding.newsItems || [],
+                        galleryImages: branding.galleryImages || [],
+                        programmes: (branding as any).programmes || [],
+                        staffProfiles: (branding as any).staffProfiles || [],
+                        upcomingEvents: (branding as any).upcomingEvents || [],
+                        testimonials: (branding as any).testimonials || [],
+                      });
+                      setWebsiteLoaded(true);
+                    } catch (err: any) {
+                      setWebsiteError(err.message || 'Failed to load branding');
+                    }
+                  }}
+                >
+                  <Text style={[styles.roleChipText, selectedTenantId === t.id && styles.roleChipTextActive]}>{t.schoolName}</Text>
+                </TouchableOpacity>
+              ))}
+              {tenants.length === 0 && (
+                <Text style={styles.emptyText}>No tenants available.</Text>
+              )}
+            </View>
+
+            {!selectedTenantId && (
+              <Text style={styles.autoAssignHint}>Select a school above to configure its website.</Text>
+            )}
+
+            {selectedTenantId && !websiteLoaded && (
+              <Text style={styles.autoAssignHint}>Loading branding data...</Text>
+            )}
+
+            {selectedTenantId && websiteLoaded && (
+              <>
+                <Text style={styles.sectionTitle}>Branding</Text>
+                <Text style={styles.inputLabel}>School Name</Text>
+                <TextInput style={styles.textInput} value={websiteForm.schoolName || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, schoolName: v })} />
+                <Text style={styles.inputLabel}>School Motto</Text>
+                <TextInput style={styles.textInput} value={websiteForm.motto || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, motto: v })} placeholder="e.g. Knowledge, Discipline, Integrity" />
+                <Text style={styles.inputLabel}>Logo URL</Text>
+                <TextInput style={styles.textInput} value={websiteForm.logoUrl || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, logoUrl: v })} placeholder="https://..." autoCapitalize="none" />
+                <Text style={styles.inputLabel}>Banner Image URL</Text>
+                <TextInput style={styles.textInput} value={websiteForm.bannerImage || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, bannerImage: v })} placeholder="https://..." autoCapitalize="none" />
+
+                <Text style={styles.sectionTitle}>Theme Colors</Text>
+                <Text style={styles.inputLabel}>Primary Color</Text>
+                <TextInput style={styles.textInput} value={websiteForm.primaryColor || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, primaryColor: v })} placeholder="#0F4C75" autoCapitalize="none" />
+                <Text style={styles.inputLabel}>Secondary Color</Text>
+                <TextInput style={styles.textInput} value={websiteForm.secondaryColor || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, secondaryColor: v })} placeholder="#FFFFFF" autoCapitalize="none" />
+
+                <Text style={styles.sectionTitle}>About the School</Text>
+                <Text style={styles.inputLabel}>About Text</Text>
+                <TextInput style={[styles.textInput, { height: 100 }]} multiline value={websiteForm.aboutText || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, aboutText: v })} placeholder="Write a brief description of the school..." />
+                <Text style={styles.inputLabel}>Mission</Text>
+                <TextInput style={[styles.textInput, { height: 80 }]} multiline value={websiteForm.mission || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, mission: v })} />
+                <Text style={styles.inputLabel}>Vision</Text>
+                <TextInput style={[styles.textInput, { height: 80 }]} multiline value={websiteForm.vision || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, vision: v })} />
+                <Text style={styles.inputLabel}>Principal's Message</Text>
+                <TextInput style={[styles.textInput, { height: 100 }]} multiline value={websiteForm.principalsMessage || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, principalsMessage: v })} placeholder="A welcome message from the headmaster..." />
+
+                <Text style={styles.sectionTitle}>Admissions</Text>
+                <Text style={styles.inputLabel}>Admissions Information</Text>
+                <TextInput style={[styles.textInput, { height: 100 }]} multiline value={websiteForm.admissionsInfo || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, admissionsInfo: v })} placeholder="Admission requirements, process, deadlines..." />
+
+                <Text style={styles.sectionTitle}>Social Media Links</Text>
+                <Text style={styles.inputLabel}>Facebook URL</Text>
+                <TextInput style={styles.textInput} value={websiteForm.facebookUrl || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, facebookUrl: v })} placeholder="https://facebook.com/..." autoCapitalize="none" />
+                <Text style={styles.inputLabel}>Instagram URL</Text>
+                <TextInput style={styles.textInput} value={websiteForm.instagramUrl || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, instagramUrl: v })} placeholder="https://instagram.com/..." autoCapitalize="none" />
+                <Text style={styles.inputLabel}>Twitter URL</Text>
+                <TextInput style={styles.textInput} value={websiteForm.twitterUrl || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, twitterUrl: v })} placeholder="https://twitter.com/..." autoCapitalize="none" />
+
+                <Text style={styles.sectionTitle}>Programmes Offered</Text>
+                {(websiteForm.programmes || []).map((prog, i) => (
+                  <View key={i} style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                    <Text style={{ flex: 1, fontSize: 13 }}>{prog.icon} {prog.name} — {prog.description}</Text>
+                    <TouchableOpacity onPress={() => setWebsiteForm({ ...websiteForm, programmes: (websiteForm.programmes || []).filter((_, idx) => idx !== i) })}>
+                      <Text style={{ color: '#ef4444', fontWeight: '700' }}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                  <TextInput style={[styles.textInput, { flex: 0.15 }]} value={newProgramme.icon} onChangeText={(v) => setNewProgramme({ ...newProgramme, icon: v })} placeholder="📚" />
+                  <TextInput style={[styles.textInput, { flex: 0.3 }]} value={newProgramme.name} onChangeText={(v) => setNewProgramme({ ...newProgramme, name: v })} placeholder="Programme name" />
+                  <TextInput style={[styles.textInput, { flex: 0.55 }]} value={newProgramme.description} onChangeText={(v) => setNewProgramme({ ...newProgramme, description: v })} placeholder="Short description" />
+                </View>
+                <TouchableOpacity style={styles.saveBtn} onPress={() => { if (newProgramme.name) { setWebsiteForm({ ...websiteForm, programmes: [...(websiteForm.programmes || []), newProgramme] }); setNewProgramme({ name: '', description: '', icon: '📚' }); } }}>
+                  <Text style={styles.saveBtnText}>+ Add Programme</Text>
+                </TouchableOpacity>
+
+                <Text style={styles.sectionTitle}>Staff / Leadership Profiles</Text>
+                {(websiteForm.staffProfiles || []).map((staff, i) => (
+                  <View key={i} style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                    <Text style={{ flex: 1, fontSize: 13 }}>{staff.name} — {staff.title}</Text>
+                    <TouchableOpacity onPress={() => setWebsiteForm({ ...websiteForm, staffProfiles: (websiteForm.staffProfiles || []).filter((_, idx) => idx !== i) })}>
+                      <Text style={{ color: '#ef4444', fontWeight: '700' }}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                  <TextInput style={[styles.textInput, { flex: 0.4 }]} value={newStaff.name} onChangeText={(v) => setNewStaff({ ...newStaff, name: v })} placeholder="Staff name" />
+                  <TextInput style={[styles.textInput, { flex: 0.4 }]} value={newStaff.title} onChangeText={(v) => setNewStaff({ ...newStaff, title: v })} placeholder="Title (e.g. Headmaster)" />
+                  <TextInput style={[styles.textInput, { flex: 0.2 }]} value={newStaff.photoUrl} onChangeText={(v) => setNewStaff({ ...newStaff, photoUrl: v })} placeholder="Photo URL" autoCapitalize="none" />
+                </View>
+                <TextInput style={[styles.textInput, { height: 60, marginBottom: 8 }]} multiline value={newStaff.bio} onChangeText={(v) => setNewStaff({ ...newStaff, bio: v })} placeholder="Short bio (optional)" />
+                <TouchableOpacity style={styles.saveBtn} onPress={() => { if (newStaff.name) { setWebsiteForm({ ...websiteForm, staffProfiles: [...(websiteForm.staffProfiles || []), { ...newStaff, photoUrl: newStaff.photoUrl || null, bio: newStaff.bio || null }] }); setNewStaff({ name: '', title: '', photoUrl: '', bio: '' }); } }}>
+                  <Text style={styles.saveBtnText}>+ Add Staff</Text>
+                </TouchableOpacity>
+
+                <Text style={styles.sectionTitle}>Upcoming Events</Text>
+                {(websiteForm.upcomingEvents || []).map((event, i) => (
+                  <View key={i} style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                    <Text style={{ flex: 1, fontSize: 13 }}>{event.date} — {event.title} ({event.type})</Text>
+                    <TouchableOpacity onPress={() => setWebsiteForm({ ...websiteForm, upcomingEvents: (websiteForm.upcomingEvents || []).filter((_, idx) => idx !== i) })}>
+                      <Text style={{ color: '#ef4444', fontWeight: '700' }}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                  <TextInput style={[styles.textInput, { flex: 0.3 }]} value={newEvent.title} onChangeText={(v) => setNewEvent({ ...newEvent, title: v })} placeholder="Event title" />
+                  <TextInput style={[styles.textInput, { flex: 0.25 }]} value={newEvent.date} onChangeText={(v) => setNewEvent({ ...newEvent, date: v })} placeholder="YYYY-MM-DD" />
+                  <TextInput style={[styles.textInput, { flex: 0.2 }]} value={newEvent.type} onChangeText={(v) => setNewEvent({ ...newEvent, type: v })} placeholder="Type" />
+                  <TextInput style={[styles.textInput, { flex: 0.25 }]} value={newEvent.description} onChangeText={(v) => setNewEvent({ ...newEvent, description: v })} placeholder="Description" />
+                </View>
+                <TouchableOpacity style={styles.saveBtn} onPress={() => { if (newEvent.title && newEvent.date) { setWebsiteForm({ ...websiteForm, upcomingEvents: [...(websiteForm.upcomingEvents || []), newEvent] }); setNewEvent({ title: '', date: '', description: '', type: 'Event' }); } }}>
+                  <Text style={styles.saveBtnText}>+ Add Event</Text>
+                </TouchableOpacity>
+
+                <Text style={styles.sectionTitle}>Testimonials</Text>
+                {(websiteForm.testimonials || []).map((test, i) => (
+                  <View key={i} style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                    <Text style={{ flex: 1, fontSize: 13 }}>"{test.content.substring(0, 40)}..." — {test.author} ({test.role})</Text>
+                    <TouchableOpacity onPress={() => setWebsiteForm({ ...websiteForm, testimonials: (websiteForm.testimonials || []).filter((_, idx) => idx !== i) })}>
+                      <Text style={{ color: '#ef4444', fontWeight: '700' }}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                  <TextInput style={[styles.textInput, { flex: 0.3 }]} value={newTestimonial.author} onChangeText={(v) => setNewTestimonial({ ...newTestimonial, author: v })} placeholder="Author name" />
+                  <TextInput style={[styles.textInput, { flex: 0.3 }]} value={newTestimonial.role} onChangeText={(v) => setNewTestimonial({ ...newTestimonial, role: v })} placeholder="Role (e.g. Parent)" />
+                  <TextInput style={[styles.textInput, { flex: 0.1 }]} value={String(newTestimonial.rating)} onChangeText={(v) => setNewTestimonial({ ...newTestimonial, rating: parseInt(v) || 5 })} placeholder="5" keyboardType="numeric" />
+                </View>
+                <TextInput style={[styles.textInput, { height: 60, marginBottom: 8 }]} multiline value={newTestimonial.content} onChangeText={(v) => setNewTestimonial({ ...newTestimonial, content: v })} placeholder="Testimonial content" />
+                <TouchableOpacity style={styles.saveBtn} onPress={() => { if (newTestimonial.author && newTestimonial.content) { setWebsiteForm({ ...websiteForm, testimonials: [...(websiteForm.testimonials || []), newTestimonial] }); setNewTestimonial({ author: '', role: '', content: '', rating: 5 }); } }}>
+                  <Text style={styles.saveBtnText}>+ Add Testimonial</Text>
+                </TouchableOpacity>
+
+                {websiteError && (
+                  <View style={styles.errorBanner}>
+                    <Text style={styles.errorBannerText}>{websiteError}</Text>
+                  </View>
+                )}
+
+                <TouchableOpacity
+                  style={[styles.saveBtn, isSavingWebsite && styles.modalApproveBtnDisabled]}
+                  disabled={isSavingWebsite}
+                  onPress={async () => {
+                    if (!selectedTenantId) {
+                      setWebsiteError('Select a tenant first.');
+                      return;
+                    }
+                    setIsSavingWebsite(true);
+                    setWebsiteError(null);
+                    try {
+                      await apiClient.updateTenantBranding(selectedTenantId, {
+                        schoolName: websiteForm.schoolName,
+                        motto: websiteForm.motto,
+                        logoUrl: websiteForm.logoUrl,
+                        bannerImage: websiteForm.bannerImage,
+                        primaryColor: websiteForm.primaryColor,
+                        secondaryColor: websiteForm.secondaryColor,
+                        aboutText: websiteForm.aboutText,
+                        mission: websiteForm.mission,
+                        vision: websiteForm.vision,
+                        principalsMessage: websiteForm.principalsMessage,
+                        admissionsInfo: websiteForm.admissionsInfo,
+                        facebookUrl: websiteForm.facebookUrl,
+                        instagramUrl: websiteForm.instagramUrl,
+                        twitterUrl: websiteForm.twitterUrl,
+                        programmes: websiteForm.programmes,
+                        staffProfiles: websiteForm.staffProfiles,
+                        upcomingEvents: websiteForm.upcomingEvents,
+                        testimonials: websiteForm.testimonials,
+                      } as any);
+                      Alert.alert('Saved', 'Website settings saved successfully.');
+                    } catch (err: any) {
+                      setWebsiteError(err.message || 'Failed to save website settings.');
+                    } finally {
+                      setIsSavingWebsite(false);
+                    }
+                  }}
+                >
+                  <Text style={styles.saveBtnText}>{isSavingWebsite ? 'Saving...' : 'Save Website Settings'}</Text>
+                </TouchableOpacity>
+              </>
             )}
           </ScrollView>
         );

@@ -174,6 +174,10 @@ class ApiClient {
     return this.get<SchoolBranding>(`/public/tenants/${tenantKey}`);
   }
 
+  async getAllPublicTenants(): Promise<any[]> {
+    return this.get<any[]>('/public/tenants');
+  }
+
   async getPublicSync(tenantKey: string, since: string): Promise<{ updated: boolean; branding: SchoolBranding | null }> {
     return this.get<{ updated: boolean; branding: SchoolBranding | null }>(
       `/sync/branding/${tenantKey}?since=${encodeURIComponent(since)}`

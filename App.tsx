@@ -3,8 +3,8 @@ import { Text, ScrollView } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useAuthStore } from '@store/authStore';
-import { LoginScreen } from '@screens/LoginScreen';
 import { SchoolWebsite } from '@screens/SchoolWebsite';
+import { SchoolDirectory } from '@screens/SchoolDirectory';
 import { ROLE_DASHBOARD_MAP } from '@shared/navigation/roleMap';
 import { RoleId } from '@shared/types';
 
@@ -158,8 +158,9 @@ function AppContent() {
     return <SchoolWebsite tenantKey={routeTenantKey} />;
   }
 
+  // If no tenant key and not authenticated, show school directory
   if (!isAuthenticated || !user) {
-    return <LoginScreen />;
+    return <SchoolDirectory />;
   }
 
   // If temp login, redirect to Verification Dashboard
