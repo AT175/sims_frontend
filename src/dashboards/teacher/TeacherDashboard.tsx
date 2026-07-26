@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert, ScrollView } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert, ScrollView, Platform } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid, DataTable, KitchenMenuWidget } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
 import { useAuthStore } from '@store/authStore';
@@ -85,6 +85,91 @@ export function TeacherDashboard() {
     getClassAnalytics, getStudentProfile,
     generateAILessonPlan,
   } = tStore;
+
+  // WebRTC media stream refs for real camera/mic
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [mediaError, setMediaError] = useState<string | null>(null);
+  const isWebPlatform = Platform.OS === 'web' || typeof navigator !== 'undefined';
+
+  const startMedia = async (video: boolean, audio: boolean): Promise<MediaStream | null> => {
+    if (!isWebPlatform || !navigator.mediaDevices?.getUserMedia) {
+      setMediaError('Camera/mic requires a web browser or WebRTC native module.');
+      return null;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: video ? { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } : false,
+        audio,
+      });
+      setMediaError(null);
+      return stream;
+    } catch (e: any) {
+      if (e?.name === 'NotAllowedError') setMediaError('Permission denied. Allow camera and microphone in browser settings.');
+      else if (e?.name === 'NotFoundError') setMediaError('No camera or microphone found on this device.');
+      else setMediaError(`Media error: ${e?.message || 'Unknown'}`);
+      return null;
+    }
+  };
+
+  const stopTracks = (kind: 'video' | 'audio') => {
+    if (!mediaStreamRef.current) return;
+    mediaStreamRef.current.getTracks().forEach((t) => { if (t.kind === kind) t.stop(); });
+  };
+
+  const handleToggleCamera = async () => {
+    if (!virtualClassroom) return;
+    if (!virtualClassroom.cameraOn) {
+      const stream = await startMedia(true, virtualClassroom.micOn);
+      if (stream) {
+        if (mediaStreamRef.current) mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+        mediaStreamRef.current = stream;
+        if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play().catch(() => {}); }
+        toggleCamera();
+      }
+    } else {
+      stopTracks('video');
+      if (mediaStreamRef.current) {
+        const at = mediaStreamRef.current.getAudioTracks();
+        mediaStreamRef.current = at.length > 0 ? new MediaStream(at) : null;
+      }
+      toggleCamera();
+    }
+  };
+
+  const handleToggleMic = async () => {
+    if (!virtualClassroom) return;
+    if (!virtualClassroom.micOn) {
+      const stream = await startMedia(virtualClassroom.cameraOn, true);
+      if (stream) {
+        if (mediaStreamRef.current) mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+        mediaStreamRef.current = stream;
+        if (videoRef.current && virtualClassroom.cameraOn) { videoRef.current.srcObject = stream; videoRef.current.play().catch(() => {}); }
+        toggleMic();
+      }
+    } else {
+      stopTracks('audio');
+      if (mediaStreamRef.current) {
+        const vt = mediaStreamRef.current.getVideoTracks();
+        mediaStreamRef.current = vt.length > 0 ? new MediaStream(vt) : null;
+      }
+      toggleMic();
+    }
+  };
+
+  const handleLeaveClassroom = () => {
+    if (mediaStreamRef.current) { mediaStreamRef.current.getTracks().forEach((t) => t.stop()); mediaStreamRef.current = null; }
+    if (videoRef.current) videoRef.current.srcObject = null;
+    const sid = virtualClassroom?.sessionId;
+    if (sid) endLiveSession(sid);
+    leaveVirtualClassroom();
+  };
+
+  useEffect(() => {
+    return () => {
+      if (mediaStreamRef.current) { mediaStreamRef.current.getTracks().forEach((t) => t.stop()); mediaStreamRef.current = null; }
+    };
+  }, []);
 
   useEffect(() => {
     useTeacherStore.getState().loadLessonPlans();
@@ -1016,12 +1101,44 @@ export function TeacherDashboard() {
                   {virtualClassroom.participants.length === 0 && <Text style={styles.emptyText}>No students have joined yet.</Text>}
                 </View>
 
+                {/* Camera Video Feed */}
+                {virtualClassroom.cameraOn && (
+                  <View style={styles.videoFeedContainer}>
+                    {isWebPlatform ? (
+                      <video
+                        ref={videoRef}
+                        autoPlay
+                        muted
+                        playsInline
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: radius.md, transform: 'scaleX(-1)' }}
+                      />
+                    ) : (
+                      <View style={styles.videoPlaceholder}>
+                        <Text style={styles.videoPlaceholderIcon}>📷</Text>
+                        <Text style={styles.videoPlaceholderText}>Camera is on (native WebRTC required for video)</Text>
+                      </View>
+                    )}
+                    <View style={styles.videoLabelBar}>
+                      <Text style={styles.videoLabelText}>{teacherName} (Host)</Text>
+                      {virtualClassroom.micOn && <Text style={styles.videoMicIcon}>🎤</Text>}
+                    </View>
+                  </View>
+                )}
+
+                {/* Media Error */}
+                {mediaError && (
+                  <View style={[styles.alertCard, { borderColor: colors.danger }]}>
+                    <Text style={[styles.alertTitle, { color: colors.danger }]}>⚠ Camera/Mic Error</Text>
+                    <Text style={styles.alertText}>{mediaError}</Text>
+                  </View>
+                )}
+
                 {/* Controls Toolbar */}
                 <View style={styles.vcToolbar}>
-                  <TouchableOpacity style={[styles.vcBtn, virtualClassroom.cameraOn && styles.vcBtnActive]} onPress={toggleCamera}>
+                  <TouchableOpacity style={[styles.vcBtn, virtualClassroom.cameraOn && styles.vcBtnActive]} onPress={handleToggleCamera}>
                     <Text style={styles.vcBtnText}>{virtualClassroom.cameraOn ? '📷 On' : '📷 Off'}</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.vcBtn, virtualClassroom.micOn && styles.vcBtnActive]} onPress={toggleMic}>
+                  <TouchableOpacity style={[styles.vcBtn, virtualClassroom.micOn && styles.vcBtnActive]} onPress={handleToggleMic}>
                     <Text style={styles.vcBtnText}>{virtualClassroom.micOn ? '🎤 On' : '🎤 Off'}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.vcBtn, virtualClassroom.screenSharing && styles.vcBtnActive]} onPress={toggleScreenShare}>
@@ -1096,7 +1213,7 @@ export function TeacherDashboard() {
                 </View>
 
                 {/* End & Leave */}
-                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.danger, marginTop: spacing.md }]} onPress={() => { const sid = virtualClassroom.sessionId; endLiveSession(sid); leaveVirtualClassroom(); Alert.alert('Session Ended', 'Live session has ended.'); }}>
+                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.danger, marginTop: spacing.md }]} onPress={() => { handleLeaveClassroom(); Alert.alert('Session Ended', 'Live session has ended.'); }}>
                   <Text style={styles.actionBtnText}>End Session & Leave</Text>
                 </TouchableOpacity>
               </View>
@@ -2146,4 +2263,12 @@ const styles = StyleSheet.create({
   // Date/time picker
   dateTimePickerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm },
   dateTimePickerSep: { fontSize: fontSize.sm, color: colors.textSecondary },
+  // Video feed
+  videoFeedContainer: { backgroundColor: '#000', borderRadius: radius.md, overflow: 'hidden' as const, marginBottom: spacing.md, aspectRatio: 4 / 3, position: 'relative' },
+  videoPlaceholder: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.surfaceAlt },
+  videoPlaceholderIcon: { fontSize: 40, marginBottom: spacing.sm },
+  videoPlaceholderText: { fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: spacing.md },
+  videoLabelBar: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, backgroundColor: 'rgba(0,0,0,0.5)' },
+  videoLabelText: { color: '#fff', fontSize: fontSize.xs, fontWeight: fontWeight.semibold },
+  videoMicIcon: { fontSize: fontSize.sm },
 });
