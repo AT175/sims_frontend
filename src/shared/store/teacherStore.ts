@@ -387,146 +387,7 @@ const calcGrade = (total: number, max: number): string => {
   return 'F9';
 };
 
-// ── Initial Data ──
-
-const INITIAL_SUBJECTS: SubjectClass[] = [
-  { id: 'tch-1', subject: 'Elective Mathematics', classForm: 'SHS2 Sci A', students: 38, hod: 'Mr. Mensah', isElective: true },
-  { id: 'tch-2', subject: 'Elective Mathematics', classForm: 'SHS2 Sci B', students: 35, hod: 'Mr. Mensah', isElective: true },
-  { id: 'tch-3', subject: 'Core Mathematics', classForm: 'SHS1 Sci A', students: 42, hod: 'Mr. Mensah', isElective: false },
-];
-
-const INITIAL_MATERIALS: LessonMaterial[] = [
-  { id: 'tch-10', title: 'Quadratic Equations', type: 'Note', classForm: 'SHS2 Sci A', subject: 'Elective Mathematics', topic: 'Ch. 5', description: 'Complete notes on solving quadratics by factoring, completing the square, and the quadratic formula', dateUploaded: '2026-07-01', uploadedBy: 'Teacher' },
-  { id: 'tch-11', title: 'Differentiation Rules', type: 'Slide', classForm: 'SHS2 Sci A', subject: 'Elective Mathematics', topic: 'Ch. 6', description: 'Power rule, product rule, quotient rule with examples', dateUploaded: '2026-07-03', uploadedBy: 'Teacher' },
-  { id: 'tch-12', title: 'Indices & Logarithms', type: 'Past Q', classForm: 'SHS1 Sci A', subject: 'Core Mathematics', topic: 'Ch. 3', description: 'WASSCE past questions with solutions', dateUploaded: '2026-06-28', uploadedBy: 'Teacher' },
-];
-
-const INITIAL_AV: AVRecording[] = [
-  { id: 'tch-20', title: 'Quadratic Formula Walkthrough', type: 'Video', duration: '12:30', classForm: 'SHS2 Sci A', subject: 'Elective Mathematics', topic: 'Quadratic equations', dateRecorded: '2026-07-02', recordedBy: 'Teacher' },
-  { id: 'tch-21', title: 'Logarithms Explained', type: 'Audio', duration: '08:15', classForm: 'SHS1 Sci A', subject: 'Core Mathematics', topic: 'Indices & Logarithms', dateRecorded: '2026-06-30', recordedBy: 'Teacher' },
-];
-
-const INITIAL_LIVE: LiveSession[] = [
-  { id: 'tch-30', subject: 'Elective Mathematics', classForm: 'SHS2 Sci A', scheduledTime: '2026-07-11 14:00', status: 'Scheduled', topic: 'Integration by substitution', startedBy: '', participants: 0 },
-  { id: 'tch-31', subject: 'Core Mathematics', classForm: 'SHS1 Sci A', scheduledTime: '2026-07-12 10:00', status: 'Scheduled', topic: 'Surds and rationalization', startedBy: '', participants: 0 },
-  { id: 'tch-32', subject: 'Elective Mathematics', classForm: 'SHS2 Sci B', scheduledTime: '2026-07-05 14:00', status: 'Ended', topic: 'Limits and continuity', startedBy: 'Teacher', participants: 33 },
-];
-
-const INITIAL_ASSIGNMENTS: Assignment[] = [
-  { id: 'tch-40', title: 'Quadratic Eq. Exercise 3', description: 'Solve all questions on page 45, including word problems', classForm: 'SHS2 Sci A', subject: 'Elective Mathematics', dueDate: '2026-07-10', dateCreated: '2026-07-05', maxScore: 20, status: 'Published', createdBy: 'Teacher',
-    submissions: [
-      { id: 'tch-40a', assignmentId: 'tch-40', studentName: 'Kwame Asante', admNo: '2026/001', submittedDate: '2026-07-08', status: 'Graded', score: 18, feedback: 'Good work on factoring. Review Q5.' },
-      { id: 'tch-40b', assignmentId: 'tch-40', studentName: 'Grace Opoku', admNo: '2026/002', submittedDate: '2026-07-09', status: 'Graded', score: 15, feedback: 'Watch sign errors in Q3.' },
-      { id: 'tch-40c', assignmentId: 'tch-40', studentName: 'Samuel Aidoo', admNo: '2026/003', submittedDate: '2026-07-09', status: 'Graded', score: 19, feedback: 'Excellent. Neat presentation.' },
-    ] },
-  { id: 'tch-41', title: 'Indices Practice Set', description: 'Simplify and evaluate all expressions in Exercise 2.3', classForm: 'SHS1 Sci A', subject: 'Core Mathematics', dueDate: '2026-07-08', dateCreated: '2026-07-03', maxScore: 15, status: 'Published', createdBy: 'Teacher',
-    submissions: [
-      { id: 'tch-41a', assignmentId: 'tch-41', studentName: 'Kwame Asante', admNo: '2026/001', submittedDate: '2026-07-07', status: 'Graded', score: 13, feedback: 'Good effort.' },
-    ] },
-  { id: 'tch-42', title: 'Mid-Sem Quiz', description: 'Covers chapters 1-6. 50 marks, 1 hour.', classForm: 'SHS2 Sci B', subject: 'Elective Mathematics', dueDate: '2026-07-12', dateCreated: '2026-07-06', maxScore: 50, status: 'Published', createdBy: 'Teacher',
-    submissions: [
-      { id: 'tch-42a', assignmentId: 'tch-42', studentName: 'Daniel Osei', admNo: '2026/004', submittedDate: '2026-07-06', status: 'Submitted' },
-    ] },
-];
-
-const INITIAL_GRADEBOOK: GradebookEntry[] = [
-  { id: 'tch-50', studentName: 'Kwame Asante', admNo: '2026/001', classForm: 'SHS2 Sci A', subject: 'Elective Mathematics', term: 'Term 3 2025/2026', classwork: 8, classworkMax: 10, homework: 9, homeworkMax: 10, test: 17, testMax: 20, exam: 72, examMax: 100, total: 106, totalMax: 140, grade: 'A1' },
-  { id: 'tch-51', studentName: 'Grace Opoku', admNo: '2026/002', classForm: 'SHS2 Sci A', subject: 'Elective Mathematics', term: 'Term 3 2025/2026', classwork: 7, classworkMax: 10, homework: 8, homeworkMax: 10, test: 15, testMax: 20, exam: 65, examMax: 100, total: 95, totalMax: 140, grade: 'B3' },
-  { id: 'tch-52', studentName: 'Samuel Aidoo', admNo: '2026/003', classForm: 'SHS2 Sci A', subject: 'Elective Mathematics', term: 'Term 3 2025/2026', classwork: 9, classworkMax: 10, homework: 10, homeworkMax: 10, test: 18, testMax: 20, exam: 85, examMax: 100, total: 122, totalMax: 140, grade: 'A1' },
-];
-
-const INITIAL_ATTENDANCE: AttendanceRecord[] = [
-  { id: 'tch-60', studentName: 'Kwame Asante', admNo: '2026/001', classForm: 'SHS2 Sci A', subject: 'Elective Mathematics', date: '2026-07-07', status: 'Present' },
-  { id: 'tch-61', studentName: 'Grace Opoku', admNo: '2026/002', classForm: 'SHS2 Sci A', subject: 'Elective Mathematics', date: '2026-07-07', status: 'Present' },
-  { id: 'tch-62', studentName: 'Samuel Aidoo', admNo: '2026/003', classForm: 'SHS2 Sci A', subject: 'Elective Mathematics', date: '2026-07-07', status: 'Late' },
-  { id: 'tch-63', studentName: 'Daniel Osei', admNo: '2026/004', classForm: 'SHS2 Sci A', subject: 'Elective Mathematics', date: '2026-07-07', status: 'Absent' },
-];
-
-const INITIAL_ROSTER: StudentRosterEntry[] = [
-  { id: 'tch-70', name: 'Kwame Asante', admNo: '2026/001', classForm: 'SHS2 Sci A', avgScore: '75.7%', attendancePct: '92%', lastGrade: 'B1', guardianName: 'Mr. Kofi Asante', guardianPhone: '024-555-1001' },
-  { id: 'tch-71', name: 'Grace Opoku', admNo: '2026/002', classForm: 'SHS2 Sci A', avgScore: '67.8%', attendancePct: '88%', lastGrade: 'B3', guardianName: 'Mrs. Grace Opoku', guardianPhone: '027-555-1002' },
-  { id: 'tch-72', name: 'Samuel Aidoo', admNo: '2026/003', classForm: 'SHS2 Sci A', avgScore: '87.1%', attendancePct: '96%', lastGrade: 'A1', guardianName: 'Mr. Samuel Aidoo', guardianPhone: '020-555-1003' },
-  { id: 'tch-73', name: 'Daniel Osei', admNo: '2026/004', classForm: 'SHS2 Sci A', avgScore: '45.2%', attendancePct: '71%', lastGrade: 'D7', guardianName: 'Mrs. Adwoa Osei', guardianPhone: '055-555-1004' },
-];
-
-const INITIAL_ANNOUNCEMENTS: ClassAnnouncement[] = [
-  { id: 'tch-80', title: 'Reminder: Assignment due Jul 10', body: 'Quadratic Equations Exercise 3 is due this Friday. Please submit during class hours.', classForm: 'SHS2 Sci A', date: '2026-07-06', postedBy: 'Teacher', priority: 'Important' },
-  { id: 'tch-81', title: 'Extra tutorial Saturday 9am', body: 'I will hold an extra tutorial session on Saturday from 9am to 12pm in the Math lab. Focus: differentiation techniques.', classForm: 'SHS1 Sci A', date: '2026-07-04', postedBy: 'Teacher', priority: 'Normal' },
-];
-
-const INITIAL_LESSON_PLANS: LessonPlan[] = [
-  { id: 'tch-90', subject: 'Elective Mathematics', classForm: 'SHS2 Sci A', date: '2026-07-08', topic: 'Integration by substitution', objectives: 'Students should be able to integrate composite functions using substitution', teachingMethods: 'Direct instruction + guided practice', resources: 'Whiteboard, textbook Ch.7, prepared examples', activities: '1. Review chain rule\n2. Introduce substitution method\n3. Worked examples\n4. Practice exercises', assessment: 'Exit ticket: 2 integration problems', homework: 'Exercise 7.2 Q1-10', status: 'Planned' },
-  { id: 'tch-91', subject: 'Core Mathematics', classForm: 'SHS1 Sci A', date: '2026-07-07', topic: 'Surds and rationalization', objectives: 'Students should be able to simplify surds and rationalize denominators', teachingMethods: 'Discovery + pair work', resources: 'Whiteboard, worksheets', activities: '1. Define surds\n2. Simplification rules\n3. Rationalization\n4. Pair practice', assessment: 'Oral questioning', homework: 'Exercise 3.4 Q1-8', status: 'Taught', reflection: 'Students struggled with rationalization of binomial denominators. Will review next lesson.' },
-];
-
-const INITIAL_TIMETABLE: TimetableEntry[] = [
-  { id: 'tch-100', day: 'Monday', period: 1, startTime: '08:00', endTime: '08:40', subject: 'Elective Mathematics', classForm: 'SHS2 Sci A', room: 'M1' },
-  { id: 'tch-101', day: 'Monday', period: 2, startTime: '08:40', endTime: '09:20', subject: 'Elective Mathematics', classForm: 'SHS2 Sci A', room: 'M1' },
-  { id: 'tch-102', day: 'Monday', period: 4, startTime: '10:00', endTime: '10:40', subject: 'Core Mathematics', classForm: 'SHS1 Sci A', room: 'M2' },
-  { id: 'tch-103', day: 'Tuesday', period: 3, startTime: '09:20', endTime: '10:00', subject: 'Elective Mathematics', classForm: 'SHS2 Sci B', room: 'M1' },
-  { id: 'tch-104', day: 'Wednesday', period: 1, startTime: '08:00', endTime: '08:40', subject: 'Elective Mathematics', classForm: 'SHS2 Sci B', room: 'M1' },
-  { id: 'tch-105', day: 'Wednesday', period: 5, startTime: '10:40', endTime: '11:20', subject: 'Core Mathematics', classForm: 'SHS1 Sci A', room: 'M2' },
-  { id: 'tch-106', day: 'Thursday', period: 2, startTime: '08:40', endTime: '09:20', subject: 'Elective Mathematics', classForm: 'SHS2 Sci A', room: 'M1' },
-  { id: 'tch-107', day: 'Friday', period: 3, startTime: '09:20', endTime: '10:00', subject: 'Core Mathematics', classForm: 'SHS1 Sci A', room: 'M2' },
-  { id: 'tch-108', day: 'Friday', period: 6, startTime: '11:20', endTime: '12:00', subject: 'Elective Mathematics', classForm: 'SHS2 Sci B', room: 'M1' },
-];
-
-const INITIAL_SYLLABUS: SyllabusTopic[] = [
-  { id: 'tch-110', subject: 'Elective Mathematics', classForm: 'SHS2 Sci A', topic: 'Differentiation', subTopics: 'Power rule, product rule, quotient rule, chain rule', week: 1, status: 'Completed', dateTaught: '2026-06-28' },
-  { id: 'tch-111', subject: 'Elective Mathematics', classForm: 'SHS2 Sci A', topic: 'Applications of Differentiation', subTopics: 'Max/min problems, rates of change, tangents and normals', week: 2, status: 'Completed', dateTaught: '2026-07-05' },
-  { id: 'tch-112', subject: 'Elective Mathematics', classForm: 'SHS2 Sci A', topic: 'Integration', subTopics: 'Indefinite integrals, substitution method, definite integrals', week: 3, status: 'In Progress', notes: 'Started substitution method today' },
-  { id: 'tch-113', subject: 'Elective Mathematics', classForm: 'SHS2 Sci A', topic: 'Applications of Integration', subTopics: 'Area under curve, volume of revolution', week: 4, status: 'Not Started' },
-  { id: 'tch-114', subject: 'Elective Mathematics', classForm: 'SHS2 Sci A', topic: 'Differential Equations', subTopics: 'First order, separation of variables', week: 5, status: 'Not Started' },
-  { id: 'tch-115', subject: 'Core Mathematics', classForm: 'SHS1 Sci A', topic: 'Indices & Logarithms', subTopics: 'Laws of indices, logarithmic functions, change of base', week: 1, status: 'Completed', dateTaught: '2026-06-28' },
-  { id: 'tch-116', subject: 'Core Mathematics', classForm: 'SHS1 Sci A', topic: 'Surds', subTopics: 'Simplification, rationalization, operations', week: 2, status: 'Completed', dateTaught: '2026-07-07' },
-  { id: 'tch-117', subject: 'Core Mathematics', classForm: 'SHS1 Sci A', topic: 'Sets & Operations', subTopics: 'Set notation, Venn diagrams, applications', week: 3, status: 'In Progress' },
-  { id: 'tch-118', subject: 'Core Mathematics', classForm: 'SHS1 Sci A', topic: 'Relations & Functions', subTopics: 'Domain, range, composition, inverse', week: 4, status: 'Not Started' },
-];
-
-const INITIAL_REMEDIAL: RemedialStudent[] = [
-  { id: 'tch-120', studentName: 'Daniel Osei', admNo: '2026/004', classForm: 'SHS2 Sci A', subject: 'Elective Mathematics', area: 'Factoring quadratics', intervention: 'After-school practice sessions, simplified worksheets', dateStarted: '2026-07-01', progress: 'Improving', notes: 'Showing improvement in simple factoring. Needs more practice on complex expressions.' },
-];
-
-const INITIAL_QUESTION_BANK: QuestionBankItem[] = [
-  { id: 'tch-130', subject: 'Elective Mathematics', topic: 'Differentiation', type: 'MCQ', question: 'What is the derivative of f(x) = 3x² + 2x - 5?', options: ['6x + 2', '3x + 2', '6x² + 2', '6x - 5'], correctAnswer: '6x + 2', marks: 2, difficulty: 'Easy', tags: ['power rule', 'polynomial'] },
-  { id: 'tch-131', subject: 'Elective Mathematics', topic: 'Integration', type: 'Short Answer', question: 'Find the indefinite integral of ∫(4x³ + 2x) dx', correctAnswer: 'x⁴ + x² + C', marks: 3, difficulty: 'Medium', tags: ['indefinite integral', 'power rule'] },
-  { id: 'tch-132', subject: 'Core Mathematics', topic: 'Indices & Logarithms', type: 'True/False', question: 'log₂(8) = 3', correctAnswer: 'True', marks: 1, difficulty: 'Easy', tags: ['logarithms'] },
-  { id: 'tch-133', subject: 'Core Mathematics', topic: 'Surds', type: 'Fill in the Blank', question: 'Rationalize: 1/√2 = ___/2', correctAnswer: '√2', marks: 2, difficulty: 'Medium', tags: ['surds', 'rationalization'] },
-  { id: 'tch-134', subject: 'Elective Mathematics', topic: 'Limits', type: 'Essay', question: 'Explain the concept of a limit and give an example of a function that has a removable discontinuity.', correctAnswer: 'A limit describes the value a function approaches as the input approaches a specified value. Example: f(x) = (x²-1)/(x-1) has a removable discontinuity at x=1, limit is 2.', marks: 5, difficulty: 'Hard', tags: ['limits', 'continuity'] },
-];
-
-const INITIAL_QUIZZES: Quiz[] = [
-  { id: 'tch-140', title: 'Differentiation Quick Quiz', subject: 'Elective Mathematics', classForm: 'SHS2 Sci A', questionIds: ['tch-130'], totalMarks: 2, duration: 15, dueDate: '2026-07-15', expiryDate: '2026-07-17', status: 'Published', createdAt: '2026-07-08' },
-];
-
-const INITIAL_PARENT_COMMS: ParentCommunication[] = [
-  { id: 'tch-150', studentName: 'Daniel Osei', admNo: '2026/004', classForm: 'SHS2 Sci A', guardianName: 'Mrs. Adwoa Osei', guardianPhone: '055-555-1004', channel: 'Phone Call', direction: 'Outgoing', subject: 'Poor performance in class test', notes: 'Called to discuss Daniel\'s recent test score of 45%. Mother agreed to ensure he does homework regularly. Will follow up in 2 weeks.', date: '2026-07-05', followUpNeeded: true, followUpDate: '2026-07-19' },
-  { id: 'tch-151', studentName: 'Kwame Asante', admNo: '2026/001', classForm: 'SHS2 Sci A', guardianName: 'Mr. Kofi Asante', guardianPhone: '024-555-1001', channel: 'In-Person', direction: 'Incoming', subject: 'Praise for excellent work', notes: 'Father came to PTM to express gratitude for Kwame\'s improvement. Very supportive.', date: '2026-07-03', followUpNeeded: false },
-];
-
-const INITIAL_BEHAVIOR: BehaviorNote[] = [
-  { id: 'tch-160', studentName: 'Samuel Aidoo', admNo: '2026/003', classForm: 'SHS2 Sci A', date: '2026-07-06', type: 'Positive', severity: 'Low', category: 'Class Participation', description: 'Consistently helps classmates during group work. Excellent leadership during pair activities.', actionTaken: 'Praised in class, noted for commendation.', reportedBy: 'Teacher' },
-  { id: 'tch-161', studentName: 'Daniel Osei', admNo: '2026/004', classForm: 'SHS2 Sci A', date: '2026-07-04', type: 'Negative', severity: 'Medium', category: 'Disruption', description: 'Repeatedly distracted classmates during lesson on integration. Did not complete classwork.', actionTaken: 'Spoke privately after class. Parent contacted.', reportedBy: 'Teacher' },
-];
-
-const INITIAL_CALENDAR: CalendarEvent[] = [
-  { id: 'tch-170', title: 'Elective Math — SHS2 Sci A', date: '2026-07-08', time: '08:00', type: 'Lesson', subject: 'Elective Mathematics', classForm: 'SHS2 Sci A' },
-  { id: 'tch-171', title: 'Quadratic Eq. Exercise 3 Due', date: '2026-07-10', type: 'Assignment Due', subject: 'Elective Mathematics', classForm: 'SHS2 Sci A' },
-  { id: 'tch-172', title: 'PLC Meeting', date: '2026-07-12', time: '15:00', type: 'Meeting' },
-  { id: 'tch-173', title: 'Mid-Sem Quiz — SHS2 Sci B', date: '2026-07-12', type: 'Exam', subject: 'Elective Mathematics', classForm: 'SHS2 Sci B' },
-  { id: 'tch-174', title: 'Syllabus submission deadline', date: '2026-07-20', type: 'Deadline' },
-];
-
-const INITIAL_NOTIFICATIONS: TeacherNotification[] = [
-  { id: 'tch-180', title: 'New Submission', message: 'Daniel Osei submitted Mid-Sem Quiz', type: 'Submission', date: '2026-07-06', read: false },
-  { id: 'tch-181', title: 'HOD Feedback', message: 'Mr. Mensah reviewed your lesson plan on Integration', type: 'HOD Feedback', date: '2026-07-05', read: false },
-  { id: 'tch-182', title: 'Assignment Due Soon', message: 'Quadratic Eq. Exercise 3 due in 2 days', type: 'Deadline', date: '2026-07-08', read: true },
-];
-
-const INITIAL_SHARED_RESOURCES: SharedResource[] = [
-  { id: 'tch-190', title: 'Calculus Differentiation Notes', subject: 'Elective Mathematics', type: 'Notes', sharedBy: 'Mr. Adjei', sharedDate: '2026-07-02', description: 'Comprehensive notes on differentiation rules with worked examples', classForm: 'SHS2 Sci A' },
-  { id: 'tch-191', title: 'WASSCE Past Questions — Algebra', subject: 'Core Mathematics', type: 'Past Questions', sharedBy: 'Mrs. Boateng', sharedDate: '2026-06-28', description: '10 years of WASSCE algebra questions with solutions', classForm: 'SHS1 Sci A' },
-];
+// ── Initial Data (empty — all data loaded from backend) ──
 
 // ── Store ──
 
@@ -692,74 +553,100 @@ interface TeacherState {
   deleteSharedResource: (id: string) => void;
 
   // Backend load methods
+  loadAll: () => Promise<void>;
   loadLessonPlans: () => Promise<void>;
   loadAssignments: () => Promise<void>;
   loadGradebook: () => Promise<void>;
   loadAttendance: () => Promise<void>;
   loadSyllabus: () => Promise<void>;
   loadMaterials: () => Promise<void>;
+  loadAV: () => Promise<void>;
+  loadLiveSessions: () => Promise<void>;
+  loadAnnouncements: () => Promise<void>;
+  loadQuestions: () => Promise<void>;
+  loadQuizzes: () => Promise<void>;
+  loadParentComms: () => Promise<void>;
+  loadBehaviorNotes: () => Promise<void>;
+  loadCalendarEvents: () => Promise<void>;
+  loadNotifications: () => Promise<void>;
+  loadSharedResources: () => Promise<void>;
+  loadRemedial: () => Promise<void>;
+  isLoading: boolean;
 }
 
 export const useTeacherStore = create<TeacherState>((set, get) => ({
-  subjects: INITIAL_SUBJECTS,
-  materials: INITIAL_MATERIALS,
-  avRecordings: INITIAL_AV,
-  liveSessions: INITIAL_LIVE,
-  assignments: INITIAL_ASSIGNMENTS,
-  gradebook: INITIAL_GRADEBOOK,
-  attendance: INITIAL_ATTENDANCE,
-  roster: INITIAL_ROSTER,
-  announcements: INITIAL_ANNOUNCEMENTS,
-  lessonPlans: INITIAL_LESSON_PLANS,
-  timetable: INITIAL_TIMETABLE,
-  syllabus: INITIAL_SYLLABUS,
-  remedial: INITIAL_REMEDIAL,
-  questionBank: INITIAL_QUESTION_BANK,
-  quizzes: INITIAL_QUIZZES,
-  parentComms: INITIAL_PARENT_COMMS,
-  behaviorNotes: INITIAL_BEHAVIOR,
-  calendarEvents: INITIAL_CALENDAR,
-  teacherNotifications: INITIAL_NOTIFICATIONS,
-  sharedResources: INITIAL_SHARED_RESOURCES,
+  subjects: [],
+  materials: [],
+  avRecordings: [],
+  liveSessions: [],
+  assignments: [],
+  gradebook: [],
+  attendance: [],
+  roster: [],
+  announcements: [],
+  lessonPlans: [],
+  timetable: [],
+  syllabus: [],
+  remedial: [],
+  questionBank: [],
+  quizzes: [],
+  parentComms: [],
+  behaviorNotes: [],
+  calendarEvents: [],
+  teacherNotifications: [],
+  sharedResources: [],
   virtualClassroom: null,
+  isLoading: false,
 
-  addMaterial: (m) => {
-    set((s) => ({ materials: [{ ...m, id: nextId(), dateUploaded: todayISO() }, ...s.materials] }));
+  addMaterial: async (m) => {
+    try { const created = await apiClient.post<any>('/teacher/materials', m); set((s) => ({ materials: [created, ...s.materials] })); }
+    catch { set((s) => ({ materials: [{ ...m, id: nextId(), dateUploaded: todayISO() }, ...s.materials] })); }
   },
   deleteMaterial: (id) => {
+    apiClient.delete(`/teacher/materials/${id}`).catch(() => {});
     set((s) => ({ materials: s.materials.filter((m) => m.id !== id) }));
   },
 
-  addAV: (a) => {
-    set((s) => ({ avRecordings: [{ ...a, id: nextId(), dateRecorded: todayISO() }, ...s.avRecordings] }));
+  addAV: async (a) => {
+    try { const created = await apiClient.post<any>('/teacher/av-recordings', a); set((s) => ({ avRecordings: [created, ...s.avRecordings] })); }
+    catch { set((s) => ({ avRecordings: [{ ...a, id: nextId(), dateRecorded: todayISO() }, ...s.avRecordings] })); }
   },
   deleteAV: (id) => {
+    apiClient.delete(`/teacher/av-recordings/${id}`).catch(() => {});
     set((s) => ({ avRecordings: s.avRecordings.filter((a) => a.id !== id) }));
   },
 
   startLiveSession: (id, startedBy) => {
+    apiClient.post(`/teacher/live-sessions/${id}/start`).catch(() => {});
     set((s) => ({ liveSessions: s.liveSessions.map((l) => l.id === id ? { ...l, status: 'Live', startedBy } : l) }));
   },
   endLiveSession: (id) => {
+    apiClient.post(`/teacher/live-sessions/${id}/end`).catch(() => {});
     set((s) => ({ liveSessions: s.liveSessions.map((l) => l.id === id ? { ...l, status: 'Ended' } : l) }));
   },
-  scheduleLiveSession: (sess) => {
-    set((s) => ({ liveSessions: [...s.liveSessions, { ...sess, id: nextId(), status: 'Scheduled', startedBy: '', participants: 0 }] }));
+  scheduleLiveSession: async (sess) => {
+    try { const created = await apiClient.post<any>('/teacher/live-sessions', sess); set((s) => ({ liveSessions: [...s.liveSessions, created] })); }
+    catch { set((s) => ({ liveSessions: [...s.liveSessions, { ...sess, id: nextId(), status: 'Scheduled', startedBy: '', participants: 0 }] })); }
   },
   cancelLiveSession: (id) => {
+    apiClient.post(`/teacher/live-sessions/${id}/cancel`).catch(() => {});
     set((s) => ({ liveSessions: s.liveSessions.map((l) => l.id === id ? { ...l, status: 'Cancelled' } : l) }));
   },
 
-  addAssignment: (a) => {
-    set((s) => ({ assignments: [{ ...a, id: nextId(), dateCreated: todayISO(), status: 'Draft', submissions: [], createdBy: 'Teacher' }, ...s.assignments] }));
+  addAssignment: async (a) => {
+    try { const created = await apiClient.post<any>('/teacher/assignments', a); set((s) => ({ assignments: [created, ...s.assignments] })); }
+    catch { set((s) => ({ assignments: [{ ...a, id: nextId(), dateCreated: todayISO(), status: 'Draft', submissions: [], createdBy: 'Teacher' }, ...s.assignments] })); }
   },
   publishAssignment: (id) => {
+    apiClient.post(`/teacher/assignments/${id}/publish`).catch(() => {});
     set((s) => ({ assignments: s.assignments.map((a) => a.id === id ? { ...a, status: 'Published' } : a) }));
   },
   closeAssignment: (id) => {
+    apiClient.post(`/teacher/assignments/${id}/close`).catch(() => {});
     set((s) => ({ assignments: s.assignments.map((a) => a.id === id ? { ...a, status: 'Closed' } : a) }));
   },
   deleteAssignment: (id) => {
+    apiClient.delete(`/teacher/assignments/${id}`).catch(() => {});
     set((s) => ({ assignments: s.assignments.filter((a) => a.id !== id) }));
   },
   submitAssignment: (assignmentId, studentName, admNo) => {
@@ -775,6 +662,8 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
     }));
   },
   gradeSubmission: (submissionId, score, feedback) => {
+    const assignment = get().assignments.find((a) => a.submissions.some((s) => s.id === submissionId));
+    if (assignment) { apiClient.post(`/teacher/assignments/${assignment.id}/grade`, { submissionId, score, feedback }).catch(() => {}); }
     set((s) => ({
       assignments: s.assignments.map((a) => ({
         ...a,
@@ -783,11 +672,12 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
     }));
   },
 
-  addGradeEntry: (g) => {
+  addGradeEntry: async (g) => {
     const total = g.classwork + g.homework + g.test + g.exam;
     const totalMax = g.classworkMax + g.homeworkMax + g.testMax + g.examMax;
     const grade = calcGrade(total, totalMax);
-    set((s) => ({ gradebook: [...s.gradebook, { ...g, id: nextId(), total, totalMax, grade }] }));
+    try { const created = await apiClient.post<any>('/teacher/gradebook', { ...g, total, totalMax, grade }); set((s) => ({ gradebook: [...s.gradebook, created] })); }
+    catch { set((s) => ({ gradebook: [...s.gradebook, { ...g, id: nextId(), total, totalMax, grade }] })); }
   },
   updateGradeEntry: (id, updates) => {
     set((s) => ({
@@ -801,13 +691,16 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
     }));
   },
   deleteGradeEntry: (id) => {
+    apiClient.delete(`/teacher/gradebook/${id}`).catch(() => {});
     set((s) => ({ gradebook: s.gradebook.filter((g) => g.id !== id) }));
   },
   getGradebookForClass: (classForm, subject) => {
     return get().gradebook.filter((g) => g.classForm === classForm && g.subject === subject);
   },
 
-  markAttendance: (records) => {
+  markAttendance: async (records) => {
+    try { await apiClient.post('/teacher/attendance/bulk', { records }); }
+    catch {}
     const newRecords = records.map((r) => ({ ...r, id: nextId() }));
     set((s) => ({ attendance: [...newRecords, ...s.attendance] }));
   },
@@ -831,23 +724,29 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
     set((s) => ({ roster: s.roster.map((r) => r.id === id ? { ...r, ...updates } : r) }));
   },
 
-  addAnnouncement: (a) => {
-    set((s) => ({ announcements: [{ ...a, id: nextId(), date: todayISO() }, ...s.announcements] }));
+  addAnnouncement: async (a) => {
+    try { const created = await apiClient.post<any>('/teacher/announcements', a); set((s) => ({ announcements: [created, ...s.announcements] })); }
+    catch { set((s) => ({ announcements: [{ ...a, id: nextId(), date: todayISO() }, ...s.announcements] })); }
   },
   deleteAnnouncement: (id) => {
+    apiClient.delete(`/teacher/announcements/${id}`).catch(() => {});
     set((s) => ({ announcements: s.announcements.filter((a) => a.id !== id) }));
   },
 
-  addLessonPlan: (lp) => {
-    set((s) => ({ lessonPlans: [{ ...lp, id: nextId(), status: 'Planned' }, ...s.lessonPlans] }));
+  addLessonPlan: async (lp) => {
+    try { const created = await apiClient.post<any>('/teacher/lesson-plans', lp); set((s) => ({ lessonPlans: [created, ...s.lessonPlans] })); }
+    catch { set((s) => ({ lessonPlans: [{ ...lp, id: nextId(), status: 'Planned' }, ...s.lessonPlans] })); }
   },
   updateLessonPlan: (id, updates) => {
+    apiClient.put(`/teacher/lesson-plans/${id}`, updates).catch(() => {});
     set((s) => ({ lessonPlans: s.lessonPlans.map((lp) => lp.id === id ? { ...lp, ...updates } : lp) }));
   },
   deleteLessonPlan: (id) => {
+    apiClient.delete(`/teacher/lesson-plans/${id}`).catch(() => {});
     set((s) => ({ lessonPlans: s.lessonPlans.filter((lp) => lp.id !== id) }));
   },
   markLessonTaught: (id, reflection) => {
+    apiClient.post(`/teacher/lesson-plans/${id}/mark-taught`, { reflection }).catch(() => {});
     set((s) => ({ lessonPlans: s.lessonPlans.map((lp) => lp.id === id ? { ...lp, status: 'Taught', reflection } : lp) }));
   },
 
@@ -861,13 +760,16 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
     return get().timetable.filter((t) => t.day === day).sort((a, b) => a.period - b.period);
   },
 
-  addSyllabusTopic: (topic) => {
-    set((s) => ({ syllabus: [...s.syllabus, { ...topic, id: nextId(), status: 'Not Started' }] }));
+  addSyllabusTopic: async (topic) => {
+    try { const created = await apiClient.post<any>('/teacher/syllabus', topic); set((s) => ({ syllabus: [...s.syllabus, created] })); }
+    catch { set((s) => ({ syllabus: [...s.syllabus, { ...topic, id: nextId(), status: 'Not Started' }] })); }
   },
   updateSyllabusTopic: (id, updates) => {
+    apiClient.put(`/teacher/syllabus/${id}`, updates).catch(() => {});
     set((s) => ({ syllabus: s.syllabus.map((t) => t.id === id ? { ...t, ...updates } : t) }));
   },
   deleteSyllabusTopic: (id) => {
+    apiClient.delete(`/teacher/syllabus/${id}`).catch(() => {});
     set((s) => ({ syllabus: s.syllabus.filter((t) => t.id !== id) }));
   },
   getSyllabusProgress: (subject, classForm) => {
@@ -876,13 +778,16 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
     return { completed, total: topics.length, pct: topics.length > 0 ? Math.round((completed / topics.length) * 100) : 0 };
   },
 
-  addRemedialStudent: (r) => {
-    set((s) => ({ remedial: [{ ...r, id: nextId() }, ...s.remedial] }));
+  addRemedialStudent: async (r) => {
+    try { const created = await apiClient.post<any>('/teacher/remedial', r); set((s) => ({ remedial: [created, ...s.remedial] })); }
+    catch { set((s) => ({ remedial: [{ ...r, id: nextId() }, ...s.remedial] })); }
   },
   updateRemedialProgress: (id, progress, notes) => {
+    apiClient.put(`/teacher/remedial/${id}`, { progress, notes }).catch(() => {});
     set((s) => ({ remedial: s.remedial.map((r) => r.id === id ? { ...r, progress, notes } : r) }));
   },
   deleteRemedialStudent: (id) => {
+    apiClient.delete(`/teacher/remedial/${id}`).catch(() => {});
     set((s) => ({ remedial: s.remedial.filter((r) => r.id !== id) }));
   },
 
@@ -920,6 +825,7 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
   },
 
   bulkGrade: (assignmentId, grades) => {
+    apiClient.post(`/teacher/assignments/${assignmentId}/bulk-grade`, { grades }).catch(() => {});
     set((s) => ({
       assignments: s.assignments.map((a) => {
         if (a.id !== assignmentId) return a;
@@ -934,10 +840,11 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
       }),
     }));
   },
-  duplicateAssignment: (id, newClassForm) => {
+  duplicateAssignment: async (id, newClassForm) => {
     const orig = get().assignments.find((a) => a.id === id);
     if (!orig) return;
-    set((s) => ({ assignments: [{ ...orig, id: nextId(), classForm: newClassForm, dateCreated: todayISO(), status: 'Draft', submissions: [] }, ...s.assignments] }));
+    try { const created = await apiClient.post<any>(`/teacher/assignments/${id}/duplicate`, { classForm: newClassForm }); set((s) => ({ assignments: [created, ...s.assignments] })); }
+    catch { set((s) => ({ assignments: [{ ...orig, id: nextId(), classForm: newClassForm, dateCreated: todayISO(), status: 'Draft', submissions: [] }, ...s.assignments] })); }
   },
 
   getClassAnalytics: (classForm, subject) => {
@@ -988,40 +895,59 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
     return { roster, grades, attendance, behavior, remedial, parentComms, assignments };
   },
 
-  addQuestion: (q) => { set((s) => ({ questionBank: [{ ...q, id: nextId() }, ...s.questionBank] })); },
+  addQuestion: async (q) => {
+    try { const created = await apiClient.post<any>('/teacher/questions', q); set((s) => ({ questionBank: [created, ...s.questionBank] })); }
+    catch { set((s) => ({ questionBank: [{ ...q, id: nextId() }, ...s.questionBank] })); }
+  },
   updateQuestion: (id, updates) => { set((s) => ({ questionBank: s.questionBank.map((q) => q.id === id ? { ...q, ...updates } : q) })); },
-  deleteQuestion: (id) => { set((s) => ({ questionBank: s.questionBank.filter((q) => q.id !== id) })); },
+  deleteQuestion: (id) => {
+    apiClient.delete(`/teacher/questions/${id}`).catch(() => {});
+    set((s) => ({ questionBank: s.questionBank.filter((q) => q.id !== id) }));
+  },
 
-  addQuiz: (q) => {
+  addQuiz: async (q) => {
     const questions = get().questionBank.filter((qn) => q.questionIds.includes(qn.id));
     const totalMarks = questions.reduce((sum, qn) => sum + qn.marks, 0);
-    set((s) => ({ quizzes: [{ ...q, id: nextId(), totalMarks, createdAt: todayISO(), status: 'Draft' }, ...s.quizzes] }));
+    try { const created = await apiClient.post<any>('/teacher/quizzes', { ...q, totalMarks }); set((s) => ({ quizzes: [created, ...s.quizzes] })); }
+    catch { set((s) => ({ quizzes: [{ ...q, id: nextId(), totalMarks, createdAt: todayISO(), status: 'Draft' }, ...s.quizzes] })); }
   },
-  publishQuiz: (id) => { set((s) => ({ quizzes: s.quizzes.map((q) => q.id === id ? { ...q, status: 'Published' } : q) })); },
-  closeQuiz: (id) => { set((s) => ({ quizzes: s.quizzes.map((q) => q.id === id ? { ...q, status: 'Closed' } : q) })); },
-  deleteQuiz: (id) => { set((s) => ({ quizzes: s.quizzes.filter((q) => q.id !== id) })); },
+  publishQuiz: (id) => { apiClient.post(`/teacher/quizzes/${id}/publish`).catch(() => {}); set((s) => ({ quizzes: s.quizzes.map((q) => q.id === id ? { ...q, status: 'Published' } : q) })); },
+  closeQuiz: (id) => { apiClient.post(`/teacher/quizzes/${id}/close`).catch(() => {}); set((s) => ({ quizzes: s.quizzes.map((q) => q.id === id ? { ...q, status: 'Closed' } : q) })); },
+  deleteQuiz: (id) => { apiClient.delete(`/teacher/quizzes/${id}`).catch(() => {}); set((s) => ({ quizzes: s.quizzes.filter((q) => q.id !== id) })); },
 
-  addParentComm: (c) => { set((s) => ({ parentComms: [{ ...c, id: nextId() }, ...s.parentComms] })); },
-  deleteParentComm: (id) => { set((s) => ({ parentComms: s.parentComms.filter((c) => c.id !== id) })); },
+  addParentComm: async (c) => {
+    try { const created = await apiClient.post<any>('/teacher/parent-comms', c); set((s) => ({ parentComms: [created, ...s.parentComms] })); }
+    catch { set((s) => ({ parentComms: [{ ...c, id: nextId() }, ...s.parentComms] })); }
+  },
+  deleteParentComm: (id) => { apiClient.delete(`/teacher/parent-comms/${id}`).catch(() => {}); set((s) => ({ parentComms: s.parentComms.filter((c) => c.id !== id) })); },
   getFollowUps: () => get().parentComms.filter((c) => c.followUpNeeded),
 
-  addBehaviorNote: (b) => { set((s) => ({ behaviorNotes: [{ ...b, id: nextId() }, ...s.behaviorNotes] })); },
-  deleteBehaviorNote: (id) => { set((s) => ({ behaviorNotes: s.behaviorNotes.filter((b) => b.id !== id) })); },
+  addBehaviorNote: async (b) => {
+    try { const created = await apiClient.post<any>('/teacher/behavior-notes', b); set((s) => ({ behaviorNotes: [created, ...s.behaviorNotes] })); }
+    catch { set((s) => ({ behaviorNotes: [{ ...b, id: nextId() }, ...s.behaviorNotes] })); }
+  },
+  deleteBehaviorNote: (id) => { apiClient.delete(`/teacher/behavior-notes/${id}`).catch(() => {}); set((s) => ({ behaviorNotes: s.behaviorNotes.filter((b) => b.id !== id) })); },
 
-  addCalendarEvent: (e) => { set((s) => ({ calendarEvents: [...s.calendarEvents, { ...e, id: nextId() }] })); },
-  deleteCalendarEvent: (id) => { set((s) => ({ calendarEvents: s.calendarEvents.filter((e) => e.id !== id) })); },
+  addCalendarEvent: async (e) => {
+    try { const created = await apiClient.post<any>('/teacher/calendar-events', e); set((s) => ({ calendarEvents: [...s.calendarEvents, created] })); }
+    catch { set((s) => ({ calendarEvents: [...s.calendarEvents, { ...e, id: nextId() }] })); }
+  },
+  deleteCalendarEvent: (id) => { apiClient.delete(`/teacher/calendar-events/${id}`).catch(() => {}); set((s) => ({ calendarEvents: s.calendarEvents.filter((e) => e.id !== id) })); },
   getCalendarForDate: (date) => get().calendarEvents.filter((e) => e.date === date).sort((a, b) => (a.time || '').localeCompare(b.time || '')),
   getCalendarForMonth: (year, month) => {
     const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
     return get().calendarEvents.filter((e) => e.date.startsWith(prefix)).sort((a, b) => a.date.localeCompare(b.date));
   },
 
-  markNotificationRead: (id) => { set((s) => ({ teacherNotifications: s.teacherNotifications.map((n) => n.id === id ? { ...n, read: true } : n) })); },
-  markAllNotificationsRead: () => { set((s) => ({ teacherNotifications: s.teacherNotifications.map((n) => ({ ...n, read: true })) })); },
+  markNotificationRead: (id) => { apiClient.post(`/teacher/notifications/${id}/read`).catch(() => {}); set((s) => ({ teacherNotifications: s.teacherNotifications.map((n) => n.id === id ? { ...n, read: true } : n) })); },
+  markAllNotificationsRead: () => { apiClient.post('/teacher/notifications/read-all').catch(() => {}); set((s) => ({ teacherNotifications: s.teacherNotifications.map((n) => ({ ...n, read: true })) })); },
   getUnreadNotificationCount: () => get().teacherNotifications.filter((n) => !n.read).length,
 
-  addSharedResource: (r) => { set((s) => ({ sharedResources: [{ ...r, id: nextId(), sharedDate: todayISO() }, ...s.sharedResources] })); },
-  deleteSharedResource: (id) => { set((s) => ({ sharedResources: s.sharedResources.filter((r) => r.id !== id) })); },
+  addSharedResource: async (r) => {
+    try { const created = await apiClient.post<any>('/teacher/shared-resources', r); set((s) => ({ sharedResources: [created, ...s.sharedResources] })); }
+    catch { set((s) => ({ sharedResources: [{ ...r, id: nextId(), sharedDate: todayISO() }, ...s.sharedResources] })); }
+  },
+  deleteSharedResource: (id) => { apiClient.delete(`/teacher/shared-resources/${id}`).catch(() => {}); set((s) => ({ sharedResources: s.sharedResources.filter((r) => r.id !== id) })); },
 
   generateAILessonPlan: async (req) => {
     try {
@@ -1077,5 +1003,62 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
       const data = await apiClient.get<any[]>('/teacher/materials');
       set({ materials: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) });
     } catch {}
+  },
+  loadAV: async () => {
+    try { const data = await apiClient.get<any[]>('/teacher/av-recordings'); set({ avRecordings: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) }); } catch {}
+  },
+  loadLiveSessions: async () => {
+    try { const data = await apiClient.get<any[]>('/teacher/live-sessions'); set({ liveSessions: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) }); } catch {}
+  },
+  loadAnnouncements: async () => {
+    try { const data = await apiClient.get<any[]>('/teacher/announcements'); set({ announcements: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) }); } catch {}
+  },
+  loadQuestions: async () => {
+    try { const data = await apiClient.get<any[]>('/teacher/questions'); set({ questionBank: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) }); } catch {}
+  },
+  loadQuizzes: async () => {
+    try { const data = await apiClient.get<any[]>('/teacher/quizzes'); set({ quizzes: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) }); } catch {}
+  },
+  loadParentComms: async () => {
+    try { const data = await apiClient.get<any[]>('/teacher/parent-comms'); set({ parentComms: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) }); } catch {}
+  },
+  loadBehaviorNotes: async () => {
+    try { const data = await apiClient.get<any[]>('/teacher/behavior-notes'); set({ behaviorNotes: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) }); } catch {}
+  },
+  loadCalendarEvents: async () => {
+    try { const data = await apiClient.get<any[]>('/teacher/calendar-events'); set({ calendarEvents: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) }); } catch {}
+  },
+  loadNotifications: async () => {
+    try { const data = await apiClient.get<any[]>('/teacher/notifications'); set({ teacherNotifications: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) }); } catch {}
+  },
+  loadSharedResources: async () => {
+    try { const data = await apiClient.get<any[]>('/teacher/shared-resources'); set({ sharedResources: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) }); } catch {}
+  },
+  loadRemedial: async () => {
+    try { const data = await apiClient.get<any[]>('/teacher/remedial'); set({ remedial: (data || []).map((d) => ({ ...d, id: d.id || nextId() })) }); } catch {}
+  },
+  loadAll: async () => {
+    set({ isLoading: true });
+    const s = get();
+    await Promise.allSettled([
+      s.loadLessonPlans(),
+      s.loadAssignments(),
+      s.loadGradebook(),
+      s.loadAttendance(),
+      s.loadSyllabus(),
+      s.loadMaterials(),
+      s.loadAV(),
+      s.loadLiveSessions(),
+      s.loadAnnouncements(),
+      s.loadQuestions(),
+      s.loadQuizzes(),
+      s.loadParentComms(),
+      s.loadBehaviorNotes(),
+      s.loadCalendarEvents(),
+      s.loadNotifications(),
+      s.loadSharedResources(),
+      s.loadRemedial(),
+    ]);
+    set({ isLoading: false });
   },
 }));

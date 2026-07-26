@@ -17,6 +17,22 @@ import {
   WHITEBOARD_TOOLS, WHITEBOARD_COLORS,
 } from '@store/teacherStore';
 
+const isWeb = Platform.OS === 'web' || typeof navigator !== 'undefined';
+
+const DateInput = ({ value, onChange, style }: { value: string; onChange: (v: string) => void; style?: any }) => {
+  if (isWeb) {
+    return (
+      <input
+        type="date"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        style={{ padding: '10px', border: '1px solid #ccc', borderRadius: radius.sm, width: '100%', fontSize: fontSize.md, marginBottom: spacing.sm, ...style }}
+      />
+    );
+  }
+  return <TextInput style={[styles.input, style]} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={value} onChangeText={onChange} />;
+};
+
 const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'Overview' },
   { key: 'subjects', label: 'My Subjects & Classes' },
@@ -83,14 +99,20 @@ export function TeacherDashboard() {
     markNotificationRead, markAllNotificationsRead,
     addSharedResource, deleteSharedResource,
     getClassAnalytics, getStudentProfile,
-    generateAILessonPlan,
+    generateAILessonPlan, loadAll,
   } = tStore;
 
   // WebRTC media stream refs for real camera/mic
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const screenShareRef = useRef<HTMLVideoElement | null>(null);
+  const screenStreamRef = useRef<MediaStream | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [mediaError, setMediaError] = useState<string | null>(null);
+  const [screenShareError, setScreenShareError] = useState<string | null>(null);
   const isWebPlatform = Platform.OS === 'web' || typeof navigator !== 'undefined';
+  const isDrawingRef = useRef(false);
+  const lastPosRef = useRef<{ x: number; y: number } | null>(null);
 
   const startMedia = async (video: boolean, audio: boolean): Promise<MediaStream | null> => {
     if (!isWebPlatform || !navigator.mediaDevices?.getUserMedia) {
@@ -160,10 +182,119 @@ export function TeacherDashboard() {
   const handleLeaveClassroom = () => {
     if (mediaStreamRef.current) { mediaStreamRef.current.getTracks().forEach((t) => t.stop()); mediaStreamRef.current = null; }
     if (videoRef.current) videoRef.current.srcObject = null;
+    if (screenStreamRef.current) { screenStreamRef.current.getTracks().forEach((t) => t.stop()); screenStreamRef.current = null; }
+    if (screenShareRef.current) screenShareRef.current.srcObject = null;
     const sid = virtualClassroom?.sessionId;
     if (sid) endLiveSession(sid);
     leaveVirtualClassroom();
   };
+
+  const handleToggleScreenShare = async () => {
+    if (!virtualClassroom) return;
+    if (!virtualClassroom.screenSharing) {
+      if (!isWebPlatform || !navigator.mediaDevices?.getDisplayMedia) {
+        setScreenShareError('Screen sharing requires a web browser.');
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+        screenStreamRef.current = stream;
+        if (screenShareRef.current) { screenShareRef.current.srcObject = stream; screenShareRef.current.play().catch(() => {}); }
+        setScreenShareError(null);
+        stream.getVideoTracks()[0]?.addEventListener('ended', () => {
+          if (screenStreamRef.current) { screenStreamRef.current.getTracks().forEach((t) => t.stop()); screenStreamRef.current = null; }
+          if (screenShareRef.current) screenShareRef.current.srcObject = null;
+          if (virtualClassroom?.screenSharing) toggleScreenShare();
+        });
+        toggleScreenShare();
+      } catch (e: any) {
+        if (e?.name === 'NotAllowedError') setScreenShareError('Permission denied. Allow screen sharing in browser settings.');
+        else setScreenShareError(`Screen share error: ${e?.message || 'Unknown'}`);
+      }
+    } else {
+      if (screenStreamRef.current) { screenStreamRef.current.getTracks().forEach((t) => t.stop()); screenStreamRef.current = null; }
+      if (screenShareRef.current) screenShareRef.current.srcObject = null;
+      toggleScreenShare();
+    }
+  };
+
+  // Whiteboard canvas drawing helpers
+  const getCanvasPos = (e: React.MouseEvent | React.TouchEvent): { x: number; y: number } | null => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    let clientX: number, clientY: number;
+    if ('touches' in e) {
+      if (e.touches.length === 0) return null;
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = (e as React.MouseEvent).clientX;
+      clientY = (e as React.MouseEvent).clientY;
+    }
+    return { x: (clientX - rect.left) * (canvas.width / rect.width), y: (clientY - rect.top) * (canvas.height / rect.height) };
+  };
+
+  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+    const pos = getCanvasPos(e);
+    if (!pos) return;
+    isDrawingRef.current = true;
+    lastPosRef.current = pos;
+    const ctx = canvasRef.current?.getContext('2d');
+    if (ctx) {
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+    }
+  };
+
+  const draw = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDrawingRef.current) return;
+    const pos = getCanvasPos(e);
+    if (!pos || !lastPosRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!ctx || !canvas) return;
+    const wb = virtualClassroom?.whiteboard;
+    if (!wb) return;
+    ctx.strokeStyle = wb.tool === 'eraser' ? '#ffffff' : wb.color;
+    ctx.lineWidth = wb.tool === 'eraser' ? 20 : wb.strokeWidth;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.globalAlpha = wb.tool === 'highlighter' ? 0.3 : 1;
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+    lastPosRef.current = pos;
+  };
+
+  const stopDrawing = () => {
+    isDrawingRef.current = false;
+    lastPosRef.current = null;
+  };
+
+  const clearWhiteboard = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (canvas && ctx) { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+  };
+
+  // Restore canvas when switching pages
+  useEffect(() => {
+    if (virtualClassroom?.whiteboardActive && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const pageData = virtualClassroom.whiteboard.pages[virtualClassroom.whiteboard.currentPage];
+        if (pageData) {
+          const img = new Image();
+          img.onload = () => { ctx.drawImage(img, 0, 0, canvas.width, canvas.height); };
+          img.src = pageData;
+        }
+      }
+    }
+  }, [virtualClassroom?.whiteboard?.currentPage, virtualClassroom?.whiteboardActive]);
 
   useEffect(() => {
     return () => {
@@ -172,12 +303,7 @@ export function TeacherDashboard() {
   }, []);
 
   useEffect(() => {
-    useTeacherStore.getState().loadLessonPlans();
-    useTeacherStore.getState().loadAssignments();
-    useTeacherStore.getState().loadGradebook();
-    useTeacherStore.getState().loadAttendance();
-    useTeacherStore.getState().loadSyllabus();
-    useTeacherStore.getState().loadMaterials();
+    loadAll();
     usePLCStore.getState().loadMeetings();
     usePLCStore.getState().loadResources();
   }, []);
@@ -249,7 +375,7 @@ export function TeacherDashboard() {
   });
   const [assignmentExpiry, setAssignmentExpiry] = useState('');
 
-  const [materialForm, setMaterialForm] = useState({ title: '', type: 'Note' as any, classForm: selectedClass, subject: selectedSubject, topic: '', description: '' });
+  const [materialForm, setMaterialForm] = useState({ title: '', type: 'Note' as any, classForm: selectedClass, subject: selectedSubject, topic: '', description: '', fileUrl: '' });
   const [avForm, setAVForm] = useState({ title: '', type: 'Audio' as any, duration: '', classForm: selectedClass, subject: selectedSubject, topic: '' });
   const [assignmentForm, setAssignmentForm] = useState({ title: '', description: '', classForm: selectedClass, subject: selectedSubject, dueDate: '', maxScore: 20 });
   const [announcementForm, setAnnouncementForm] = useState({ title: '', body: '', classForm: selectedClass, priority: 'Normal' as any });
@@ -688,7 +814,7 @@ export function TeacherDashboard() {
               <StatCard label="Excused" value={attendanceStats.excused} accentColor={colors.info} />
             </CardGrid>
             <Text style={styles.inputLabel}>Date</Text>
-            <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={attendanceDate} onChangeText={setAttendanceDate} />
+            <DateInput value={attendanceDate} onChange={setAttendanceDate} />
             <Text style={styles.sectionTitle}>Mark Attendance — Tap to cycle status</Text>
             {roster.filter((r) => r.classForm === selectedClass).map((s) => {
               const current = attendanceDraft[s.admNo] || (todayAttendance.find((a) => a.studentName === s.name)?.status ?? 'Present');
@@ -1141,13 +1267,42 @@ export function TeacherDashboard() {
                   <TouchableOpacity style={[styles.vcBtn, virtualClassroom.micOn && styles.vcBtnActive]} onPress={handleToggleMic}>
                     <Text style={styles.vcBtnText}>{virtualClassroom.micOn ? '🎤 On' : '🎤 Off'}</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.vcBtn, virtualClassroom.screenSharing && styles.vcBtnActive]} onPress={toggleScreenShare}>
+                  <TouchableOpacity style={[styles.vcBtn, virtualClassroom.screenSharing && styles.vcBtnActive]} onPress={handleToggleScreenShare}>
                     <Text style={styles.vcBtnText}>{virtualClassroom.screenSharing ? '🖥️ Sharing' : '🖥️ Share'}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.vcBtn, virtualClassroom.whiteboardActive && styles.vcBtnActive]} onPress={toggleWhiteboard}>
                     <Text style={styles.vcBtnText}>📝 Board</Text>
                   </TouchableOpacity>
                 </View>
+
+                {/* Screen Share Video */}
+                {virtualClassroom.screenSharing && (
+                  <View style={styles.videoFeedContainer}>
+                    {isWebPlatform ? (
+                      <video
+                        ref={screenShareRef}
+                        autoPlay
+                        muted
+                        playsInline
+                        style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: radius.md, backgroundColor: '#000' }}
+                      />
+                    ) : (
+                      <View style={styles.videoPlaceholder}>
+                        <Text style={styles.videoPlaceholderIcon}>🖥️</Text>
+                        <Text style={styles.videoPlaceholderText}>Screen sharing (web only)</Text>
+                      </View>
+                    )}
+                    <View style={styles.videoLabelBar}>
+                      <Text style={styles.videoLabelText}>Screen Share</Text>
+                    </View>
+                  </View>
+                )}
+                {screenShareError && (
+                  <View style={[styles.alertCard, { borderColor: colors.danger }]}>
+                    <Text style={[styles.alertTitle, { color: colors.danger }]}>⚠ Screen Share Error</Text>
+                    <Text style={styles.alertText}>{screenShareError}</Text>
+                  </View>
+                )}
 
                 {/* Whiteboard */}
                 {virtualClassroom.whiteboardActive && (
@@ -1170,7 +1325,28 @@ export function TeacherDashboard() {
                       <TouchableOpacity style={styles.smallBtn} onPress={() => setWhiteboardStrokeWidth(5)}><Text style={styles.smallBtnText}>Med</Text></TouchableOpacity>
                       <TouchableOpacity style={styles.smallBtn} onPress={() => setWhiteboardStrokeWidth(8)}><Text style={styles.smallBtnText}>Thick</Text></TouchableOpacity>
                       <TouchableOpacity style={styles.smallBtn} onPress={addWhiteboardPage}><Text style={styles.smallBtnText}>+ Page</Text></TouchableOpacity>
+                      <TouchableOpacity style={styles.smallBtn} onPress={clearWhiteboard}><Text style={styles.smallBtnText}>Clear</Text></TouchableOpacity>
                     </View>
+                    {/* Real drawing canvas on web */}
+                    {isWebPlatform ? (
+                      <canvas
+                        ref={canvasRef}
+                        width={800}
+                        height={500}
+                        onMouseDown={startDrawing}
+                        onMouseMove={draw}
+                        onMouseUp={stopDrawing}
+                        onMouseLeave={stopDrawing}
+                        onTouchStart={startDrawing}
+                        onTouchMove={draw}
+                        onTouchEnd={stopDrawing}
+                        style={{ width: '100%', height: 300, backgroundColor: '#ffffff', borderRadius: radius.md, border: '1px solid #ccc', touchAction: 'none', cursor: 'crosshair' }}
+                      />
+                    ) : (
+                      <View style={[styles.whiteboardCanvas, { height: 300, backgroundColor: '#ffffff', borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' }]}>
+                        <Text style={{ color: '#999' }}>Drawing canvas requires web platform</Text>
+                      </View>
+                    )}
                     <View style={styles.whiteboardCanvas}>
                       {virtualClassroom.whiteboard.pages.map((_, i) => (
                         <TouchableOpacity key={i} style={[styles.pageChip, virtualClassroom.whiteboard.currentPage === i && styles.pageChipActive]} onPress={() => setWhiteboardPage(i)}>
@@ -1604,7 +1780,7 @@ export function TeacherDashboard() {
           <Text style={styles.modalSubtitle}>Submit feedback after observing a colleague's lesson</Text>
 
           <Text style={styles.inputLabel}>Date *</Text>
-          <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={obsForm.date} onChangeText={(v) => setObsForm({ ...obsForm, date: v })} />
+          <DateInput value={obsForm.date} onChange={(v) => setObsForm({ ...obsForm, date: v })} />
           <Text style={styles.inputLabel}>Teacher Observed (Colleague) *</Text>
           <TextInput style={styles.input} placeholder="Name of the teacher whose lesson you observed" placeholderTextColor={colors.textLight} value={obsForm.observedTeacher} onChangeText={(v) => setObsForm({ ...obsForm, observedTeacher: v })} />
           <Text style={styles.inputLabel}>Your Name (Observer) *</Text>
@@ -1685,9 +1861,21 @@ export function TeacherDashboard() {
           <TextInput style={styles.input} placeholder="e.g. Ch. 5" placeholderTextColor={colors.textLight} value={materialForm.topic} onChangeText={(v) => setMaterialForm({ ...materialForm, topic: v })} />
           <Text style={styles.inputLabel}>Description</Text>
           <TextInput style={[styles.input, styles.textArea]} placeholder="Brief description" placeholderTextColor={colors.textLight} value={materialForm.description} onChangeText={(v) => setMaterialForm({ ...materialForm, description: v })} multiline />
+          <Text style={styles.inputLabel}>Attach File</Text>
+          {isWebPlatform ? (
+            <input
+              type="file"
+              style={{ marginBottom: spacing.sm, padding: '8px', border: '1px solid #ccc', borderRadius: radius.sm, width: '100%' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) setMaterialForm({ ...materialForm, fileUrl: file.name });
+              }}
+            />
+          ) : null}
+          {materialForm.fileUrl ? <Text style={[styles.inputLabel, { color: colors.success }]}>Selected: {materialForm.fileUrl}</Text> : null}
           <View style={styles.modalActions}>
             <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowMaterialModal(false)}><Text style={styles.modalBtnTextDark}>Cancel</Text></TouchableOpacity>
-            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={() => { if (!materialForm.title.trim()) { Alert.alert('Error', 'Title is required'); return; } addMaterial({ ...materialForm, uploadedBy: teacherName }); setMaterialForm({ title: '', type: 'Note', classForm: selectedClass, subject: selectedSubject, topic: '', description: '' }); setShowMaterialModal(false); Alert.alert('Success', 'Material uploaded.'); }}><Text style={styles.modalBtnTextLight}>Upload</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={() => { if (!materialForm.title.trim()) { Alert.alert('Error', 'Title is required'); return; } addMaterial({ ...materialForm, uploadedBy: teacherName }); setMaterialForm({ title: '', type: 'Note', classForm: selectedClass, subject: selectedSubject, topic: '', description: '', fileUrl: '' }); setShowMaterialModal(false); Alert.alert('Success', 'Material uploaded.'); }}><Text style={styles.modalBtnTextLight}>Upload</Text></TouchableOpacity>
           </View>
         </ScrollView></View></View>
       </Modal>
@@ -1726,9 +1914,9 @@ export function TeacherDashboard() {
           <Text style={styles.inputLabel}>Subject</Text>
           <TextInput style={styles.input} placeholder="e.g. Elective Mathematics" placeholderTextColor={colors.textLight} value={assignmentForm.subject} onChangeText={(v) => setAssignmentForm({ ...assignmentForm, subject: v })} />
           <Text style={styles.inputLabel}>Due Date *</Text>
-          <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={assignmentForm.dueDate} onChangeText={(v) => setAssignmentForm({ ...assignmentForm, dueDate: v })} />
+          <DateInput value={assignmentForm.dueDate} onChange={(v) => setAssignmentForm({ ...assignmentForm, dueDate: v })} />
           <Text style={styles.inputLabel}>Expiry Date (when submission closes)</Text>
-          <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={assignmentExpiry} onChangeText={setAssignmentExpiry} />
+          <DateInput value={assignmentExpiry} onChange={setAssignmentExpiry} />
           <Text style={styles.inputLabel}>Max Score</Text>
           <TextInput style={styles.input} placeholder="20" placeholderTextColor={colors.textLight} value={String(assignmentForm.maxScore)} onChangeText={(v) => setAssignmentForm({ ...assignmentForm, maxScore: parseInt(v) || 0 })} keyboardType="numeric" />
           <View style={styles.modalActions}>
@@ -1782,7 +1970,7 @@ export function TeacherDashboard() {
           <Text style={styles.inputLabel}>Class</Text>
           <TextInput style={styles.input} placeholder="e.g. SHS2 Sci A" placeholderTextColor={colors.textLight} value={lessonPlanForm.classForm} onChangeText={(v) => setLessonPlanForm({ ...lessonPlanForm, classForm: v })} />
           <Text style={styles.inputLabel}>Date</Text>
-          <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={lessonPlanForm.date} onChangeText={(v) => setLessonPlanForm({ ...lessonPlanForm, date: v })} />
+          <DateInput value={lessonPlanForm.date} onChange={(v) => setLessonPlanForm({ ...lessonPlanForm, date: v })} />
           <Text style={styles.inputLabel}>Topic *</Text>
           <TextInput style={styles.input} placeholder="e.g. Integration by substitution" placeholderTextColor={colors.textLight} value={lessonPlanForm.topic} onChangeText={(v) => setLessonPlanForm({ ...lessonPlanForm, topic: v })} />
           <Text style={styles.inputLabel}>Objectives</Text>
@@ -1814,14 +2002,24 @@ export function TeacherDashboard() {
           <Text style={styles.inputLabel}>Class</Text>
           <TextInput style={styles.input} placeholder="e.g. SHS2 Sci A" placeholderTextColor={colors.textLight} value={uploadForm.classForm} onChangeText={(v) => setUploadForm({ ...uploadForm, classForm: v })} />
           <Text style={styles.inputLabel}>Date</Text>
-          <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={uploadForm.date} onChangeText={(v) => setUploadForm({ ...uploadForm, date: v })} />
+          <DateInput value={uploadForm.date} onChange={(v) => setUploadForm({ ...uploadForm, date: v })} />
           <Text style={styles.inputLabel}>Topic *</Text>
           <TextInput style={styles.input} placeholder="e.g. Integration by substitution" placeholderTextColor={colors.textLight} value={uploadForm.topic} onChangeText={(v) => setUploadForm({ ...uploadForm, topic: v })} />
-          <Text style={styles.inputLabel}>File Name *</Text>
-          <TextInput style={styles.input} placeholder="e.g. Lesson_Plan_Ch7.pdf" placeholderTextColor={colors.textLight} value={uploadForm.fileName} onChangeText={(v) => setUploadForm({ ...uploadForm, fileName: v })} />
-          <TouchableOpacity style={styles.filePickerBtn} onPress={() => Alert.alert('File Picker', 'File picker would open here. Enter the file name above for now.')}>
-            <Text style={styles.filePickerBtnText}>Choose File...</Text>
-          </TouchableOpacity>
+          <Text style={styles.inputLabel}>File *</Text>
+          {isWebPlatform ? (
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx,.ppt,.pptx,.txt"
+              style={{ marginBottom: spacing.sm, padding: '8px', border: '1px solid #ccc', borderRadius: radius.sm, width: '100%' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) setUploadForm({ ...uploadForm, fileName: file.name });
+              }}
+            />
+          ) : (
+            <TextInput style={styles.input} placeholder="Enter file name" placeholderTextColor={colors.textLight} value={uploadForm.fileName} onChangeText={(v) => setUploadForm({ ...uploadForm, fileName: v })} />
+          )}
+          {uploadForm.fileName ? <Text style={[styles.inputLabel, { color: colors.success }]}>Selected: {uploadForm.fileName}</Text> : null}
           <View style={styles.modalActions}>
             <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowLessonUploadModal(false)}><Text style={styles.modalBtnTextDark}>Cancel</Text></TouchableOpacity>
             <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={() => { if (!uploadForm.topic.trim()) { Alert.alert('Error', 'Topic is required'); return; } if (!uploadForm.fileName.trim()) { Alert.alert('Error', 'File name is required'); return; } addLessonPlan({ ...uploadForm, objectives: '', teachingMethods: '', resources: '', activities: '', assessment: '', homework: '', fileUrl: uploadForm.fileName, fileName: uploadForm.fileName }); setUploadForm({ subject: selectedSubject, classForm: selectedClass, date: new Date().toISOString().slice(0, 10), topic: '', fileName: '' }); setShowLessonUploadModal(false); Alert.alert('Success', 'Lesson plan uploaded.'); }}><Text style={styles.modalBtnTextLight}>Upload</Text></TouchableOpacity>
@@ -1853,7 +2051,7 @@ export function TeacherDashboard() {
           <TextInput style={styles.input} placeholder="e.g. SHS2 Sci A" placeholderTextColor={colors.textLight} value={liveForm.classForm} onChangeText={(v) => setLiveForm({ ...liveForm, classForm: v })} />
           <Text style={styles.inputLabel}>Date *</Text>
           <View style={styles.dateTimePickerRow}>
-            <TextInput style={[styles.input, { flex: 2 }]} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={liveDate} onChangeText={setLiveDate} />
+            <DateInput value={liveDate} onChange={setLiveDate} style={{ flex: 2, marginBottom: 0 }} />
             <Text style={styles.dateTimePickerSep}>at</Text>
             <TextInput style={[styles.input, { flex: 1 }]} placeholder="HH" placeholderTextColor={colors.textLight} value={liveHour} onChangeText={setLiveHour} keyboardType="numeric" maxLength={2} />
             <Text style={styles.dateTimePickerSep}>:</Text>
@@ -1990,9 +2188,9 @@ export function TeacherDashboard() {
           <Text style={styles.inputLabel}>Duration (minutes)</Text>
           <TextInput style={styles.input} placeholder="30" placeholderTextColor={colors.textLight} value={String(quizForm.duration)} onChangeText={(v) => setQuizForm({ ...quizForm, duration: parseInt(v) || 30 })} keyboardType="numeric" />
           <Text style={styles.inputLabel}>Due Date *</Text>
-          <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={quizForm.dueDate} onChangeText={(v) => setQuizForm({ ...quizForm, dueDate: v })} />
+          <DateInput value={quizForm.dueDate} onChange={(v) => setQuizForm({ ...quizForm, dueDate: v })} />
           <Text style={styles.inputLabel}>Expiry Date *</Text>
-          <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={quizForm.expiryDate} onChangeText={(v) => setQuizForm({ ...quizForm, expiryDate: v })} />
+          <DateInput value={quizForm.expiryDate} onChange={(v) => setQuizForm({ ...quizForm, expiryDate: v })} />
           <Text style={styles.inputLabel}>Select Questions</Text>
           {questionBank.map((q) => (
             <TouchableOpacity key={q.id} style={[styles.selectChip, quizForm.questionIds.includes(q.id) && styles.selectChipActive, { marginBottom: spacing.xs }]} onPress={() => { const ids = quizForm.questionIds.includes(q.id) ? quizForm.questionIds.filter((id) => id !== q.id) : [...quizForm.questionIds, q.id]; setQuizForm({ ...quizForm, questionIds: ids }); }}>
@@ -2034,7 +2232,7 @@ export function TeacherDashboard() {
           {parentCommForm.followUpNeeded && (
             <View>
               <Text style={styles.inputLabel}>Follow-up Date</Text>
-              <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={parentCommForm.followUpDate} onChangeText={(v) => setParentCommForm({ ...parentCommForm, followUpDate: v })} />
+              <DateInput value={parentCommForm.followUpDate} onChange={(v) => setParentCommForm({ ...parentCommForm, followUpDate: v })} />
             </View>
           )}
           <View style={styles.modalActions}>
@@ -2055,7 +2253,7 @@ export function TeacherDashboard() {
           <Text style={styles.inputLabel}>Class</Text>
           <TextInput style={styles.input} placeholder="e.g. SHS2 Sci A" placeholderTextColor={colors.textLight} value={behaviorForm.classForm} onChangeText={(v) => setBehaviorForm({ ...behaviorForm, classForm: v })} />
           <Text style={styles.inputLabel}>Date</Text>
-          <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={behaviorForm.date} onChangeText={(v) => setBehaviorForm({ ...behaviorForm, date: v })} />
+          <DateInput value={behaviorForm.date} onChange={(v) => setBehaviorForm({ ...behaviorForm, date: v })} />
           <Text style={styles.inputLabel}>Type</Text>
           <View style={styles.selectRow}>{BEHAVIOR_TYPES.map((opt) => (<TouchableOpacity key={opt} style={[styles.selectChip, behaviorForm.type === opt && styles.selectChipActive]} onPress={() => setBehaviorForm({ ...behaviorForm, type: opt })}><Text style={[styles.selectChipText, behaviorForm.type === opt && styles.selectChipTextActive]}>{opt}</Text></TouchableOpacity>))}</View>
           <Text style={styles.inputLabel}>Severity</Text>
@@ -2080,7 +2278,7 @@ export function TeacherDashboard() {
           <Text style={styles.inputLabel}>Title *</Text>
           <TextInput style={styles.input} placeholder="e.g. Calculus Quiz" placeholderTextColor={colors.textLight} value={calendarForm.title} onChangeText={(v) => setCalendarForm({ ...calendarForm, title: v })} />
           <Text style={styles.inputLabel}>Date *</Text>
-          <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={calendarForm.date} onChangeText={(v) => setCalendarForm({ ...calendarForm, date: v })} />
+          <DateInput value={calendarForm.date} onChange={(v) => setCalendarForm({ ...calendarForm, date: v })} />
           <Text style={styles.inputLabel}>Time</Text>
           <TextInput style={styles.input} placeholder="e.g. 14:00" placeholderTextColor={colors.textLight} value={calendarForm.time} onChangeText={(v) => setCalendarForm({ ...calendarForm, time: v })} />
           <Text style={styles.inputLabel}>Type</Text>
