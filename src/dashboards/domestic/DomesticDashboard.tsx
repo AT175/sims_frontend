@@ -8,6 +8,7 @@ import { useBoardingStore, BEDDING_CONDITIONS, DORM_INSPECTION_RESULTS } from '@
 import { useKitchenStore } from '@store/kitchenStore';
 import { useTransportStore } from '@store/transportStore';
 import { useCleaningStore } from '@store/cleaningStore';
+import { useExeatStore } from '@store/exeatStore';
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'Overview' },
@@ -36,6 +37,7 @@ export function DomesticDashboard() {
   const kitchenStore = useKitchenStore();
   const transportStore = useTransportStore();
   const cleaningStore = useCleaningStore();
+  const exeatStore = useExeatStore();
 
   useEffect(() => {
     useBoardingStore.getState().loadAll();
@@ -43,6 +45,7 @@ export function DomesticDashboard() {
     useCleaningStore.getState().loadAll();
     useRequisitionStore.getState().loadAll();
     useTransportStore.getState().loadAll();
+    useExeatStore.getState().loadAll();
   }, []);
 
   const pendingApprovals = getPendingDomestic();
@@ -259,7 +262,7 @@ export function DomesticDashboard() {
   const renderPage = () => {
     switch (activePage) {
       case 'overview':
-        return <OverviewPage pendingApprovals={pendingApprovals} boardingStore={boardingStore} kitchenStore={kitchenStore} transportStore={transportStore} cleaningStore={cleaningStore} setActivePage={setActivePage} />;
+        return <OverviewPage pendingApprovals={pendingApprovals} boardingStore={boardingStore} kitchenStore={kitchenStore} transportStore={transportStore} cleaningStore={cleaningStore} exeatStore={exeatStore} setActivePage={setActivePage} />;
 
       case 'boarding':
         return <BoardingPage boardingStore={boardingStore} />;
@@ -322,7 +325,7 @@ export function DomesticDashboard() {
 
 // ── Overview Page ──
 
-function OverviewPage({ pendingApprovals, boardingStore, kitchenStore, transportStore, cleaningStore, setActivePage }: any) {
+function OverviewPage({ pendingApprovals, boardingStore, kitchenStore, transportStore, cleaningStore, exeatStore, setActivePage }: any) {
   const totalCapacity = boardingStore.houses.reduce((s: number, h: any) => s + h.capacity, 0);
   const totalOccupied = boardingStore.houses.reduce((s: number, h: any) => s + h.occupied, 0);
   const lowStock = kitchenStore.getLowStock();
@@ -333,12 +336,14 @@ function OverviewPage({ pendingApprovals, boardingStore, kitchenStore, transport
   const pendingTasks = cleaningStore.tasks.filter((t: any) => !t.done);
   const welfareUnresolved = boardingStore.welfare.filter((w: any) => !w.resolved);
   const disciplineEscalated = boardingStore.discipline.filter((d: any) => d.escalated);
+  const activeExeats = exeatStore.exeats.filter((e: any) => e.status === 'Checked Out' || e.status === 'Approved');
+  const pendingExeats = exeatStore.exeats.filter((e: any) => e.status === 'Pending');
 
   return (
     <View>
       <CardGrid>
         <StatCard label="Boarding Occupancy" value={`${totalOccupied}/${totalCapacity}`} subtitle={`${boardingStore.houses.length} houses`} accentColor={colors.primary} />
-        <StatCard label="Pending Requisitions" value={pendingApprovals.length} subtitle="awaiting approval" accentColor={pendingApprovals.length > 0 ? colors.warning : colors.success} />
+        <StatCard label="Pending Requisition" value={pendingApprovals.length} subtitle="awaiting approval" accentColor={pendingApprovals.length > 0 ? colors.warning : colors.success} />
         <StatCard label="Kitchen Alerts" value={lowStock.length + outOfStock.length} subtitle={`${outOfStock.length} out of stock`} accentColor={lowStock.length + outOfStock.length > 0 ? colors.danger : colors.success} />
         <StatCard label="Vehicles Active" value={activeVehicles.length} subtitle={`${maintVehicles.length} in maintenance`} accentColor={colors.info} />
       </CardGrid>
@@ -348,6 +353,13 @@ function OverviewPage({ pendingApprovals, boardingStore, kitchenStore, transport
         <StatCard label="Maintenance Issues" value={openIssues.length} subtitle="unresolved" accentColor={openIssues.length > 0 ? colors.danger : colors.success} />
         <StatCard label="Welfare Concerns" value={welfareUnresolved.length} subtitle="unresolved" accentColor={welfareUnresolved.length > 0 ? colors.warning : colors.success} />
         <StatCard label="Discipline Escalated" value={disciplineEscalated.length} subtitle="to Headmaster" accentColor={disciplineEscalated.length > 0 ? colors.danger : colors.success} />
+      </CardGrid>
+
+      <CardGrid>
+        <StatCard label="Students on Exeat" value={activeExeats.length} subtitle="currently out" accentColor={activeExeats.length > 0 ? colors.warning : colors.success} />
+        <StatCard label="Pending Exeats" value={pendingExeats.length} subtitle="awaiting SHM approval" accentColor={pendingExeats.length > 0 ? colors.warning : colors.success} />
+        <StatCard label="Bedding Items" value={boardingStore.bedding.length} subtitle="tracked" accentColor={colors.info} />
+        <StatCard label="Dorm Inspections" value={boardingStore.dormInspections.length} subtitle="recorded" accentColor={colors.primary} />
       </CardGrid>
 
       <Text style={styles.pageTitle}>Houses Summary</Text>
@@ -383,6 +395,22 @@ function OverviewPage({ pendingApprovals, boardingStore, kitchenStore, transport
         <TouchableOpacity style={[styles.alertBanner, { backgroundColor: colors.dangerBg, borderLeftColor: colors.danger }]} onPress={() => setActivePage('cleaning')}>
           <Text style={[styles.alertBannerText, { color: colors.danger }]}>{openIssues.length} maintenance issue(s) unresolved →</Text>
         </TouchableOpacity>
+      )}
+
+      {activeExeats.length > 0 && (
+        <>
+          <Text style={styles.pageTitle}>Students Currently on Exeat</Text>
+          <DataTable
+            columns={[
+              { key: 'studentName', label: 'Student', render: (i: any) => i.studentName },
+              { key: 'house', label: 'House', render: (i: any) => i.house },
+              { key: 'destination', label: 'Destination', render: (i: any) => i.destination },
+              { key: 'returnDate', label: 'Expected Return', render: (i: any) => i.returnDate },
+              { key: 'status', label: 'Status', render: (i: any) => i.status },
+            ]}
+            data={activeExeats}
+          />
+        </>
       )}
     </View>
   );

@@ -15,6 +15,7 @@ import { useRequisitionStore } from '@store/requisitionStore';
 import { RequisitionModal } from '@components/RequisitionModal';
 import { useExeatStore, EXEAT_REASONS, TRANSPORT_MODES } from '@store/exeatStore';
 import type { ExeatReason } from '@store/exeatStore';
+import { useCleaningStore } from '@store/cleaningStore';
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'Overview' },
@@ -25,6 +26,10 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'welfare', label: 'Welfare Check' },
   { key: 'exeats', label: 'Exeats' },
   { key: 'requisitions', label: 'Requisitions' },
+  { key: 'bedding', label: 'Bedding' },
+  { key: 'inspections', label: 'Dorm Inspections' },
+  { key: 'meetings', label: 'House Meetings' },
+  { key: 'reportIssue', label: 'Report Issue' },
   { key: 'menu', label: "Today's Menu" },
   { key: 'reports', label: 'Reports' },
 ];
@@ -47,12 +52,18 @@ export function HouseDashboard() {
     addDiscipline, deleteDiscipline, getDisciplineByHouse, escalateDiscipline,
     addWelfare, deleteWelfare, getWelfareByHouse, resolveWelfare,
     getHouseByHousemaster,
+    getBeddingByHouse,
+    getDormInspectionsByHouse,
+    houseMeetings,
   } = useBoardingStore();
+
+  const cleaningStore = useCleaningStore();
 
   useEffect(() => {
     useBoardingStore.getState().loadAll();
     useRequisitionStore.getState().loadAll();
     useExeatStore.getState().loadAll();
+    useCleaningStore.getState().loadAll();
   }, []);
 
   const {
@@ -85,6 +96,7 @@ export function HouseDashboard() {
     destination: '', departureDate: todayStr(), returnDate: todayStr(),
     guardianName: '', guardianPhone: '', transportMode: 'Private Car',
   });
+  const [issueForm, setIssueForm] = useState({ location: '', issue: '', priority: 'Medium', notes: '' });
 
   const openModal = (type: string) => { setModalType(type); setShowModal(true); };
   const closeModal = () => { setShowModal(false); };
@@ -133,6 +145,20 @@ export function HouseDashboard() {
     setExeatForm({ studentName: '', admissionNo: '', class: '', reason: 'Medical', reasonDetail: '', destination: '', departureDate: todayStr(), returnDate: todayStr(), guardianName: '', guardianPhone: '', transportMode: 'Private Car' });
     closeModal();
     Alert.alert('Exeat Issued', 'Exeat request submitted for Senior Housemaster approval. The student will receive a pass once approved.');
+  };
+
+  const handleSaveIssue = () => {
+    if (!issueForm.issue.trim()) { Alert.alert('Error', 'Issue description is required'); return; }
+    cleaningStore.addIssue({
+      location: issueForm.location.trim() || HOUSE_NAME,
+      issue: issueForm.issue.trim(),
+      priority: issueForm.priority as 'High' | 'Medium' | 'Low',
+      reportedBy: recordedBy,
+      notes: issueForm.notes.trim(),
+    });
+    setIssueForm({ location: '', issue: '', priority: 'Medium', notes: '' });
+    closeModal();
+    Alert.alert('Reported', 'Issue has been reported to Asst. Head (Domestic) for action.');
   };
 
   const generateExeatPass = (exeatId: string) => {
@@ -601,6 +627,148 @@ export function HouseDashboard() {
           </View>
         );
 
+      case 'bedding':
+        return (() => {
+          const houseBedding = getBeddingByHouse(HOUSE_NAME);
+          const conditionColor = (c: string) => c === 'Good' ? colors.success : c === 'Fair' ? colors.warning : c === 'Poor' ? colors.danger : colors.danger;
+          return (
+            <View>
+              <CardGrid>
+                <StatCard label="Total Items" value={houseBedding.length} accentColor={colors.primary} />
+                <StatCard label="Good" value={houseBedding.filter((b: any) => b.condition === 'Good').length} accentColor={colors.success} />
+                <StatCard label="Fair/Poor" value={houseBedding.filter((b: any) => b.condition === 'Fair' || b.condition === 'Poor').length} accentColor={colors.warning} />
+                <StatCard label="Damaged" value={houseBedding.filter((b: any) => b.condition === 'Damaged').length} accentColor={colors.danger} />
+              </CardGrid>
+              <Text style={styles.pageTitle}>Bedding Inventory — {HOUSE_NAME}</Text>
+              <Text style={styles.pageSubtitle}>Tracked by Asst. Head (Domestic). Read-only view for housemasters.</Text>
+              {houseBedding.length === 0 && <Text style={styles.emptyText}>No bedding records for your house yet.</Text>}
+              {houseBedding.map((b: any) => (
+                <View key={b.id} style={[styles.disciplineCard, { borderLeftColor: conditionColor(b.condition) }]}>
+                  <View style={styles.disciplineHeader}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.disciplineStudent}>{b.item}{b.room ? ` — Room ${b.room}` : ''}</Text>
+                      <Text style={styles.disciplineMeta}>Qty: {b.quantity} | Last Checked: {b.lastChecked}</Text>
+                      {b.notes && <Text style={styles.disciplineMeta}>{b.notes}</Text>}
+                    </View>
+                    <View style={styles.disciplineBadges}>
+                      <View style={[styles.statusBadge, { backgroundColor: conditionColor(b.condition) + '20' }]}>
+                        <Text style={[styles.statusText, { color: conditionColor(b.condition) }]}>{b.condition}</Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+          );
+        })();
+
+      case 'inspections':
+        return (() => {
+          const houseInspections = getDormInspectionsByHouse(HOUSE_NAME);
+          const resultColor = (r: string) => r === 'Pass' ? colors.success : r === 'Warning' ? colors.warning : colors.danger;
+          return (
+            <View>
+              <CardGrid>
+                <StatCard label="Inspections" value={houseInspections.length} accentColor={colors.primary} />
+                <StatCard label="Avg Score" value={houseInspections.length > 0 ? `${Math.round(houseInspections.reduce((s: number, d: any) => s + d.overallScore, 0) / houseInspections.length)}%` : '—'} accentColor={colors.info} />
+                <StatCard label="Follow-ups" value={houseInspections.filter((d: any) => d.followUp).length} accentColor={colors.warning} />
+                <StatCard label="Fails" value={houseInspections.filter((d: any) => d.overallScore < 60).length} accentColor={colors.danger} />
+              </CardGrid>
+              <Text style={styles.pageTitle}>Dormitory Inspections — {HOUSE_NAME}</Text>
+              <Text style={styles.pageSubtitle}>Conducted by Asst. Head (Domestic). Read-only view for housemasters.</Text>
+              {houseInspections.length === 0 && <Text style={styles.emptyText}>No inspections recorded for your house yet.</Text>}
+              {houseInspections.map((d: any) => (
+                <View key={d.id} style={[styles.disciplineCard, { borderLeftColor: d.overallScore >= 80 ? colors.success : d.overallScore >= 60 ? colors.warning : colors.danger }]}>
+                  <View style={styles.disciplineHeader}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.disciplineStudent}>{d.date} — Score: {d.overallScore}%</Text>
+                      <Text style={styles.disciplineMeta}>Inspector: {d.inspector}{d.room ? ` | Room: ${d.room}` : ''}</Text>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                        {[
+                          { l: 'Cleanliness', v: d.cleanliness },
+                          { l: 'Bedding', v: d.beddingCheck },
+                          { l: 'Ventilation', v: d.ventilation },
+                          { l: 'Lighting', v: d.lighting },
+                          { l: 'Security', v: d.security },
+                        ].map((c) => (
+                          <View key={c.l} style={{ backgroundColor: colors.surfaceAlt, borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 4 }}>
+                            <Text style={{ fontSize: fontSize.xs, color: colors.textSecondary }}>{c.l}</Text>
+                            <Text style={{ fontSize: fontSize.sm, fontWeight: fontWeight.bold, color: resultColor(c.v) }}>{c.v}</Text>
+                          </View>
+                        ))}
+                      </View>
+                      {d.notes && <Text style={styles.disciplineMeta}>Notes: {d.notes}</Text>}
+                      {d.followUp && <Text style={{ fontSize: fontSize.xs, fontWeight: fontWeight.bold, color: colors.danger, marginTop: 4 }}>⚠ Follow-up required</Text>}
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+          );
+        })();
+
+      case 'meetings':
+        return (
+          <View>
+            <CardGrid>
+              <StatCard label="Total Meetings" value={houseMeetings.length} accentColor={colors.primary} />
+              <StatCard label="Latest" value={houseMeetings.length > 0 ? houseMeetings[0].date : '—'} accentColor={colors.info} />
+            </CardGrid>
+            <Text style={styles.pageTitle}>House Meetings</Text>
+            <Text style={styles.pageSubtitle}>Chaired by Asst. Head (Domestic). Meeting minutes and decisions.</Text>
+            {houseMeetings.length === 0 && <Text style={styles.emptyText}>No meetings recorded yet.</Text>}
+            {houseMeetings.map((m: any) => (
+              <View key={m.id} style={[styles.disciplineCard, { borderLeftColor: colors.primary }]}>
+                <View style={styles.disciplineHeader}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.disciplineStudent}>Meeting — {m.date}</Text>
+                    <Text style={styles.disciplineMeta}>Chaired by: {m.chairedBy}</Text>
+                    <Text style={styles.disciplineMeta}>Attendees: {m.attendees.join(', ') || 'N/A'}</Text>
+                    <Text style={[styles.disciplineMeta, { fontWeight: fontWeight.bold, marginTop: 6 }]}>Agenda: {m.agenda}</Text>
+                    {m.minutes && <Text style={styles.disciplineMeta}>Minutes: {m.minutes}</Text>}
+                    {m.decisions && <Text style={styles.disciplineMeta}>Decisions: {m.decisions}</Text>}
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        );
+
+      case 'reportIssue':
+        return (
+          <View>
+            <CardGrid>
+              <StatCard label="Reported" value={cleaningStore.issues.filter((i) => i.location.includes(HOUSE_NAME)).length} accentColor={colors.primary} />
+              <StatCard label="Open" value={cleaningStore.issues.filter((i) => i.location.includes(HOUSE_NAME) && i.status === 'Reported').length} accentColor={colors.warning} />
+              <StatCard label="Scheduled" value={cleaningStore.issues.filter((i) => i.location.includes(HOUSE_NAME) && i.status === 'Repair Scheduled').length} accentColor={colors.info} />
+              <StatCard label="Fixed" value={cleaningStore.issues.filter((i) => i.location.includes(HOUSE_NAME) && i.status === 'Fixed').length} accentColor={colors.success} />
+            </CardGrid>
+
+            <TouchableOpacity style={styles.actionBtn} onPress={() => { setIssueForm({ location: '', issue: '', priority: 'Medium', notes: '' }); openModal('issue'); }}>
+              <Text style={styles.actionBtnText}>+ Report New Issue</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.sectionTitle}>Issues for {HOUSE_NAME}</Text>
+            <Text style={styles.pageSubtitle}>Report cleaning/maintenance issues to Asst. Head (Domestic)</Text>
+            {cleaningStore.issues.filter((i) => i.location.includes(HOUSE_NAME)).length === 0 && <Text style={styles.emptyText}>No issues reported yet.</Text>}
+            {cleaningStore.issues.filter((i) => i.location.includes(HOUSE_NAME)).map((i) => (
+              <View key={i.id} style={[styles.disciplineCard, { borderLeftColor: i.priority === 'High' ? colors.danger : i.priority === 'Medium' ? colors.warning : colors.textSecondary }]}>
+                <View style={styles.disciplineHeader}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.disciplineStudent}>{i.issue}</Text>
+                    <Text style={styles.disciplineMeta}>{i.date} | Location: {i.location} | By: {i.reportedBy}</Text>
+                    {i.notes && <Text style={styles.disciplineMeta}>Notes: {i.notes}</Text>}
+                  </View>
+                  <View style={styles.disciplineBadges}>
+                    {renderBadge(i.priority, i.priority === 'High' ? colors.danger : i.priority === 'Medium' ? colors.warning : colors.textSecondary)}
+                    {renderBadge(i.status, i.status === 'Fixed' ? colors.success : i.status === 'Repair Scheduled' ? colors.info : colors.warning)}
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        );
+
       case 'menu':
         return (
           <View>
@@ -658,7 +826,7 @@ export function HouseDashboard() {
   };
 
   const renderModal = () => {
-    const titles: Record<string, string> = { student: 'Add Student', room: 'Add Room', discipline: 'Log Discipline Incident', welfare: 'Add Welfare Note', exeat: 'Issue Exeat' };
+    const titles: Record<string, string> = { student: 'Add Student', room: 'Add Room', discipline: 'Log Discipline Incident', welfare: 'Add Welfare Note', exeat: 'Issue Exeat', issue: 'Report Issue to Domestic' };
     return (
       <Modal visible={showModal} transparent animationType="fade" onRequestClose={closeModal}>
         <View style={styles.modalOverlay}><View style={styles.modalContent}><ScrollView showsVerticalScrollIndicator={false}>
@@ -736,9 +904,28 @@ export function HouseDashboard() {
             </View>
           )}
 
+          {modalType === 'issue' && (
+            <View>
+              <Text style={styles.inputLabel}>Location</Text>
+              <TextInput style={styles.input} placeholder={`e.g. ${HOUSE_NAME} Room A-12`} placeholderTextColor={colors.textLight} value={issueForm.location} onChangeText={(v) => setIssueForm({ ...issueForm, location: v })} />
+              <Text style={styles.inputLabel}>Issue Description *</Text>
+              <TextInput style={[styles.input, styles.textArea]} placeholder="e.g. Broken window latch, leaking pipe" placeholderTextColor={colors.textLight} value={issueForm.issue} onChangeText={(v) => setIssueForm({ ...issueForm, issue: v })} multiline />
+              <Text style={styles.inputLabel}>Priority</Text>
+              <View style={styles.selectRow}>
+                {['High', 'Medium', 'Low'].map((p) => (
+                  <TouchableOpacity key={p} style={[styles.selectChip, issueForm.priority === p && styles.selectChipActive]} onPress={() => setIssueForm({ ...issueForm, priority: p })}>
+                    <Text style={[styles.selectChipText, issueForm.priority === p && styles.selectChipTextActive]}>{p}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={styles.inputLabel}>Additional Notes</Text>
+              <TextInput style={[styles.input, styles.textArea]} placeholder="Any extra details" placeholderTextColor={colors.textLight} value={issueForm.notes} onChangeText={(v) => setIssueForm({ ...issueForm, notes: v })} multiline />
+            </View>
+          )}
+
           <View style={styles.modalActions}>
             <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={closeModal}><Text style={styles.modalBtnTextDark}>Cancel</Text></TouchableOpacity>
-            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={() => { if (modalType === 'student') handleSaveStudent(); else if (modalType === 'room') handleSaveRoom(); else if (modalType === 'discipline') handleSaveDiscipline(); else if (modalType === 'welfare') handleSaveWelfare(); else if (modalType === 'exeat') handleSaveExeat(); }}><Text style={styles.modalBtnTextLight}>Save</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={() => { if (modalType === 'student') handleSaveStudent(); else if (modalType === 'room') handleSaveRoom(); else if (modalType === 'discipline') handleSaveDiscipline(); else if (modalType === 'welfare') handleSaveWelfare(); else if (modalType === 'exeat') handleSaveExeat(); else if (modalType === 'issue') handleSaveIssue(); }}><Text style={styles.modalBtnTextLight}>Save</Text></TouchableOpacity>
           </View>
         </ScrollView></View></View>
       </Modal>
