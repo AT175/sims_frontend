@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Modal, TextInput, Pressable } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid, DataTable, KitchenMenuWidget } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
 import { useAuthStore } from '@store/authStore';
 import { useRequisitionStore } from '@store/requisitionStore';
-import { useBoardingStore } from '@store/boardingStore';
+import { useBoardingStore, BEDDING_CONDITIONS, DORM_INSPECTION_RESULTS } from '@store/index';
 import { useKitchenStore } from '@store/kitchenStore';
 import { useTransportStore } from '@store/transportStore';
 import { useCleaningStore } from '@store/cleaningStore';
@@ -15,6 +15,8 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'catering', label: 'Catering & Kitchen' },
   { key: 'transport', label: 'Transport' },
   { key: 'cleaning', label: 'Cleaning & Maintenance' },
+  { key: 'dormInspections', label: 'Dormitory Inspections' },
+  { key: 'houseMeetings', label: 'House Meetings' },
   { key: 'approvals', label: 'Requisition Approvals' },
   { key: 'compliance', label: 'Compliance' },
   { key: 'reports', label: 'Reports' },
@@ -271,6 +273,12 @@ export function DomesticDashboard() {
       case 'cleaning':
         return <CleaningPage cleaningStore={cleaningStore} />;
 
+      case 'dormInspections':
+        return <DormInspectionsPage boardingStore={boardingStore} recordedBy={recordedBy} />;
+
+      case 'houseMeetings':
+        return <HouseMeetingsPage boardingStore={boardingStore} recordedBy={recordedBy} />;
+
       case 'approvals':
         return (
           <ApprovalsPage
@@ -384,7 +392,7 @@ function OverviewPage({ pendingApprovals, boardingStore, kitchenStore, transport
 
 function BoardingPage({ boardingStore }: any) {
   const [subTab, setSubTab] = useState('houses');
-  const tabs = ['houses', 'rollcall', 'discipline', 'welfare'];
+  const tabs = ['houses', 'rollcall', 'discipline', 'welfare', 'bedding', 'allocation', 'assign'];
 
   return (
     <View>
@@ -398,7 +406,7 @@ function BoardingPage({ boardingStore }: any) {
       <View style={styles.subTabRow}>
         {tabs.map((t) => (
           <TouchableOpacity key={t} style={[styles.subTab, subTab === t && styles.subTabActive]} onPress={() => setSubTab(t)}>
-            <Text style={[styles.subTabText, subTab === t && styles.subTabTextActive]}>{t === 'houses' ? 'Houses & Rooms' : t === 'rollcall' ? 'Roll Call' : t === 'discipline' ? 'Discipline' : 'Welfare'}</Text>
+            <Text style={[styles.subTabText, subTab === t && styles.subTabTextActive]}>{t === 'houses' ? 'Houses & Rooms' : t === 'rollcall' ? 'Roll Call' : t === 'discipline' ? 'Discipline' : t === 'welfare' ? 'Welfare' : t === 'bedding' ? 'Bedding' : t === 'allocation' ? 'House Allocation' : 'Assign Housemaster'}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -485,11 +493,288 @@ function BoardingPage({ boardingStore }: any) {
           ))}
         </View>
       )}
+
+      {subTab === 'bedding' && (
+        <BeddingSubTab boardingStore={boardingStore} />
+      )}
+
+      {subTab === 'allocation' && (
+        <AllocationSubTab boardingStore={boardingStore} />
+      )}
+
+      {subTab === 'assign' && (
+        <AssignHousemasterSubTab boardingStore={boardingStore} />
+      )}
     </View>
   );
 }
 
-// ── Catering Page ──
+// ── Bedding Sub-Tab ──
+
+function BeddingSubTab({ boardingStore }: any) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ house: '', room: '', item: '', quantity: '', condition: 'Good' as string, notes: '' });
+
+  const handleAdd = () => {
+    if (!form.house || !form.item || !form.quantity) {
+      Alert.alert('Missing Fields', 'House, item and quantity are required.');
+      return;
+    }
+    boardingStore.addBedding({
+      house: form.house,
+      room: form.room,
+      item: form.item,
+      quantity: parseInt(form.quantity, 10) || 0,
+      condition: form.condition,
+      lastChecked: new Date().toISOString().slice(0, 10),
+      notes: form.notes,
+    });
+    setForm({ house: '', room: '', item: '', quantity: '', condition: 'Good', notes: '' });
+    setShowAdd(false);
+  };
+
+  const conditionColor = (c: string) => c === 'Good' ? colors.success : c === 'Fair' ? colors.warning : c === 'Poor' ? colors.danger : colors.danger;
+
+  return (
+    <View>
+      <View style={styles.rowBetween}>
+        <Text style={styles.pageTitle}>Bedding Inventory</Text>
+        <TouchableOpacity style={styles.addBtn} onPress={() => setShowAdd(true)}>
+          <Text style={styles.addBtnText}>+ Add Bedding</Text>
+        </TouchableOpacity>
+      </View>
+      <Text style={styles.pageSubtitle}>Track bedding condition and allocation per house/room</Text>
+
+      <CardGrid>
+        <StatCard label="Total Items" value={boardingStore.bedding.length} accentColor={colors.primary} />
+        <StatCard label="Good" value={boardingStore.bedding.filter((b: any) => b.condition === 'Good').length} accentColor={colors.success} />
+        <StatCard label="Fair/Poor" value={boardingStore.bedding.filter((b: any) => b.condition === 'Fair' || b.condition === 'Poor').length} accentColor={colors.warning} />
+        <StatCard label="Damaged" value={boardingStore.bedding.filter((b: any) => b.condition === 'Damaged').length} accentColor={colors.danger} />
+      </CardGrid>
+
+      {boardingStore.bedding.length === 0 && <Text style={styles.emptyText}>No bedding records yet.</Text>}
+
+      {boardingStore.bedding.map((b: any) => (
+        <View key={b.id} style={styles.detailCard}>
+          <View style={styles.detailHeader}>
+            <Text style={styles.detailTitle}>{b.item} — {b.house}{b.room ? ` / ${b.room}` : ''}</Text>
+            <View style={[styles.statusBadge, { backgroundColor: conditionColor(b.condition) + '20' }]}>
+              <Text style={[styles.statusText, { color: conditionColor(b.condition) }]}>{b.condition}</Text>
+            </View>
+          </View>
+          <Text style={styles.detailMeta}>Qty: {b.quantity} | Last Checked: {b.lastChecked}</Text>
+          {b.notes && <Text style={styles.detailBody}>{b.notes}</Text>}
+          <TouchableOpacity onPress={() => boardingStore.deleteBedding(b.id)}>
+            <Text style={styles.deleteLink}>Remove</Text>
+          </TouchableOpacity>
+        </View>
+      ))}
+
+      <Modal visible={showAdd} transparent animationType="slide" onRequestClose={() => setShowAdd(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowAdd(false)}>
+          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.modalTitle}>Add Bedding Item</Text>
+            {boardingStore.houses.length > 0 && (
+              <View style={styles.pickerRow}>
+                {boardingStore.houses.map((h: any) => (
+                  <TouchableOpacity key={h.id} style={[styles.pickerChip, form.house === h.name && styles.pickerChipActive]} onPress={() => setForm({ ...form, house: h.name })}>
+                    <Text style={[styles.pickerChipText, form.house === h.name && styles.pickerChipTextActive]}>{h.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+            <TextInput style={styles.input} placeholder="Room (optional)" value={form.room} onChangeText={(v) => setForm({ ...form, room: v })} />
+            <TextInput style={styles.input} placeholder="Item (e.g. Mattress, Bedsheet, Pillow)" value={form.item} onChangeText={(v) => setForm({ ...form, item: v })} />
+            <TextInput style={styles.input} placeholder="Quantity" keyboardType="numeric" value={form.quantity} onChangeText={(v) => setForm({ ...form, quantity: v })} />
+            <View style={styles.pickerRow}>
+              {BEDDING_CONDITIONS.map((c) => (
+                <TouchableOpacity key={c} style={[styles.pickerChip, form.condition === c && styles.pickerChipActive]} onPress={() => setForm({ ...form, condition: c })}>
+                  <Text style={[styles.pickerChipText, form.condition === c && styles.pickerChipTextActive]}>{c}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TextInput style={styles.input} placeholder="Notes (optional)" value={form.notes} onChangeText={(v) => setForm({ ...form, notes: v })} multiline />
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowAdd(false)}><Text style={styles.cancelBtnText}>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleAdd}><Text style={styles.saveBtnText}>Save</Text></TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </View>
+  );
+}
+
+// ── House Allocation Sub-Tab ──
+
+function AllocationSubTab({ boardingStore }: any) {
+  const [showAssign, setShowAssign] = useState(false);
+  const [form, setForm] = useState({ studentId: '', house: '', room: '' });
+
+  const unassigned = boardingStore.students.filter((s: any) => !s.house || s.house === '');
+  const houseList = boardingStore.getHouseList();
+
+  const handleAssign = () => {
+    if (!form.studentId || !form.house) {
+      Alert.alert('Missing Fields', 'Student and house are required.');
+      return;
+    }
+    boardingStore.assignStudentToHouse(form.studentId, form.house, form.room);
+    setForm({ studentId: '', house: '', room: '' });
+    setShowAssign(false);
+  };
+
+  const generateHouseListPDF = () => {
+    const now = new Date().toLocaleString();
+    let body = '';
+    houseList.forEach((hl: any) => {
+      body += `<h2>${hl.house} House</h2><table style="border-collapse:collapse;width:100%;margin-bottom:20px;font-size:12px"><thead><tr style="background:#f0f0f0"><th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Adm No</th><th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Name</th><th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Class</th><th style="padding:6px 8px;border:1px solid #ddd;text-align:left">Room</th></tr></thead><tbody>`;
+      hl.students.forEach((s: any) => {
+        body += `<tr><td style="padding:4px 8px;border:1px solid #ddd">${s.admNo}</td><td style="padding:4px 8px;border:1px solid #ddd">${s.name}</td><td style="padding:4px 8px;border:1px solid #ddd">${s.class}</td><td style="padding:4px 8px;border:1px solid #ddd">${s.room || '-'}</td></tr>`;
+      });
+      body += `</tbody></table>`;
+    });
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>House List</title><style>*{font-family:'Segoe UI',Arial,sans-serif}body{padding:40px;color:#1A1A2E;max-width:900px;margin:0 auto}h1{color:#0F4C75;border-bottom:3px solid #0F4C75;padding-bottom:10px}h2{color:#2D3142;margin-top:30px}table{font-size:13px}th{font-weight:600}@media print{body{padding:20px}}</style></head><body><h1>House List</h1><p>Generated: ${now}</p>${body}<script>window.onload=function(){window.print()}</script></body></html>`;
+    const printWin = window.open('', '_blank');
+    if (printWin) { printWin.document.write(html); printWin.document.close(); }
+    else { Alert.alert('Popup Blocked', 'Please allow popups to generate the house list.'); }
+  };
+
+  return (
+    <View>
+      <View style={styles.rowBetween}>
+        <Text style={styles.pageTitle}>House Allocation</Text>
+        <View style={styles.rowGap}>
+          <TouchableOpacity style={styles.addBtn} onPress={() => setShowAssign(true)}>
+            <Text style={styles.addBtnText}>+ Assign Student</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.pdfBtn} onPress={generateHouseListPDF}>
+            <Text style={styles.pdfBtnText}>Print House List</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+      <Text style={styles.pageSubtitle}>Allocate students to houses and prepare house lists</Text>
+
+      {unassigned.length > 0 && (
+        <TouchableOpacity style={styles.alertBanner} onPress={() => setShowAssign(true)}>
+          <Text style={styles.alertBannerText}>{unassigned.length} student(s) not yet allocated to a house →</Text>
+        </TouchableOpacity>
+      )}
+
+      {houseList.map((hl: any) => (
+        <View key={hl.house}>
+          <Text style={styles.sectionTitle}>{hl.house} House ({hl.students.length} students)</Text>
+          <DataTable
+            columns={[
+              { key: 'admNo', label: 'Adm No', render: (i: any) => i.admNo },
+              { key: 'name', label: 'Name', render: (i: any) => i.name },
+              { key: 'class', label: 'Class', render: (i: any) => i.class },
+              { key: 'room', label: 'Room', render: (i: any) => i.room || '-' },
+            ]}
+            data={hl.students}
+          />
+        </View>
+      ))}
+
+      <Modal visible={showAssign} transparent animationType="slide" onRequestClose={() => setShowAssign(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowAssign(false)}>
+          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.modalTitle}>Assign Student to House</Text>
+            {boardingStore.students.length === 0 ? (
+              <Text style={styles.emptyText}>No students registered yet.</Text>
+            ) : (
+              <>
+                <Text style={styles.inputLabel}>Select Student</Text>
+                <View style={styles.pickerRow}>
+                  {boardingStore.students.slice(0, 20).map((s: any) => (
+                    <TouchableOpacity key={s.id} style={[styles.pickerChip, form.studentId === s.id && styles.pickerChipActive]} onPress={() => setForm({ ...form, studentId: s.id })}>
+                      <Text style={[styles.pickerChipText, form.studentId === s.id && styles.pickerChipTextActive]} numberOfLines={1}>{s.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <Text style={styles.inputLabel}>Select House</Text>
+                <View style={styles.pickerRow}>
+                  {boardingStore.houses.map((h: any) => (
+                    <TouchableOpacity key={h.id} style={[styles.pickerChip, form.house === h.name && styles.pickerChipActive]} onPress={() => setForm({ ...form, house: h.name })}>
+                      <Text style={[styles.pickerChipText, form.house === h.name && styles.pickerChipTextActive]}>{h.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TextInput style={styles.input} placeholder="Room (optional)" value={form.room} onChangeText={(v) => setForm({ ...form, room: v })} />
+                <View style={styles.modalActions}>
+                  <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowAssign(false)}><Text style={styles.cancelBtnText}>Cancel</Text></TouchableOpacity>
+                  <TouchableOpacity style={styles.saveBtn} onPress={handleAssign}><Text style={styles.saveBtnText}>Assign</Text></TouchableOpacity>
+                </View>
+              </>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </View>
+  );
+}
+
+// ── Assign Housemaster Sub-Tab ──
+
+function AssignHousemasterSubTab({ boardingStore }: any) {
+  const [editingHouse, setEditingHouse] = useState<string | null>(null);
+  const [form, setForm] = useState({ housemasterName: '', phone: '' });
+
+  const handleAssign = (houseId: string) => {
+    if (!form.housemasterName) {
+      Alert.alert('Missing Name', 'Housemaster/Housemistress name is required.');
+      return;
+    }
+    boardingStore.assignHousemaster(houseId, form.housemasterName, form.phone);
+    setEditingHouse(null);
+    setForm({ housemasterName: '', phone: '' });
+    Alert.alert('Assigned', 'Housemaster/Housemistress has been assigned to the dormitory.');
+  };
+
+  return (
+    <View>
+      <Text style={styles.pageTitle}>Assign Housemasters/Housemistresses</Text>
+      <Text style={styles.pageSubtitle}>Assign staff to oversee dormitories</Text>
+
+      {boardingStore.houses.length === 0 && <Text style={styles.emptyText}>No houses registered yet.</Text>}
+
+      {boardingStore.houses.map((h: any) => (
+        <View key={h.id} style={styles.detailCard}>
+          <View style={styles.detailHeader}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.detailTitle}>{h.name} ({h.type})</Text>
+              <Text style={styles.detailMeta}>Capacity: {h.capacity} | Occupied: {h.occupied}</Text>
+            </View>
+            {editingHouse === h.id ? (
+              <TouchableOpacity onPress={() => { setEditingHouse(null); setForm({ housemasterName: '', phone: '' }); }}>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={styles.miniBtn} onPress={() => { setEditingHouse(h.id); setForm({ housemasterName: h.housemaster || '', phone: h.phone || '' }); }}>
+                <Text style={styles.miniBtnText}>Edit</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {editingHouse === h.id ? (
+            <View>
+              <TextInput style={styles.input} placeholder="Housemaster/Housemistress Name" value={form.housemasterName} onChangeText={(v) => setForm({ ...form, housemasterName: v })} />
+              <TextInput style={styles.input} placeholder="Phone Number" value={form.phone} onChangeText={(v) => setForm({ ...form, phone: v })} keyboardType="phone-pad" />
+              <TouchableOpacity style={styles.saveBtn} onPress={() => handleAssign(h.id)}>
+                <Text style={styles.saveBtnText}>Save Assignment</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View>
+              <Text style={styles.detailBody}>Housemaster: {h.housemaster || '— Not Assigned —'}</Text>
+              {h.phone && <Text style={styles.detailBody}>Phone: {h.phone}</Text>}
+            </View>
+          )}
+        </View>
+      ))}
+    </View>
+  );
+}
 
 function CateringPage({ kitchenStore }: any) {
   const [subTab, setSubTab] = useState('stock');
@@ -890,6 +1175,238 @@ function CompliancePage({ cleaningStore, transportStore, kitchenStore }: any) {
   );
 }
 
+// ── Dormitory Inspections Page ──
+
+function DormInspectionsPage({ boardingStore, recordedBy }: any) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({
+    house: '', room: '',
+    cleanliness: 'Pass' as string, beddingCheck: 'Pass' as string,
+    ventilation: 'Pass' as string, lighting: 'Pass' as string, security: 'Pass' as string,
+    notes: '',
+  });
+
+  const scoreFromResults = (results: string[]) => {
+    const passCount = results.filter((r) => r === 'Pass').length;
+    return Math.round((passCount / results.length) * 100);
+  };
+
+  const handleAdd = () => {
+    if (!form.house) {
+      Alert.alert('Missing House', 'Please select a house to inspect.');
+      return;
+    }
+    const results = [form.cleanliness, form.beddingCheck, form.ventilation, form.lighting, form.security];
+    const overallScore = scoreFromResults(results);
+    const hasFail = results.includes('Fail');
+    boardingStore.addDormInspection({
+      date: new Date().toISOString().slice(0, 10),
+      house: form.house,
+      room: form.room,
+      inspector: recordedBy,
+      cleanliness: form.cleanliness as any,
+      beddingCheck: form.beddingCheck as any,
+      ventilation: form.ventilation as any,
+      lighting: form.lighting as any,
+      security: form.security as any,
+      overallScore,
+      notes: form.notes,
+      followUp: hasFail || overallScore < 60,
+    });
+    setForm({ house: '', room: '', cleanliness: 'Pass', beddingCheck: 'Pass', ventilation: 'Pass', lighting: 'Pass', security: 'Pass', notes: '' });
+    setShowAdd(false);
+  };
+
+  const resultColor = (r: string) => r === 'Pass' ? colors.success : r === 'Warning' ? colors.warning : colors.danger;
+
+  const inspections = boardingStore.dormInspections;
+  const followUps = inspections.filter((d: any) => d.followUp);
+  const avgScore = inspections.length > 0 ? Math.round(inspections.reduce((s: number, d: any) => s + d.overallScore, 0) / inspections.length) : 100;
+
+  const renderCheckPicker = (label: string, value: string, setter: (v: string) => void) => (
+    <View key={label}>
+      <Text style={styles.inputLabel}>{label}</Text>
+      <View style={styles.pickerRow}>
+        {DORM_INSPECTION_RESULTS.map((r) => (
+          <TouchableOpacity key={r} style={[styles.pickerChip, value === r && styles.pickerChipActive]} onPress={() => setter(r)}>
+            <Text style={[styles.pickerChipText, value === r && styles.pickerChipTextActive]}>{r}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+
+  return (
+    <View>
+      <CardGrid>
+        <StatCard label="Total Inspections" value={inspections.length} accentColor={colors.primary} />
+        <StatCard label="Average Score" value={`${avgScore}%`} accentColor={avgScore >= 80 ? colors.success : avgScore >= 60 ? colors.warning : colors.danger} />
+        <StatCard label="Follow-ups" value={followUps.length} accentColor={followUps.length > 0 ? colors.warning : colors.success} />
+        <StatCard label="Fails" value={inspections.filter((d: any) => d.overallScore < 60).length} accentColor={colors.danger} />
+      </CardGrid>
+
+      <View style={styles.rowBetween}>
+        <Text style={styles.pageTitle}>Dormitory Inspections</Text>
+        <TouchableOpacity style={styles.addBtn} onPress={() => setShowAdd(true)}>
+          <Text style={styles.addBtnText}>+ New Inspection</Text>
+        </TouchableOpacity>
+      </View>
+      <Text style={styles.pageSubtitle}>Periodic checks of dormitories — cleanliness, bedding, ventilation, lighting, security</Text>
+
+      {inspections.length === 0 && <Text style={styles.emptyText}>No dormitory inspections recorded yet.</Text>}
+
+      {inspections.map((d: any) => (
+        <View key={d.id} style={styles.detailCard}>
+          <View style={styles.detailHeader}>
+            <Text style={styles.detailTitle}>{d.house} — {d.date}</Text>
+            <View style={[styles.statusBadge, { backgroundColor: (d.overallScore >= 80 ? colors.success : d.overallScore >= 60 ? colors.warning : colors.danger) + '20' }]}>
+              <Text style={[styles.statusText, { color: d.overallScore >= 80 ? colors.success : d.overallScore >= 60 ? colors.warning : colors.danger }]}>{d.overallScore}%</Text>
+            </View>
+          </View>
+          <View style={styles.inspectionGrid}>
+            {[
+              { label: 'Cleanliness', val: d.cleanliness },
+              { label: 'Bedding', val: d.beddingCheck },
+              { label: 'Ventilation', val: d.ventilation },
+              { label: 'Lighting', val: d.lighting },
+              { label: 'Security', val: d.security },
+            ].map((c) => (
+              <View key={c.label} style={styles.inspectionChip}>
+                <Text style={styles.inspectionChipLabel}>{c.label}</Text>
+                <Text style={[styles.inspectionChipVal, { color: resultColor(c.val) }]}>{c.val}</Text>
+              </View>
+            ))}
+          </View>
+          <Text style={styles.detailMeta}>Inspector: {d.inspector}{d.room ? ` | Room: ${d.room}` : ''}</Text>
+          {d.notes && <Text style={styles.detailBody}>{d.notes}</Text>}
+          {d.followUp && <Text style={styles.escalatedTag}>⚠ Follow-up required</Text>}
+          <TouchableOpacity onPress={() => boardingStore.deleteDormInspection(d.id)}>
+            <Text style={styles.deleteLink}>Remove</Text>
+          </TouchableOpacity>
+        </View>
+      ))}
+
+      <Modal visible={showAdd} transparent animationType="slide" onRequestClose={() => setShowAdd(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowAdd(false)}>
+          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.modalTitle}>New Dormitory Inspection</Text>
+            <Text style={styles.inputLabel}>Select House</Text>
+            <View style={styles.pickerRow}>
+              {boardingStore.houses.map((h: any) => (
+                <TouchableOpacity key={h.id} style={[styles.pickerChip, form.house === h.name && styles.pickerChipActive]} onPress={() => setForm({ ...form, house: h.name })}>
+                  <Text style={[styles.pickerChipText, form.house === h.name && styles.pickerChipTextActive]}>{h.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TextInput style={styles.input} placeholder="Room (optional)" value={form.room} onChangeText={(v) => setForm({ ...form, room: v })} />
+            {renderCheckPicker('Cleanliness', form.cleanliness, (v) => setForm({ ...form, cleanliness: v }))}
+            {renderCheckPicker('Bedding Check', form.beddingCheck, (v) => setForm({ ...form, beddingCheck: v }))}
+            {renderCheckPicker('Ventilation', form.ventilation, (v) => setForm({ ...form, ventilation: v }))}
+            {renderCheckPicker('Lighting', form.lighting, (v) => setForm({ ...form, lighting: v }))}
+            {renderCheckPicker('Security', form.security, (v) => setForm({ ...form, security: v }))}
+            <TextInput style={styles.input} placeholder="Notes (optional)" value={form.notes} onChangeText={(v) => setForm({ ...form, notes: v })} multiline />
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowAdd(false)}><Text style={styles.cancelBtnText}>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleAdd}><Text style={styles.saveBtnText}>Save Inspection</Text></TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </View>
+  );
+}
+
+// ── House Meetings Page ──
+
+function HouseMeetingsPage({ boardingStore, recordedBy }: any) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ date: new Date().toISOString().slice(0, 10), attendees: '', agenda: '', minutes: '', decisions: '' });
+
+  const meetings = boardingStore.houseMeetings;
+
+  const handleAdd = () => {
+    if (!form.date || !form.agenda) {
+      Alert.alert('Missing Fields', 'Date and agenda are required.');
+      return;
+    }
+    const attendees = form.attendees.split(',').map((a) => a.trim()).filter(Boolean);
+    boardingStore.addHouseMeeting({
+      date: form.date,
+      attendees,
+      agenda: form.agenda,
+      minutes: form.minutes,
+      decisions: form.decisions,
+      chairedBy: recordedBy,
+    });
+    setForm({ date: new Date().toISOString().slice(0, 10), attendees: '', agenda: '', minutes: '', decisions: '' });
+    setShowAdd(false);
+  };
+
+  const generateMeetingPDF = (m: any) => {
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>House Meeting Minutes</title><style>*{font-family:'Segoe UI',Arial,sans-serif}body{padding:40px;color:#1A1A2E;max-width:800px;margin:0 auto}h1{color:#0F4C75;border-bottom:3px solid #0F4C75;padding-bottom:10px}h2{color:#2D3142;margin-top:20px}.meta{font-size:13px;color:#888;margin-bottom:15px}.section{margin-bottom:20px}.attendees{background:#f5f5f5;padding:10px 15px;border-radius:8px;font-size:13px}@media print{body{padding:20px}}</style></head><body><h1>Housemistresses/Housemasters Meeting</h1><div class="meta">Date: ${m.date} | Chaired by: ${m.chairedBy}</div><div class="section"><h2>Attendees</h2><div class="attendees">${m.attendees.join(', ') || 'N/A'}</div></div><div class="section"><h2>Agenda</h2><p>${m.agenda}</p></div><div class="section"><h2>Minutes</h2><p>${(m.minutes || 'N/A').replace(/\n/g, '<br>')}</p></div><div class="section"><h2>Decisions</h2><p>${(m.decisions || 'N/A').replace(/\n/g, '<br>')}</p></div><script>window.onload=function(){window.print()}</script></body></html>`;
+    const printWin = window.open('', '_blank');
+    if (printWin) { printWin.document.write(html); printWin.document.close(); }
+    else { Alert.alert('Popup Blocked', 'Please allow popups to print meeting minutes.'); }
+  };
+
+  return (
+    <View>
+      <CardGrid>
+        <StatCard label="Total Meetings" value={meetings.length} accentColor={colors.primary} />
+        <StatCard label="Latest Meeting" value={meetings.length > 0 ? meetings[0].date : '—'} accentColor={colors.info} />
+      </CardGrid>
+
+      <View style={styles.rowBetween}>
+        <Text style={styles.pageTitle}>Housemistresses/Housemasters Meetings</Text>
+        <TouchableOpacity style={styles.addBtn} onPress={() => setShowAdd(true)}>
+          <Text style={styles.addBtnText}>+ New Meeting</Text>
+        </TouchableOpacity>
+      </View>
+      <Text style={styles.pageSubtitle}>Chairperson meetings with housemistresses and housemasters</Text>
+
+      {meetings.length === 0 && <Text style={styles.emptyText}>No meetings recorded yet.</Text>}
+
+      {meetings.map((m: any) => (
+        <View key={m.id} style={styles.detailCard}>
+          <View style={styles.detailHeader}>
+            <Text style={styles.detailTitle}>Meeting — {m.date}</Text>
+            <View style={styles.rowGap}>
+              <TouchableOpacity style={styles.miniBtn} onPress={() => generateMeetingPDF(m)}>
+                <Text style={styles.miniBtnText}>Print</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => boardingStore.deleteHouseMeeting(m.id)}>
+                <Text style={styles.deleteLink}>Remove</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <Text style={styles.detailMeta}>Chaired by: {m.chairedBy}</Text>
+          <Text style={styles.detailMeta}>Attendees: {m.attendees.join(', ') || 'N/A'}</Text>
+          <Text style={styles.detailBody}><Text style={{ fontWeight: fontWeight.bold }}>Agenda:</Text> {m.agenda}</Text>
+          {m.minutes && <Text style={styles.detailBody}><Text style={{ fontWeight: fontWeight.bold }}>Minutes:</Text> {m.minutes}</Text>}
+          {m.decisions && <Text style={styles.detailBody}><Text style={{ fontWeight: fontWeight.bold }}>Decisions:</Text> {m.decisions}</Text>}
+        </View>
+      ))}
+
+      <Modal visible={showAdd} transparent animationType="slide" onRequestClose={() => setShowAdd(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowAdd(false)}>
+          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.modalTitle}>New House Meeting</Text>
+            <TextInput style={styles.input} placeholder="Date (YYYY-MM-DD)" value={form.date} onChangeText={(v) => setForm({ ...form, date: v })} />
+            <TextInput style={styles.input} placeholder="Attendees (comma-separated)" value={form.attendees} onChangeText={(v) => setForm({ ...form, attendees: v })} />
+            <TextInput style={styles.input} placeholder="Agenda" value={form.agenda} onChangeText={(v) => setForm({ ...form, agenda: v })} multiline />
+            <TextInput style={styles.input} placeholder="Minutes" value={form.minutes} onChangeText={(v) => setForm({ ...form, minutes: v })} multiline />
+            <TextInput style={styles.input} placeholder="Decisions" value={form.decisions} onChangeText={(v) => setForm({ ...form, decisions: v })} multiline />
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowAdd(false)}><Text style={styles.cancelBtnText}>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleAdd}><Text style={styles.saveBtnText}>Save Meeting</Text></TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </View>
+  );
+}
+
 // ── Reports Page ──
 
 function ReportsPage({ boardingStore, kitchenStore, transportStore, cleaningStore, generatePDF }: any) {
@@ -1129,4 +1646,36 @@ const styles = StyleSheet.create({
   reportBarCount: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.text, width: 50, textAlign: 'right' },
   logoutBtn: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   logoutText: { color: colors.danger, fontSize: fontSize.sm, fontWeight: fontWeight.medium },
+
+  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs, flexWrap: 'wrap', gap: spacing.sm },
+  rowGap: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
+  addBtn: { backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: spacing.sm, paddingHorizontal: spacing.md },
+  addBtnText: { color: colors.white, fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
+  deleteLink: { fontSize: fontSize.sm, color: colors.danger, fontWeight: fontWeight.medium, marginTop: spacing.xs },
+
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: spacing.lg },
+  modalContent: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, maxHeight: '85%' },
+  modalTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.text, marginBottom: spacing.md },
+  modalActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md, justifyContent: 'flex-end' },
+  saveBtn: { backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg },
+  saveBtnText: { color: colors.white, fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
+  cancelBtn: { backgroundColor: colors.surfaceAlt, borderRadius: radius.md, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: colors.border },
+  cancelBtnText: { color: colors.textSecondary, fontSize: fontSize.sm, fontWeight: fontWeight.medium },
+
+  inputLabel: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, color: colors.textSecondary, marginBottom: spacing.xs, marginTop: spacing.sm },
+  input: { borderWidth: 1.5, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, fontSize: fontSize.md, color: colors.text, marginBottom: spacing.sm, backgroundColor: colors.surfaceAlt },
+
+  pickerRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
+  pickerChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.surfaceAlt },
+  pickerChipActive: { borderColor: colors.primary, backgroundColor: colors.primary + '15' },
+  pickerChipText: { fontSize: fontSize.sm, color: colors.textSecondary },
+  pickerChipTextActive: { color: colors.primary, fontWeight: fontWeight.bold },
+
+  miniBtn: { backgroundColor: colors.surfaceAlt, borderRadius: radius.sm, paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderWidth: 1, borderColor: colors.border },
+  miniBtnText: { color: colors.primary, fontSize: fontSize.xs, fontWeight: fontWeight.semibold },
+
+  inspectionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginVertical: spacing.sm },
+  inspectionChip: { backgroundColor: colors.surfaceAlt, borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, minWidth: 80 },
+  inspectionChipLabel: { fontSize: fontSize.xs, color: colors.textSecondary, marginBottom: 2 },
+  inspectionChipVal: { fontSize: fontSize.sm, fontWeight: fontWeight.bold },
 });

@@ -12,8 +12,8 @@ export { useSecurityStore, INCIDENT_TYPES, INCIDENT_SEVERITIES, INCIDENT_STATUSE
 export type { Guard, GateLog, Incident, IncidentType, IncidentSeverity, IncidentStatus, PatrolShift, ShiftName, PreRegisteredVisitor, VisitorStatus, GateStatus, ChecklistItem } from './securityStore';
 export { useTransportStore, VEHICLE_STATUSES, VEHICLE_TYPES, MAINTENANCE_STATUSES, MAINTENANCE_TYPES, DRIVER_STATUSES, LICENSE_CLASSES } from './transportStore';
 export type { Vehicle, TripLog, MaintenanceRecord, FuelLog, Driver, VehicleStatus, VehicleType, MaintenanceStatus, MaintenanceType, DriverStatus, LicenseClass } from './transportStore';
-export { useBoardingStore, ROLL_CALL_STATUSES, DISCIPLINE_SEVERITIES, HOUSE_TYPES } from './boardingStore';
-export type { BoardingStudent, Room, RollCallEntry, RollCallStatus, DisciplineLog, DisciplineSeverity, WelfareNote, House, HouseType } from './boardingStore';
+export { useBoardingStore, ROLL_CALL_STATUSES, DISCIPLINE_SEVERITIES, HOUSE_TYPES, BEDDING_CONDITIONS, DORM_INSPECTION_RESULTS } from './boardingStore';
+export type { BoardingStudent, Room, RollCallEntry, RollCallStatus, DisciplineLog, DisciplineSeverity, WelfareNote, House, HouseType, BeddingItem, BeddingCondition, HouseMeeting, DormInspection, DormInspectionResult } from './boardingStore';
 export { useExeatStore, EXEAT_STATUSES, EXEAT_REASONS, TRANSPORT_MODES } from './exeatStore';
 export type { Exeat, ExeatStatus, ExeatReason } from './exeatStore';
 export { usePLCStore, MEETING_STATUSES, ATTENDANCE_STATUSES, ACTION_ITEM_STATUSES, DUTY_DAYS, OBSERVATION_RATINGS, PLC_REQ_STATUSES, RESOURCE_CATEGORIES } from './plcStore';

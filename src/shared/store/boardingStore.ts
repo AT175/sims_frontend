@@ -70,11 +70,54 @@ export interface House {
   since: string;
 }
 
+export type BeddingCondition = 'Good' | 'Fair' | 'Poor' | 'Damaged';
+
+export interface BeddingItem {
+  id: string;
+  house: string;
+  room: string;
+  item: string;
+  quantity: number;
+  condition: BeddingCondition;
+  lastChecked: string;
+  notes?: string;
+}
+
+export interface HouseMeeting {
+  id: string;
+  date: string;
+  attendees: string[];
+  agenda: string;
+  minutes: string;
+  decisions: string;
+  chairedBy: string;
+}
+
+export type DormInspectionResult = 'Pass' | 'Fail' | 'Warning';
+
+export interface DormInspection {
+  id: string;
+  date: string;
+  house: string;
+  room: string;
+  inspector: string;
+  cleanliness: DormInspectionResult;
+  beddingCheck: DormInspectionResult;
+  ventilation: DormInspectionResult;
+  lighting: DormInspectionResult;
+  security: DormInspectionResult;
+  overallScore: number;
+  notes: string;
+  followUp: boolean;
+}
+
 // ── Constants ──
 
 export const ROLL_CALL_STATUSES: RollCallStatus[] = ['Present', 'Absent', 'Excused', 'Late'];
 export const DISCIPLINE_SEVERITIES: DisciplineSeverity[] = ['Minor', 'Moderate', 'Serious', 'Critical'];
 export const HOUSE_TYPES: HouseType[] = ['Boys', 'Girls'];
+export const BEDDING_CONDITIONS: BeddingCondition[] = ['Good', 'Fair', 'Poor', 'Damaged'];
+export const DORM_INSPECTION_RESULTS: DormInspectionResult[] = ['Pass', 'Fail', 'Warning'];
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -91,6 +134,9 @@ const initialRollCalls: RollCallEntry[] = [];
 const initialDiscipline: DisciplineLog[] = [];
 
 const initialWelfare: WelfareNote[] = [];
+const initialBedding: BeddingItem[] = [];
+const initialHouseMeetings: HouseMeeting[] = [];
+const initialDormInspections: DormInspection[] = [];
 
 // ── Store ──
 
@@ -101,6 +147,9 @@ interface BoardingState {
   rollCalls: RollCallEntry[];
   discipline: DisciplineLog[];
   welfare: WelfareNote[];
+  bedding: BeddingItem[];
+  houseMeetings: HouseMeeting[];
+  dormInspections: DormInspection[];
 
   // Students
   addStudent: (s: Omit<BoardingStudent, 'id'>) => void;
@@ -138,6 +187,23 @@ interface BoardingState {
   // House assignment
   assignHousemaster: (houseId: string, housemasterName: string, phone: string) => void;
   getHouseByHousemaster: (housemasterName: string) => House | undefined;
+  assignStudentToHouse: (studentId: string, house: string, room: string) => void;
+  getHouseList: () => { house: string; students: BoardingStudent[] }[];
+
+  // Bedding
+  addBedding: (b: Omit<BeddingItem, 'id'>) => void;
+  updateBedding: (id: string, updates: Partial<BeddingItem>) => void;
+  deleteBedding: (id: string) => void;
+  getBeddingByHouse: (house: string) => BeddingItem[];
+
+  // House Meetings
+  addHouseMeeting: (m: Omit<HouseMeeting, 'id'>) => void;
+  deleteHouseMeeting: (id: string) => void;
+
+  // Dorm Inspections
+  addDormInspection: (d: Omit<DormInspection, 'id'>) => void;
+  deleteDormInspection: (id: string) => void;
+  getDormInspectionsByHouse: (house: string) => DormInspection[];
 
   // API
   loadRollCalls: () => Promise<void>;
@@ -155,6 +221,9 @@ export const useBoardingStore = create<BoardingState>((set, get) => ({
   rollCalls: initialRollCalls,
   discipline: initialDiscipline,
   welfare: initialWelfare,
+  bedding: initialBedding,
+  houseMeetings: initialHouseMeetings,
+  dormInspections: initialDormInspections,
 
   // Students
   addStudent: (s) => set((st) => ({ students: [...st.students, { ...s, id: genId() }] })),
@@ -217,6 +286,29 @@ export const useBoardingStore = create<BoardingState>((set, get) => ({
     houses: st.houses.map((h) => h.id === houseId ? { ...h, housemaster: housemasterName, phone } : h),
   })),
   getHouseByHousemaster: (housemasterName) => get().houses.find((h) => h.housemaster === housemasterName),
+  assignStudentToHouse: (studentId, house, room) => set((st) => ({
+    students: st.students.map((s) => s.id === studentId ? { ...s, house, room } : s),
+    houses: st.houses.map((h) => h.name === house ? { ...h, occupied: st.students.filter((s) => s.house === house).length + 1 } : h),
+  })),
+  getHouseList: () => {
+    const houses = get().houses;
+    return houses.map((h) => ({ house: h.name, students: get().students.filter((s) => s.house === h.name) }));
+  },
+
+  // Bedding
+  addBedding: (b) => set((st) => ({ bedding: [{ ...b, id: genId() }, ...st.bedding] })),
+  updateBedding: (id, updates) => set((st) => ({ bedding: st.bedding.map((b) => b.id === id ? { ...b, ...updates } : b) })),
+  deleteBedding: (id) => set((st) => ({ bedding: st.bedding.filter((b) => b.id !== id) })),
+  getBeddingByHouse: (house) => get().bedding.filter((b) => b.house === house),
+
+  // House Meetings
+  addHouseMeeting: (m) => set((st) => ({ houseMeetings: [{ ...m, id: genId() }, ...st.houseMeetings] })),
+  deleteHouseMeeting: (id) => set((st) => ({ houseMeetings: st.houseMeetings.filter((m) => m.id !== id) })),
+
+  // Dorm Inspections
+  addDormInspection: (d) => set((st) => ({ dormInspections: [{ ...d, id: genId() }, ...st.dormInspections] })),
+  deleteDormInspection: (id) => set((st) => ({ dormInspections: st.dormInspections.filter((d) => d.id !== id) })),
+  getDormInspectionsByHouse: (house) => get().dormInspections.filter((d) => d.house === house),
 
   loadRollCalls: async () => {
     try {
