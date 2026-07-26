@@ -18,6 +18,7 @@ import { DASHBOARD_MAP } from '@shared/navigation/dashboardCatalog';
 import { AssignedRolesPage } from './AssignedRolesPage';
 import { UserProfileModal } from './UserProfileModal';
 import { NotificationCenter } from './NotificationCenter';
+import { useResponsive } from '@shared/hooks/useResponsive';
 
 export interface NavItem {
   key: string;
@@ -47,6 +48,8 @@ export function DashboardLayout({
   const [profileOpen, setProfileOpen] = useState(false);
   const { user, logout, switchRole } = useAuthStore();
   const accessStore = useAccessControlStore();
+  const responsive = useResponsive();
+  const isDesktop = responsive.isDesktop;
 
   const currentDashboardKey = user ? ROLE_DASHBOARD_MAP[user.activeRole as RoleId] : '';
   const baseFilteredNavItems = user
@@ -159,46 +162,59 @@ export function DashboardLayout({
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => setSidebarOpen(true)}
-          style={styles.hamburger}
-          activeOpacity={0.6}
-        >
-          <View style={styles.hamburgerLine} />
-          <View style={[styles.hamburgerLine, { width: 16 }]} />
-          <View style={styles.hamburgerLine} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {filteredNavItems.find((n) => n.key === activeKey)?.label ?? title}
-        </Text>
-        <View style={styles.headerRight}>
-          {headerRight}
-          <NotificationCenter />
-          <SyncStatusIndicator />
+      {/* Persistent sidebar on desktop */}
+      {isDesktop && (
+        <View style={styles.persistentSidebar}>
+          {sidebarContent}
         </View>
+      )}
+
+      <View style={styles.mainArea}>
+        <View style={styles.header}>
+          {!isDesktop && (
+            <TouchableOpacity
+              onPress={() => setSidebarOpen(true)}
+              style={styles.hamburger}
+              activeOpacity={0.6}
+            >
+              <View style={styles.hamburgerLine} />
+              <View style={[styles.hamburgerLine, { width: 16 }]} />
+              <View style={styles.hamburgerLine} />
+            </TouchableOpacity>
+          )}
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {filteredNavItems.find((n) => n.key === activeKey)?.label ?? title}
+          </Text>
+          <View style={styles.headerRight}>
+            {headerRight}
+            <NotificationCenter />
+            <SyncStatusIndicator />
+          </View>
+        </View>
+
+        <ScrollView style={styles.content} contentContainerStyle={{ padding: responsive.contentPadding, maxWidth: responsive.maxContentWidth, width: '100%', alignSelf: 'center' }}>
+          {activeKey === 'assigned-roles'
+            ? <AssignedRolesPage currentDashboardTitle={title} />
+            : children
+          }
+        </ScrollView>
       </View>
 
-      <ScrollView style={styles.content} contentContainerStyle={{ padding: spacing.md }}>
-        {activeKey === 'assigned-roles'
-          ? <AssignedRolesPage currentDashboardTitle={title} />
-          : children
-        }
-      </ScrollView>
-
-      {/* Sidebar overlay — auto-hides on nav click */}
-      <Modal
-        visible={sidebarOpen}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setSidebarOpen(false)}
-      >
-        <Pressable style={styles.overlay} onPress={() => setSidebarOpen(false)}>
-          <Pressable style={styles.sidebarDrawer} onPress={(e) => e.stopPropagation()}>
-            {sidebarContent}
+      {/* Sidebar drawer — mobile only */}
+      {!isDesktop && (
+        <Modal
+          visible={sidebarOpen}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setSidebarOpen(false)}
+        >
+          <Pressable style={styles.overlay} onPress={() => setSidebarOpen(false)}>
+            <Pressable style={styles.sidebarDrawer} onPress={(e) => e.stopPropagation()}>
+              {sidebarContent}
+            </Pressable>
           </Pressable>
-        </Pressable>
-      </Modal>
+        </Modal>
+      )}
 
       {/* Role Switcher Modal */}
       <Modal
@@ -266,6 +282,17 @@ export function DashboardLayout({
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: colors.background,
+  },
+  persistentSidebar: {
+    width: layout.sidebarWidth,
+    height: '100%',
+    backgroundColor: colors.primaryDark,
+    ...shadows.xl,
+  },
+  mainArea: {
     flex: 1,
     backgroundColor: colors.background,
   },
@@ -505,11 +532,13 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.bold,
     color: colors.text,
     flex: 1,
+    flexShrink: 1,
     marginLeft: spacing.sm,
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: spacing.md,
   },
   content: {

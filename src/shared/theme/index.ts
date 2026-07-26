@@ -1,5 +1,20 @@
 import { StyleSheet } from 'react-native';
 
+export const breakpoints = {
+  mobile: 480,
+  tablet: 768,
+  desktop: 1024,
+  wide: 1440,
+} as const;
+
+export function responsiveFont(baseSize: number, width: number): number {
+  if (width >= breakpoints.wide) return Math.round(baseSize * 1.1);
+  if (width >= breakpoints.desktop) return baseSize;
+  if (width >= breakpoints.tablet) return Math.round(baseSize * 0.95);
+  if (width >= breakpoints.mobile) return Math.round(baseSize * 0.9);
+  return Math.round(baseSize * 0.85);
+}
+
 export const colors = {
   primary: '#0F4C75',
   primaryLight: '#3282B8',
@@ -129,6 +144,7 @@ export const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.lg,
     marginBottom: spacing.md,
+    overflow: 'hidden',
     ...shadows.sm,
   },
   row: {

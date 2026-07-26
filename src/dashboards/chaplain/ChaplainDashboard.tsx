@@ -801,6 +801,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginBottom: spacing.sm,
     borderLeftWidth: 4,
+    overflow: 'hidden',
     ...{
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 1 },

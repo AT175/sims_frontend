@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.textInverse },
   headerSubtitle: { fontSize: fontSize.sm, color: colors.textLight, marginTop: spacing.xs },
   content: { flex: 1, padding: spacing.lg },
-  card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md },
+  card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md, overflow: 'hidden' },
   cardTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.text, marginBottom: spacing.sm },
   cardText: { fontSize: fontSize.md, color: colors.textSecondary, lineHeight: 22 },
   inputLabel: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, color: colors.textSecondary, marginBottom: spacing.xs },

@@ -931,7 +931,7 @@ const styles = StyleSheet.create({
   actionBtnText: { color: colors.white, fontSize: fontSize.md, fontWeight: fontWeight.semibold },
   logoutBtn: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   logoutText: { color: colors.danger, fontSize: fontSize.sm, fontWeight: fontWeight.medium },
-  card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md, borderLeftWidth: 4 },
+  card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md, borderLeftWidth: 4, overflow: 'hidden' },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   cardTitle: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: colors.text, marginBottom: spacing.xs },
   cardMeta: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 2 },

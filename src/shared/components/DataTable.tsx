@@ -40,6 +40,7 @@ export function DataTable<T extends Record<string, unknown>>({
               <Text
                 key={String(col.key)}
                 style={[styles.headerCell, col.width ? { width: col.width as number } : { flex: 1, minWidth: 100 }]}
+                numberOfLines={1}
               >
                 {col.label}
               </Text>
@@ -58,6 +59,7 @@ export function DataTable<T extends Record<string, unknown>>({
                     <Text
                       key={String(col.key)}
                       style={[styles.dataCell, col.width ? { width: col.width as number } : { flex: 1, minWidth: 100 }]}
+                      numberOfLines={2}
                     >
                       {value}
                     </Text>

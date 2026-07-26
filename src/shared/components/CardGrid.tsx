@@ -15,21 +15,20 @@ export function CardGrid({ children, columns, gap = spacing.md }: CardGridProps)
   let cols = columns;
   if (!cols) {
     if (count <= 2) cols = width < 480 ? 1 : 2;
-    else if (count <= 4) cols = width >= 768 ? 4 : 2;
-    else cols = width >= 1024 ? 5 : width >= 768 ? 3 : width >= 480 ? 2 : 1;
+    else if (count <= 4) cols = width >= 768 ? 4 : width < 480 ? 1 : 2;
+    else cols = width >= 1280 ? 4 : width >= 768 ? 3 : width >= 480 ? 2 : 1;
   }
 
-  const availableWidth = width - gap * (cols + 1) - spacing.lg * 2;
-  const itemWidth = Math.floor(Math.max(availableWidth, 200) / cols);
+  const itemPercent = `${Math.floor(100 / cols)}%` as any;
 
   const items = React.Children.map(children, (child) => (
-    <View style={{ width: itemWidth, marginRight: gap, marginBottom: gap }}>
+    <View style={{ width: itemPercent, paddingHorizontal: gap / 2, marginBottom: gap }}>
       {child}
     </View>
   ));
 
   return (
-    <View style={styles.grid}>
+    <View style={[styles.grid, { marginHorizontal: -gap / 2 }]}>
       {items}
     </View>
   );

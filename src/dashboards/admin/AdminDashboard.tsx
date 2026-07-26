@@ -2332,7 +2332,7 @@ const styles = StyleSheet.create({
   miniApproveBtn: { backgroundColor: colors.success, borderRadius: radius.sm, paddingVertical: spacing.xs, paddingHorizontal: spacing.sm },
   miniApproveBtnText: { color: colors.white, fontSize: fontSize.xs, fontWeight: fontWeight.semibold },
   miniCancelBtn: { backgroundColor: colors.surfaceAlt, borderRadius: radius.sm, paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderWidth: 1, borderColor: colors.border },
-  card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border },
+  card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
   cardTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.text, marginBottom: spacing.xs },
   cardMeta: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: spacing.xs },
   cardBody: { fontSize: fontSize.sm, color: colors.text, marginTop: spacing.sm, lineHeight: 20 },

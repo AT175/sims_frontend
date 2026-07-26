@@ -22,9 +22,9 @@ export function StatCard({ label, value, subtitle, accentColor, icon, onPress }:
         </View>
         <View style={[styles.accentDot, { backgroundColor: accent }]} />
       </View>
-      <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{value}</Text>
-      {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+      <Text style={styles.label} numberOfLines={2}>{label}</Text>
+      <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
+      {subtitle && <Text style={styles.subtitle} numberOfLines={2}>{subtitle}</Text>}
     </View>
   );
 
@@ -40,6 +40,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.lg,
     minHeight: 120,
+    overflow: 'hidden',
     ...shadows.md,
     borderWidth: 1,
     borderColor: colors.borderLight,
