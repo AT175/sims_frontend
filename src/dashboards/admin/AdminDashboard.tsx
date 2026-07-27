@@ -566,28 +566,77 @@ export function AdminDashboard() {
       csspsRef: admission.csspsRef,
     });
 
-    const existingAccount = registryStore.getParentAccountByAdmission(id);
-    if (!existingAccount) {
-      const username = `parent_${admission.applicantName.toLowerCase().replace(/[^a-z]/g, '').slice(0, 10)}`;
-      const password = `parent${Math.floor(100 + Math.random() * 900)}`;
-      registryStore.addParentAccount({
-        username,
-        password,
-        parentName: admission.parentName,
-        parentPhone: admission.parentPhone,
-        parentEmail: admission.parentEmail,
-        wardName: admission.applicantName,
-        wardAdmNo: admNo,
-        wardClass: cls,
-        wardHouse: house,
-        wardProgramme: admission.programme,
-        admissionId: id,
-      });
-      Alert.alert('Success', `Admission approved. Student enrolled as ${admNo}.\nClass: ${cls}\nHouse: ${house}\n\nParent account created:\nUsername: ${username}\nPassword: ${password}`);
-    } else {
-      Alert.alert('Success', `Admission approved. Student enrolled as ${admNo}.\nClass: ${cls}\nHouse: ${house}`);
-    }
-    setShowAdmissionModal(false);
+    // Also create student + portal account on the backend
+    apiClient.post<any>('/students', {
+      admissionNumber: admNo,
+      firstName: admission.applicantName.split(' ')[0] || '',
+      lastName: admission.applicantName.split(' ').slice(1).join(' ') || '',
+      dateOfBirth: '2009-01-01',
+      gender: 'male',
+      classSectionId: cls,
+      houseId: house || null,
+      guardianName: admission.parentName,
+      guardianPhone: admission.parentPhone,
+      guardianAddress: 'N/A',
+      admissionDate: new Date().toISOString().slice(0, 10),
+      status: 'active',
+    }).then((res: any) => {
+      if (onRefresh) onRefresh();
+      if (res?.credentials) {
+        const existingAccount = registryStore.getParentAccountByAdmission(id);
+        if (!existingAccount) {
+          const username = `parent_${admission.applicantName.toLowerCase().replace(/[^a-z]/g, '').slice(0, 10)}`;
+          const password = `parent${Math.floor(100 + Math.random() * 900)}`;
+          registryStore.addParentAccount({
+            username,
+            password,
+            parentName: admission.parentName,
+            parentPhone: admission.parentPhone,
+            parentEmail: admission.parentEmail,
+            wardName: admission.applicantName,
+            wardAdmNo: admNo,
+            wardClass: cls,
+            wardHouse: house,
+            wardProgramme: admission.programme,
+            admissionId: id,
+          });
+          Alert.alert(
+            'Admission Approved',
+            `Student enrolled as ${admNo}.\nClass: ${cls}\nHouse: ${house}\n\nStudent Portal Account:\nUsername: ${res.credentials.username}\nPassword: ${res.credentials.password}\n\nParent Account:\nUsername: ${username}\nPassword: ${password}`,
+          );
+        } else {
+          Alert.alert(
+            'Admission Approved',
+            `Student enrolled as ${admNo}.\nClass: ${cls}\nHouse: ${house}\n\nStudent Portal Account:\nUsername: ${res.credentials.username}\nPassword: ${res.credentials.password}`,
+          );
+        }
+        setShowAdmissionModal(false);
+      }
+    }).catch((err: any) => {
+      console.error('[Admin] Failed to create student on backend:', err);
+      const existingAccount = registryStore.getParentAccountByAdmission(id);
+      if (!existingAccount) {
+        const username = `parent_${admission.applicantName.toLowerCase().replace(/[^a-z]/g, '').slice(0, 10)}`;
+        const password = `parent${Math.floor(100 + Math.random() * 900)}`;
+        registryStore.addParentAccount({
+          username,
+          password,
+          parentName: admission.parentName,
+          parentPhone: admission.parentPhone,
+          parentEmail: admission.parentEmail,
+          wardName: admission.applicantName,
+          wardAdmNo: admNo,
+          wardClass: cls,
+          wardHouse: house,
+          wardProgramme: admission.programme,
+          admissionId: id,
+        });
+        Alert.alert('Success', `Admission approved. Student enrolled as ${admNo}.\nClass: ${cls}\nHouse: ${house}\n\nParent account created:\nUsername: ${username}\nPassword: ${password}`);
+      } else {
+        Alert.alert('Success', `Admission approved. Student enrolled as ${admNo}.\nClass: ${cls}\nHouse: ${house}`);
+      }
+      setShowAdmissionModal(false);
+    });
   };
 
   const handleRejectAdmission = (id: string) => {

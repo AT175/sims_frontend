@@ -349,8 +349,14 @@ function StudentsPage({ students, store, renderBadge, onRefresh }: any) {
       guardianAddress: form.guardianAddress,
       admissionDate: new Date().toISOString().slice(0, 10),
       status: 'Active',
-    } as any).then(() => {
+    } as any).then((res: any) => {
       if (onRefresh) onRefresh();
+      if (res?.credentials) {
+        Alert.alert(
+          'Portal Account Created',
+          `Username: ${res.credentials.username}\nPassword: ${res.credentials.password}\n\nThe student will be asked to change this password on first login.`,
+        );
+      }
     }).catch((err) => {
       console.error('[Registry] Background sync failed for student create:', err);
     });
