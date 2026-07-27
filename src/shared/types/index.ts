@@ -68,7 +68,8 @@ export type RoleId =
   | 'safe_space'
   | 'internal_auditor'
   | 'headmaster_secretary'
-  | 'system_admin';
+  | 'system_admin'
+  | 'subscription_payment';
 
 /** Authenticated user session */
 export interface AuthUser {

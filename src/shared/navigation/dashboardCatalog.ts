@@ -623,6 +623,18 @@ export const DASHBOARD_CATALOG: DashboardDef[] = [
       { key: 'reports', label: 'Reports' },
     ],
   },
+  {
+    key: 'Subscription',
+    label: 'Subscription & Payment',
+    role: 'subscription_payment',
+    pages: [
+      { key: 'overview', label: 'Overview' },
+      { key: 'subscriptions', label: 'All Subscriptions' },
+      { key: 'payments', label: 'Payment Records' },
+      { key: 'expired', label: 'Expired & Inactive' },
+      { key: 'reports', label: 'Reports' },
+    ],
+  },
 ];
 
 export const DASHBOARD_MAP: Record<string, DashboardDef> = DASHBOARD_CATALOG.reduce(

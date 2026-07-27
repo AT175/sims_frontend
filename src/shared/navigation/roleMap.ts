@@ -41,6 +41,7 @@ export const ROLE_DASHBOARD_MAP: Record<RoleId, string> = {
   internal_auditor: 'InternalAuditor',
   headmaster_secretary: 'HeadmasterSecretary',
   system_admin: 'SystemAdmin',
+  subscription_payment: 'Subscription',
 };
 
 /** Human-readable role labels */
@@ -84,4 +85,5 @@ export const ROLE_LABELS: Record<RoleId, string> = {
   internal_auditor: 'Internal Auditor',
   headmaster_secretary: 'Headmaster Secretary',
   system_admin: 'System Administrator',
+  subscription_payment: 'Subscription & Payment',
 };

@@ -13,6 +13,7 @@ import { apiClient } from '@shared/api/apiClient';
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'setup-login', label: 'Set Up My Login' },
+  { key: 'subscription', label: 'My Subscription' },
   { key: 'wards', label: 'My Children' },
   { key: 'academic', label: 'Academic Reports' },
   { key: 'attendance', label: 'Attendance' },
@@ -51,6 +52,7 @@ export function ParentDashboard() {
       }
     >
       {activePage === 'setup-login' && <SetupLoginPage />}
+      {activePage === 'subscription' && <SubscriptionPage />}
       {activePage === 'wards' && <WardsPage />}
       {activePage === 'academic' && <AcademicReportsPage />}
       {activePage === 'attendance' && <AttendancePage />}
@@ -203,6 +205,188 @@ function SetupLoginPage() {
           <Text style={styles.modalBtnTextLight}>{saving ? 'Creating...' : 'Create My Parent Account'}</Text>
         </TouchableOpacity>
       </View>
+    </View>
+  );
+}
+
+// ── Subscription Page ──
+
+function SubscriptionPage() {
+  const [subscription, setSubscription] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [upgrading, setUpgrading] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [paymentForm, setPaymentForm] = useState({ paymentMethod: 'Mobile Money', paymentReference: '' });
+
+  const loadSubscription = async () => {
+    setLoading(true);
+    try {
+      const res = await apiClient.get<any>('/subscriptions/me');
+      setSubscription(res);
+    } catch {
+      setSubscription(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSubscription();
+  }, []);
+
+  const handleUpgrade = async () => {
+    if (!paymentForm.paymentReference.trim()) {
+      Alert.alert('Error', 'Please enter a payment reference');
+      return;
+    }
+    setUpgrading(true);
+    try {
+      await apiClient.post('/subscriptions/upgrade', {
+        paymentMethod: paymentForm.paymentMethod,
+        paymentReference: paymentForm.paymentReference.trim(),
+      });
+      Alert.alert('Success', 'Your subscription has been upgraded to annual! You now have full access for one year.');
+      setShowUpgradeModal(false);
+      loadSubscription();
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Failed to upgrade subscription');
+    } finally {
+      setUpgrading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View>
+        <Text style={styles.pageTitle}>My Subscription</Text>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>Loading...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  const isActive = subscription?.status === 'active';
+  const isTrial = subscription?.plan === 'trial';
+  const isExpired = subscription?.status === 'expired' || subscription?.status === 'none';
+
+  return (
+    <View>
+      <Text style={styles.pageTitle}>My Subscription</Text>
+      <Text style={styles.pageSubtitle}>Manage your portal access subscription</Text>
+
+      <View style={[styles.wardCard, { borderLeftWidth: 4, borderLeftColor: isActive ? colors.success : colors.danger }]}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm }}>
+          <Text style={styles.wardName}>Subscription Status</Text>
+          <Text style={[styles.wardStatValue, { color: isActive ? colors.success : colors.danger }]}>
+            {subscription?.status?.toUpperCase() ?? 'NONE'}
+          </Text>
+        </View>
+
+        {subscription && subscription.status !== 'none' ? (
+          <>
+            <Text style={styles.wardDetail}>Plan: {subscription.plan?.toUpperCase()}</Text>
+            <Text style={styles.wardDetail}>Start Date: {subscription.startDate}</Text>
+            <Text style={styles.wardDetail}>End Date: {subscription.endDate}</Text>
+            <Text style={styles.wardDetail}>Amount: {subscription.currency} {subscription.amount}</Text>
+            {subscription.paymentMethod && <Text style={styles.wardDetail}>Payment Method: {subscription.paymentMethod}</Text>}
+          </>
+        ) : (
+          <Text style={styles.wardDetail}>No subscription found. Please upgrade to access the portal.</Text>
+        )}
+      </View>
+
+      {isTrial && (
+        <View style={[styles.wardCard, { borderLeftWidth: 4, borderLeftColor: colors.warning }]}>
+          <Text style={{ fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.warning, marginBottom: spacing.sm }}>
+            You are on a free trial
+          </Text>
+          <Text style={{ fontSize: fontSize.sm, color: colors.textSecondary, marginBottom: spacing.sm }}>
+            Your trial expires on {subscription?.endDate}. Upgrade now to GHS 100/year for uninterrupted access to your child's information.
+          </Text>
+          <TouchableOpacity
+            style={[styles.modalBtn, styles.modalBtnSubmit, { marginTop: spacing.sm }]}
+            onPress={() => setShowUpgradeModal(true)}
+          >
+            <Text style={styles.modalBtnTextLight}>Upgrade Now — GHS 100/year</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {isExpired && (
+        <View style={[styles.wardCard, { borderLeftWidth: 4, borderLeftColor: colors.danger }]}>
+          <Text style={{ fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.danger, marginBottom: spacing.sm }}>
+            Your subscription has expired
+          </Text>
+          <Text style={{ fontSize: fontSize.sm, color: colors.textSecondary, marginBottom: spacing.sm }}>
+            You no longer have access to the portal. Upgrade to GHS 100/year to restore access to your child's information.
+          </Text>
+          <TouchableOpacity
+            style={[styles.modalBtn, styles.modalBtnSubmit, { marginTop: spacing.sm }]}
+            onPress={() => setShowUpgradeModal(true)}
+          >
+            <Text style={styles.modalBtnTextLight}>Upgrade Now — GHS 100/year</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {isActive && !isTrial && (
+        <View style={[styles.wardCard, { borderLeftWidth: 4, borderLeftColor: colors.success }]}>
+          <Text style={{ fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.success }}>
+            You have full access until {subscription?.endDate}
+          </Text>
+        </View>
+      )}
+
+      <Modal visible={showUpgradeModal} animationType="slide" transparent onRequestClose={() => setShowUpgradeModal(false)}>
+        <View style={styles.modalOverlay}>
+          <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalScrollContent}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Upgrade to Annual</Text>
+              <Text style={styles.modalSubtitle}>GHS 100 for one year of full access</Text>
+
+              <Text style={styles.inputLabel}>Payment Method</Text>
+              <View style={styles.selectRow}>
+                {['Mobile Money', 'Bank Transfer', 'Cash'].map((m) => (
+                  <TouchableOpacity
+                    key={m}
+                    style={[styles.selectChip, paymentForm.paymentMethod === m && styles.selectChipActive]}
+                    onPress={() => setPaymentForm({ ...paymentForm, paymentMethod: m })}
+                  >
+                    <Text style={[styles.selectChipText, paymentForm.paymentMethod === m && styles.selectChipTextActive]}>{m}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.inputLabel}>Payment Reference</Text>
+              <TextInput
+                style={styles.input}
+                value={paymentForm.paymentReference}
+                onChangeText={(v) => setPaymentForm({ ...paymentForm, paymentReference: v })}
+                placeholder="e.g. MM-1234567890"
+                placeholderTextColor={colors.textLight}
+              />
+
+              <Text style={{ fontSize: fontSize.xs, color: colors.textLight, marginTop: spacing.sm }}>
+                Enter the transaction reference from your payment. Your subscription will be activated immediately.
+              </Text>
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowUpgradeModal(false)}>
+                  <Text style={styles.modalBtnTextDark}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalBtn, styles.modalBtnSubmit, { opacity: upgrading ? 0.6 : 1 }]}
+                  onPress={handleUpgrade}
+                  disabled={upgrading}
+                >
+                  <Text style={styles.modalBtnTextLight}>{upgrading ? 'Processing...' : 'Pay & Upgrade'}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 }
