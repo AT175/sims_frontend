@@ -9,8 +9,10 @@ import {
 } from '@store/ptaStore';
 import { useExeatStore, EXEAT_REASONS, TRANSPORT_MODES } from '@store/exeatStore';
 import { useBoardingStore } from '@store/boardingStore';
+import { apiClient } from '@shared/api/apiClient';
 
 const NAV_ITEMS: NavItem[] = [
+  { key: 'setup-login', label: 'Set Up My Login' },
   { key: 'wards', label: 'My Children' },
   { key: 'academic', label: 'Academic Reports' },
   { key: 'attendance', label: 'Attendance' },
@@ -26,7 +28,7 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 export function ParentDashboard() {
-  const [activePage, setActivePage] = useState('wards');
+  const [activePage, setActivePage] = useState('setup-login');
   const { user, logout } = useAuthStore();
   const parentName = user?.displayName ?? 'Parent';
 
@@ -48,6 +50,7 @@ export function ParentDashboard() {
         </TouchableOpacity>
       }
     >
+      {activePage === 'setup-login' && <SetupLoginPage />}
       {activePage === 'wards' && <WardsPage />}
       {activePage === 'academic' && <AcademicReportsPage />}
       {activePage === 'attendance' && <AttendancePage />}
@@ -61,6 +64,146 @@ export function ParentDashboard() {
       {activePage === 'feedback' && <FeedbackPage />}
       {activePage === 'directory' && <DirectoryPage />}
     </DashboardLayout>
+  );
+}
+
+// ── Set Up My Login Page ──
+
+function SetupLoginPage() {
+  const { user, logout } = useAuthStore();
+  const [form, setForm] = useState({ username: '', password: '', confirmPassword: '', displayName: '' });
+  const [saving, setSaving] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const hasParentRole = user?.roles?.includes('parent');
+
+  const handleSetup = async () => {
+    if (!form.username.trim() || !form.password.trim()) {
+      Alert.alert('Error', 'Username and password are required.');
+      return;
+    }
+    if (form.username.trim().length < 3) {
+      Alert.alert('Error', 'Username must be at least 3 characters.');
+      return;
+    }
+    if (form.password.trim().length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters.');
+      return;
+    }
+    if (form.password !== form.confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match.');
+      return;
+    }
+    setSaving(true);
+    try {
+      await apiClient.post('/auth/parent-setup', {
+        username: form.username.trim(),
+        password: form.password.trim(),
+        displayName: form.displayName.trim() || undefined,
+      });
+      setDone(true);
+      Alert.alert(
+        'Account Created',
+        'Your separate parent account has been created. You will now be logged out. Please log in again with your new username and password.',
+        [{ text: 'OK', onPress: () => logout() }],
+      );
+    } catch (err: any) {
+      const msg = err?.message || err?.error || 'Failed to create parent account.';
+      Alert.alert('Error', msg);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!hasParentRole) {
+    return (
+      <View>
+        <Text style={styles.pageTitle}>Set Up My Login</Text>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>
+            Your account already has a separate parent login. You can change your password from your profile settings.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (done) {
+    return (
+      <View>
+        <Text style={styles.pageTitle}>Set Up My Login</Text>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>
+            Your parent account has been created. Please log out and log in again with your new credentials.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View>
+      <Text style={styles.pageTitle}>Set Up My Login</Text>
+      <Text style={styles.pageSubtitle}>Create your own separate parent account</Text>
+
+      <View style={[styles.wardCard, { borderLeftWidth: 4, borderLeftColor: colors.info }]}>
+        <Text style={{ fontSize: fontSize.sm, color: colors.textSecondary, marginBottom: spacing.sm }}>
+          You are currently logged in with your child's shared account. Create a separate parent login below so you can access the parent portal independently.
+        </Text>
+        <Text style={{ fontSize: fontSize.xs, color: colors.textLight }}>
+          After setup, the parent role will be removed from this shared account. Your child will continue to use their own login.
+        </Text>
+      </View>
+
+      <View style={styles.wardCard}>
+        <Text style={styles.inputLabel}>New Username</Text>
+        <TextInput
+          style={styles.input}
+          value={form.username}
+          onChangeText={(v) => setForm({ ...form, username: v })}
+          placeholder="e.g. parent_john"
+          placeholderTextColor={colors.textLight}
+          autoCapitalize="none"
+        />
+
+        <Text style={styles.inputLabel}>Display Name (optional)</Text>
+        <TextInput
+          style={styles.input}
+          value={form.displayName}
+          onChangeText={(v) => setForm({ ...form, displayName: v })}
+          placeholder="e.g. John Doe"
+          placeholderTextColor={colors.textLight}
+        />
+
+        <Text style={styles.inputLabel}>New Password</Text>
+        <TextInput
+          style={styles.input}
+          value={form.password}
+          onChangeText={(v) => setForm({ ...form, password: v })}
+          placeholder="At least 6 characters"
+          placeholderTextColor={colors.textLight}
+          secureTextEntry
+        />
+
+        <Text style={styles.inputLabel}>Confirm Password</Text>
+        <TextInput
+          style={styles.input}
+          value={form.confirmPassword}
+          onChangeText={(v) => setForm({ ...form, confirmPassword: v })}
+          placeholder="Re-enter password"
+          placeholderTextColor={colors.textLight}
+          secureTextEntry
+        />
+
+        <TouchableOpacity
+          style={[styles.modalBtn, styles.modalBtnSubmit, { marginTop: spacing.md, opacity: saving ? 0.6 : 1 }]}
+          onPress={handleSetup}
+          disabled={saving}
+        >
+          <Text style={styles.modalBtnTextLight}>{saving ? 'Creating...' : 'Create My Parent Account'}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 

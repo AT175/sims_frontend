@@ -13,6 +13,7 @@ import { useBursarStore } from '@store/bursarStore';
 import { useAdminStore } from '@store/adminStore';
 import type { FacilityIssue, AnnouncementPriority, AnnouncementAudience, DocumentType, DisciplineSeverity, SRCRequestType, CorrespondenceDirection } from '@store/adminStore';
 import { DOCUMENT_TYPES, DISCIPLINE_SEVERITIES, SRC_REQUEST_TYPES, CORRESPONDENCE_DIRECTIONS } from '@store/adminStore';
+import { apiClient } from '@shared/api/apiClient';
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'Admin Overview' },
@@ -581,7 +582,6 @@ export function AdminDashboard() {
       admissionDate: new Date().toISOString().slice(0, 10),
       status: 'active',
     }).then((res: any) => {
-      if (onRefresh) onRefresh();
       if (res?.credentials) {
         const existingAccount = registryStore.getParentAccountByAdmission(id);
         if (!existingAccount) {
