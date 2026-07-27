@@ -49,7 +49,7 @@ const QUICK_STATS = [
   { label: 'Founded', value: '2011' },
 ];
 
-export function LoginScreen({ presetTenantKey, onBack }: { presetTenantKey?: string; onBack?: () => void }) {
+export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTenantKey?: string; onBack?: () => void; presetTab?: Tab }) {
   const { login, loginTemp, isLoading, error, clearError } = useAuthStore();
   const registryStore = useRegistryStore();
   const { width: windowWidth } = useWindowDimensions();
@@ -57,7 +57,7 @@ export function LoginScreen({ presetTenantKey, onBack }: { presetTenantKey?: str
   const IS_VERY_NARROW = windowWidth < 480;
 
   const [view, setView] = useState<'home' | 'portal'>(presetTenantKey ? 'portal' : 'home');
-  const [activeTab, setActiveTab] = useState<Tab>('signin');
+  const [activeTab, setActiveTab] = useState<Tab>(presetTab || 'signin');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

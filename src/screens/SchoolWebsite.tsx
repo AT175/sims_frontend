@@ -44,6 +44,7 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showPortal, setShowPortal] = useState(false);
+  const [portalTab, setPortalTab] = useState<'signin' | 'apply' | 'status'>('signin');
   const [heroSlide, setHeroSlide] = useState(0);
   const [, setActiveSection] = useState('home');
   const [isOfflineMode, setIsOfflineMode] = useState(false);
@@ -121,6 +122,11 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
     setTimeout(() => scrollViewRef.current?.scrollTo?.({ y: aboutY.current, animated: true }), 100);
   };
 
+  const openPortal = (tab: 'signin' | 'apply' | 'status') => {
+    setPortalTab(tab);
+    setShowPortal(true);
+  };
+
   if (loading) {
     return (
       <View style={s.loadingContainer}>
@@ -147,7 +153,7 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
   }
 
   if (showPortal) {
-    return <LoginScreen presetTenantKey={tenantKey} onBack={() => setShowPortal(false)} />;
+    return <LoginScreen presetTenantKey={tenantKey} presetTab={portalTab} onBack={() => setShowPortal(false)} />;
   }
 
   if (!branding) return null;
@@ -199,10 +205,10 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
                 <TouchableOpacity onPress={() => setActiveSection('admissions')}><Text style={s.headerNavLink}>Admissions</Text></TouchableOpacity>
               </>
             )}
-            <TouchableOpacity style={[s.headerGhostBtn, { borderColor: primary }, IS_NARROW && { paddingVertical: spacing.sm, paddingHorizontal: spacing.md }]} onPress={() => setShowPortal(true)}>
+            <TouchableOpacity style={[s.headerGhostBtn, { borderColor: primary }, IS_NARROW && { paddingVertical: spacing.sm, paddingHorizontal: spacing.md }]} onPress={() => openPortal('signin')}>
               <Text style={[s.headerGhostText, { color: primary }]}>Login</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[s.headerCtaBtn, { backgroundColor: primary }, IS_NARROW && { paddingVertical: spacing.sm, paddingHorizontal: spacing.md + 4 }]} onPress={() => setActiveSection('admissions')}>
+            <TouchableOpacity style={[s.headerCtaBtn, { backgroundColor: primary }, IS_NARROW && { paddingVertical: spacing.sm, paddingHorizontal: spacing.md + 4 }]} onPress={() => openPortal('apply')}>
               <Text style={s.headerCtaText}>Apply</Text>
             </TouchableOpacity>
             {isOfflineMode && (
@@ -233,11 +239,11 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
             <Text style={[s.heroTitle, IS_NARROW && { fontSize: 30, lineHeight: 38 }]}>Welcome to{'\n'}<Text style={[s.heroTitleAccent, { color: accent }]}>{schoolName}</Text></Text>
             {motto ? <Text style={[s.heroSubtitle, IS_NARROW && { fontSize: fontSize.md, lineHeight: fontSize.md * 1.5 }]}>"{motto}"</Text> : null}
             <View style={s.heroBtnRow}>
-              <TouchableOpacity style={[s.heroBtnPrimary, { backgroundColor: accent }, IS_NARROW && { paddingVertical: spacing.sm + 4, paddingHorizontal: spacing.lg }]} onPress={() => setActiveSection('admissions')} activeOpacity={0.85}>
+              <TouchableOpacity style={[s.heroBtnPrimary, { backgroundColor: accent }, IS_NARROW && { paddingVertical: spacing.sm + 4, paddingHorizontal: spacing.lg }]} onPress={() => openPortal('apply')} activeOpacity={0.85}>
                 <Text style={[s.heroBtnPrimaryText, { color: primaryDark }, IS_NARROW && { fontSize: fontSize.sm }]}>Apply for Admission</Text>
                 <Text style={[s.heroBtnPrimaryText, { color: primaryDark }, IS_NARROW && { fontSize: fontSize.sm }]}>→</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[s.heroBtnSecondary, IS_NARROW && { paddingVertical: spacing.sm + 4, paddingHorizontal: spacing.lg }]} onPress={() => setShowPortal(true)} activeOpacity={0.85}>
+              <TouchableOpacity style={[s.heroBtnSecondary, IS_NARROW && { paddingVertical: spacing.sm + 4, paddingHorizontal: spacing.lg }]} onPress={() => openPortal('signin')} activeOpacity={0.85}>
                 <Text style={[s.heroBtnSecondaryText, IS_NARROW && { fontSize: fontSize.sm }]}>Staff / Student Login</Text>
               </TouchableOpacity>
             </View>
@@ -450,12 +456,12 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
               {branding.admissionsInfo || `Admissions are open for the academic year. Contact us or apply online to join ${schoolName}.`}
             </Text>
             <View style={s.heroBtnRow}>
-              <TouchableOpacity style={[s.heroBtnPrimary, { backgroundColor: accent }, IS_NARROW && { paddingVertical: spacing.sm + 4, paddingHorizontal: spacing.lg }]} onPress={() => setShowPortal(true)} activeOpacity={0.85}>
+              <TouchableOpacity style={[s.heroBtnPrimary, { backgroundColor: accent }, IS_NARROW && { paddingVertical: spacing.sm + 4, paddingHorizontal: spacing.lg }]} onPress={() => openPortal('apply')} activeOpacity={0.85}>
                 <Text style={[s.heroBtnPrimaryText, { color: primaryDark }, IS_NARROW && { fontSize: fontSize.sm }]}>Apply Now</Text>
                 <Text style={[s.heroBtnPrimaryText, { color: primaryDark }, IS_NARROW && { fontSize: fontSize.sm }]}>→</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[s.heroBtnSecondary, IS_NARROW && { paddingVertical: spacing.sm + 4, paddingHorizontal: spacing.lg }]} onPress={() => setActiveSection('contact')} activeOpacity={0.85}>
-                <Text style={[s.heroBtnSecondaryText, IS_NARROW && { fontSize: fontSize.sm }]}>Contact Us</Text>
+              <TouchableOpacity style={[s.heroBtnSecondary, IS_NARROW && { paddingVertical: spacing.sm + 4, paddingHorizontal: spacing.lg }]} onPress={() => openPortal('status')} activeOpacity={0.85}>
+                <Text style={[s.heroBtnSecondaryText, IS_NARROW && { fontSize: fontSize.sm }]}>Check Status</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -466,11 +472,11 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
           <Text style={[s.ctaTitle, { color: primary }]}>Ready to Join Our Community?</Text>
           <Text style={s.ctaText}>Apply for admission today or contact us for more information. We're here to help you every step of the way.</Text>
           <View style={s.heroBtnRow}>
-            <TouchableOpacity style={[s.heroBtnPrimary, { backgroundColor: accent }, IS_NARROW && { paddingVertical: spacing.sm + 4, paddingHorizontal: spacing.lg }]} onPress={() => setShowPortal(true)} activeOpacity={0.85}>
+            <TouchableOpacity style={[s.heroBtnPrimary, { backgroundColor: accent }, IS_NARROW && { paddingVertical: spacing.sm + 4, paddingHorizontal: spacing.lg }]} onPress={() => openPortal('apply')} activeOpacity={0.85}>
               <Text style={[s.heroBtnPrimaryText, { color: primaryDark }, IS_NARROW && { fontSize: fontSize.sm }]}>Apply Now</Text>
               <Text style={[s.heroBtnPrimaryText, { color: primaryDark }, IS_NARROW && { fontSize: fontSize.sm }]}>→</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[s.heroBtnSecondary, IS_NARROW && { paddingVertical: spacing.sm + 4, paddingHorizontal: spacing.lg }]} onPress={() => setShowPortal(true)} activeOpacity={0.85}>
+            <TouchableOpacity style={[s.heroBtnSecondary, IS_NARROW && { paddingVertical: spacing.sm + 4, paddingHorizontal: spacing.lg }]} onPress={() => openPortal('signin')} activeOpacity={0.85}>
               <Text style={[s.heroBtnSecondaryText, IS_NARROW && { fontSize: fontSize.sm }]}>Staff / Student Login</Text>
             </TouchableOpacity>
           </View>
@@ -496,8 +502,8 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
               <Text style={[s.footerColTitle, { color: accent }]}>Quick Links</Text>
               <TouchableOpacity onPress={() => scrollViewRef.current?.scrollTo?.({ y: 0, animated: true })}><Text style={s.footerLink}>Home</Text></TouchableOpacity>
               <TouchableOpacity onPress={scrollToAbout}><Text style={s.footerLink}>About Us</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => setActiveSection('admissions')}><Text style={s.footerLink}>Admissions</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => setShowPortal(true)}><Text style={s.footerLink}>Staff Login</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => openPortal('apply')}><Text style={s.footerLink}>Admissions</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => openPortal('signin')}><Text style={s.footerLink}>Staff Login</Text></TouchableOpacity>
             </View>
             <View style={[s.footerCol, IS_NARROW && { minWidth: 140 }]}>
               <Text style={[s.footerColTitle, { color: accent }]}>Contact Us</Text>
