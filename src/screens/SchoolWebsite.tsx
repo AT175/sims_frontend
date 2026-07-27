@@ -553,8 +553,8 @@ const s = StyleSheet.create({
   headerGhostText: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, letterSpacing: 0.3 },
   // Hero
   hero: { position: 'relative', minHeight: 620, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
-  heroBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
-  heroOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  heroBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', pointerEvents: 'none' },
+  heroOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none' },
   heroContent: { zIndex: 2, alignItems: 'center', paddingHorizontal: spacing.xl, maxWidth: 720 },
   heroBadge: { backgroundColor: 'rgba(255, 255, 255, 0.25)', borderRadius: 20, paddingHorizontal: spacing.md + 4, paddingVertical: spacing.xs + 2, marginBottom: spacing.lg, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.4)' },
   heroBadgeText: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, color: colors.white, letterSpacing: 1 },
