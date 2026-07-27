@@ -16,37 +16,31 @@ import { useAuthStore } from '@store/authStore';
 import { useRegistryStore } from '@store/registryStore';
 import type { Programme, PaymentMethod } from '@store/registryStore';
 import { PROGRAMMES } from '@store/registryStore';
-import { apiClient } from '@shared/api/apiClient';
+import { apiClient, SchoolBranding } from '@shared/api/apiClient';
 import { colors, spacing, fontSize } from '@theme/index';
+import { getCachedBranding, cacheBranding } from '@shared/db/indexedDBAdapter';
+import { useConnectionStatus } from '@shared/hooks/useConnectionStatus';
 import { loginStyles as s } from './loginStyles';
 
 type Tab = 'signin' | 'apply' | 'status';
 type AdmissionStep = 'search' | 'payment' | 'form' | 'submitted';
 type StatusStep = 'lookup' | 'result';
 
-const HERO_SLIDES = [
-  { image: '/b1.jpg', caption: 'Terchire Senior High School' },
+const DEFAULT_HERO_SLIDES = [
+  { image: '/b1.jpg', caption: 'Welcome to our school' },
   { image: '/b3.jpeg', caption: 'Quality Education & Discipline' },
-  { image: '/b4.jpeg', caption: 'A Center for Excellence in Ahafo' },
-  { image: '/b5.jpeg', caption: 'Nimdɛɛ Firi Onyame' },
-  { image: '/b6.jpeg', caption: 'Building Future Leaders' },
-  { image: '/b7.jpeg', caption: 'Serving Tano North Since 2011' },
-  { image: '/8.jpeg', caption: 'Our Campus Community' },
+  { image: '/b4.jpeg', caption: 'A Center for Excellence' },
+  { image: '/b5.jpeg', caption: 'Building Future Leaders' },
+  { image: '/b6.jpeg', caption: 'Serving Our Community' },
+  { image: '/b7.jpeg', caption: 'Our Campus' },
 ];
 
-const INFO_SLIDES = [
+const DEFAULT_INFO_SLIDES = [
   { image: '/slide1.jpg', title: 'Quality Education', text: 'Dedicated to training learners to high education standards through collaborative stakeholder efforts.', accent: colors.primaryLight },
   { image: '/slide2.jpg', title: 'Discipline & Character', text: 'Instilling moral integrity and discipline in every student, creating responsible citizens.', accent: colors.accent },
-  { image: '/slide3.jpg', title: 'Our Programmes', text: 'General Science, General Arts, Business, Agriculture, Home Economics, and Visual Art programmes designed to prepare students for the future.', accent: colors.success },
-  { image: '/slide4.jpg', title: 'Ahafo Region', text: 'Serving the Tano North District since 2011, providing accessible secondary education to the community.', accent: colors.info },
+  { image: '/slide3.jpg', title: 'Our Programmes', text: 'A range of programmes designed to prepare students for the future.', accent: colors.success },
+  { image: '/slide4.jpg', title: 'Our Region', text: 'Serving the community with accessible secondary education.', accent: colors.info },
   { image: '/slide5.jpg', title: 'Our Community', text: 'A growing school community of students, teachers, and stakeholders working together for excellence.', accent: colors.purple },
-];
-
-const QUICK_STATS = [
-  { label: 'Students', value: '164+' },
-  { label: 'Programmes', value: '6' },
-  { label: 'Region', value: 'Ahafo' },
-  { label: 'Founded', value: '2011' },
 ];
 
 export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTenantKey?: string; onBack?: () => void; presetTab?: Tab }) {
@@ -55,6 +49,11 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
   const { width: windowWidth } = useWindowDimensions();
   const IS_NARROW = windowWidth < 768;
   const IS_VERY_NARROW = windowWidth < 480;
+  const { isOnline: _isOnline } = useConnectionStatus();
+  void _isOnline;
+
+  const [branding, setBranding] = useState<SchoolBranding | null>(null);
+  const [, setBrandingLoading] = useState(true);
 
   const [view, setView] = useState<'home' | 'portal'>(presetTenantKey ? 'portal' : 'home');
   const [activeTab, setActiveTab] = useState<Tab>(presetTab || 'signin');
@@ -71,6 +70,68 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
 
   const openPortal = (tab: Tab) => { setView('portal'); setActiveTab(tab); clearError(); };
   const goHome = () => { if (onBack) { onBack(); } else { setView('home'); } };
+
+  // ── Fetch tenant branding ──
+  useEffect(() => {
+    if (!presetTenantKey) { setBrandingLoading(false); return; }
+    let cancelled = false;
+    (async () => {
+      setBrandingLoading(true);
+      try {
+        const cached = await getCachedBranding(presetTenantKey);
+        if (cached && !cancelled) { setBranding(cached); setBrandingLoading(false); }
+      } catch { /* cache read failed */ }
+      try {
+        const data = await apiClient.getPublicBranding(presetTenantKey);
+        if (!cancelled) { setBranding(data); cacheBranding(presetTenantKey, data).catch(() => {}); }
+      } catch { /* API fetch failed */ }
+      if (!cancelled) setBrandingLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [presetTenantKey]);
+
+  // ── Derived branding values ──
+  const schoolName = branding?.schoolName || 'School';
+  const schoolShort = schoolName.split(' ').map((w) => w[0]).join('').slice(0, 4).toUpperCase();
+  const motto = branding?.motto || '';
+  const _primary = branding?.primaryColor || colors.primary;
+  void _primary;
+  const aboutText = branding?.aboutText || '';
+  const mission = branding?.mission || '';
+  const vision = branding?.vision || '';
+  const phone = branding?.phone || '';
+  const email = branding?.email || '';
+  const address = branding?.address || '';
+  const region = branding?.region || '';
+  const _facebookUrl = branding?.facebookUrl || '';
+  const _instagramUrl = branding?.instagramUrl || '';
+  void _facebookUrl; void _instagramUrl;
+  const tenantProgrammes = branding?.programmes || [];
+
+  const heroSlides = (branding?.galleryImages && branding.galleryImages.length > 0)
+    ? branding.galleryImages.slice(0, 6).map((img, i) => ({
+        image: img,
+        caption: i === 0 ? (motto || `Welcome to ${schoolName}`) : ['Quality Education & Discipline', 'A Center for Excellence', 'Building Future Leaders', 'Serving Our Community', 'Our Campus'][i - 1] || 'Our Campus',
+      }))
+    : branding?.bannerImage
+      ? [{ image: branding.bannerImage, caption: motto || `Welcome to ${schoolName}` }, ...DEFAULT_HERO_SLIDES.slice(1)]
+      : DEFAULT_HERO_SLIDES;
+
+  const infoSlides = DEFAULT_INFO_SLIDES.map((slide, i) => ({
+    ...slide,
+    text: i === 0 && mission ? mission : i === 1 && vision ? vision : i === 2 && tenantProgrammes.length > 0 ? `${tenantProgrammes.map(p => p.name).join(', ')} programmes designed to prepare students for the future.` : slide.text,
+    title: i === 3 && region ? `${region} Region` : slide.title,
+  }));
+
+  const quickStats = [
+    { label: 'Programmes', value: String(tenantProgrammes.length || '6') },
+    { label: 'Region', value: region || '—' },
+    { label: 'Type', value: 'Public' },
+    { label: 'Motto', value: motto ? motto.split(' ').slice(0, 2).join(' ') : '—' },
+  ];
+
+  const heroSlidesRef = useRef(6);
+  heroSlidesRef.current = heroSlides.length;
 
   const scrollViewRef = useRef<any>(null);
   const aboutY = useRef(0);
@@ -120,7 +181,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
         Animated.timing(fadeAnim, { toValue: 0, duration: 400, useNativeDriver: true, easing: Easing.ease }),
         Animated.timing(slideAnim, { toValue: -15, duration: 400, useNativeDriver: true, easing: Easing.ease }),
       ]).start(() => {
-        setSlideIndex((prev) => (prev + 1) % INFO_SLIDES.length);
+        setSlideIndex((prev) => (prev + 1) % infoSlides.length);
         slideAnim.setValue(15);
         Animated.parallel([
           Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true, easing: Easing.out(Easing.ease) }),
@@ -138,7 +199,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
       Animated.parallel([
         Animated.timing(heroFade, { toValue: 0, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
       ]).start(() => {
-        setHeroSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+        setHeroSlide((prev) => (prev + 1) % heroSlidesRef.current);
         heroScale.setValue(1.08);
         Animated.parallel([
           Animated.timing(heroFade, { toValue: 1, duration: 700, useNativeDriver: true, easing: Easing.out(Easing.ease) }),
@@ -269,8 +330,8 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
           {/* Header */}
           <View style={[s.header, IS_NARROW && { paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 }]}>
             <TouchableOpacity style={s.headerLogoRow} onPress={goHome}>
-              <View style={s.headerLogoBox}><Text style={s.headerLogoText}>TSHS</Text></View>
-              {!IS_VERY_NARROW && <View><Text style={s.headerSchoolName}>Terchire SHS</Text><Text style={s.headerSchoolSub}>Nimdɛɛ Firi Onyame</Text></View>}
+              <View style={s.headerLogoBox}><Text style={s.headerLogoText}>{schoolShort}</Text></View>
+              {!IS_VERY_NARROW && <View><Text style={s.headerSchoolName}>{schoolName}</Text><Text style={s.headerSchoolSub}>{motto}</Text></View>}
             </TouchableOpacity>
             <View style={[s.headerNav, IS_NARROW && { gap: spacing.sm }]}>
               {!IS_NARROW && <>
@@ -284,7 +345,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
 
           {/* Hero with flash animation carousel */}
           <View style={[s.hero, IS_NARROW && { minHeight: 500 }]}>
-            {HERO_SLIDES.map((slide, i) => (
+            {heroSlides.map((slide, i) => (
               <Animated.Image
                 key={i}
                 source={{ uri: slide.image }}
@@ -300,9 +361,9 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
             ))}
             <View style={s.heroOverlay} />
             <View style={[s.heroContent, IS_NARROW && { paddingHorizontal: spacing.md, width: '100%' }]}>
-              <View style={s.heroBadge}><Text style={s.heroBadgeText}>★ EST. 2011 · AHAFO REGION · GES ACCREDITED</Text></View>
-              <Text style={[s.heroTitle, IS_NARROW && { fontSize: 30, lineHeight: 38 }]}>Welcome to{'\n'}<Text style={s.heroTitleAccent}>Terchire Senior High School</Text></Text>
-              <Text style={[s.heroSubtitle, IS_NARROW && { fontSize: fontSize.md, lineHeight: fontSize.md * 1.5 }]}>A center for quality education and discipline in the Ahafo Region. "Nimdɛɛ Firi Onyame" — Knowledge comes from God.</Text>
+              <View style={s.heroBadge}><Text style={s.heroBadgeText}>★ {schoolName.toUpperCase()}</Text></View>
+              <Text style={[s.heroTitle, IS_NARROW && { fontSize: 30, lineHeight: 38 }]}>Welcome to{'\n'}<Text style={s.heroTitleAccent}>{schoolName}</Text></Text>
+              <Text style={[s.heroSubtitle, IS_NARROW && { fontSize: fontSize.md, lineHeight: fontSize.md * 1.5 }]}>{aboutText ? aboutText.slice(0, 180) + (aboutText.length > 180 ? '...' : '') : 'A center for quality education and discipline.'}</Text>
               <View style={s.heroBtnRow}>
                 <TouchableOpacity style={[s.heroBtnPrimary, IS_NARROW && { paddingVertical: spacing.sm + 4, paddingHorizontal: spacing.lg }]} onPress={() => openPortal('apply')} activeOpacity={0.85}>
                   <Text style={[s.heroBtnPrimaryText, IS_NARROW && { fontSize: fontSize.sm }]}>Apply for Admission</Text>
@@ -315,7 +376,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
             </View>
             {/* Hero dots indicator */}
             <View style={s.heroDots}>
-              {HERO_SLIDES.map((_, i) => (
+              {heroSlides.map((_, i) => (
                 <View key={i} style={[s.heroDot, i === heroSlide && s.heroDotActive]} />
               ))}
             </View>
@@ -325,22 +386,22 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
           <View style={[s.section, s.aboutBg, IS_NARROW && { paddingVertical: spacing.xl + 8, paddingHorizontal: spacing.md }]} onLayout={(e) => { aboutY.current = e.nativeEvent.layout.y; }}>
             <View style={s.sectionNarrow}>
               <Text style={s.sectionTitle}>About <Text style={s.sectionTitleAccent}>Our School</Text></Text>
-              <Text style={s.sectionSubtitle}>Established in 2011 in Terchire, Tano North District of the Ahafo Region, Terchire Senior High School is dedicated to providing high-quality education and discipline to its learners.</Text>
+              <Text style={s.sectionSubtitle}>{aboutText || 'Welcome to our school.'}</Text>
               <View style={s.aboutGrid}>
                 <View style={[s.aboutCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
                   <View style={s.aboutCardIconWrap}><Text style={s.aboutCardIcon}>🎯</Text></View>
                   <Text style={s.aboutCardTitle}>Our Mission</Text>
-                  <Text style={s.aboutCardText}>To train learners to high levels of education standards through the collaborative effort of all relevant stakeholders.</Text>
+                  <Text style={s.aboutCardText}>{mission || 'To train learners to high levels of education standards through the collaborative effort of all relevant stakeholders.'}</Text>
                 </View>
                 <View style={[s.aboutCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
                   <View style={s.aboutCardIconWrap}><Text style={s.aboutCardIcon}>🌟</Text></View>
                   <Text style={s.aboutCardTitle}>Our Vision</Text>
-                  <Text style={s.aboutCardText}>A center for quality education and discipline, serving the Tano North District and the Ahafo Region with dedication and excellence.</Text>
+                  <Text style={s.aboutCardText}>{vision || 'A center for quality education and discipline.'}</Text>
                 </View>
                 <View style={[s.aboutCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
                   <View style={s.aboutCardIconWrap}><Text style={s.aboutCardIcon}>🤝</Text></View>
                   <Text style={s.aboutCardTitle}>Our Motto</Text>
-                  <Text style={s.aboutCardText}>"Nimdɛɛ Firi Onyame" — Knowledge comes from God. We believe in nurturing both the intellect and character of every student through collaborative effort and discipline.</Text>
+                  <Text style={s.aboutCardText}>{motto ? `"${motto}"` : 'Our school motto reflects our commitment to excellence and discipline.'}</Text>
                 </View>
               </View>
             </View>
@@ -349,44 +410,22 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
           {/* Features Section */}
           <View style={[s.section, s.featuresBg, IS_NARROW && { paddingVertical: spacing.xl + 8, paddingHorizontal: spacing.md }]}>
             <View style={s.sectionNarrow}>
-              <Text style={s.sectionTitle}>Why Choose <Text style={s.sectionTitleAccent}>Terchire SHS?</Text></Text>
-              <Text style={s.sectionSubtitle}>A single-track public senior high school committed to collaborative learning and discipline in the Ahafo Region.</Text>
+              <Text style={s.sectionTitle}>Why Choose <Text style={s.sectionTitleAccent}>{schoolShort}?</Text></Text>
+              <Text style={s.sectionSubtitle}>{vision || 'A center for quality education and discipline.'}</Text>
               <View style={s.featuresGrid}>
-                <View style={[s.featureCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
-                  <View style={s.featureIconWrap}><Text style={s.featureIcon}>📚</Text></View>
-                  <Text style={s.featureTitle}>Quality Education</Text>
-                  <Text style={s.featureText}>Dedicated teachers committed to training learners to high education standards through collaborative stakeholder efforts.</Text>
-                </View>
-                <View style={[s.featureCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
-                  <View style={s.featureIconWrap}><Text style={s.featureIcon}>🏆</Text></View>
-                  <Text style={s.featureTitle}>Discipline & Character</Text>
-                  <Text style={s.featureText}>We instill discipline and moral integrity in every student, creating responsible citizens ready to serve their community.</Text>
-                </View>
-                <View style={[s.featureCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
-                  <View style={s.featureIconWrap}><Text style={s.featureIcon}>🔬</Text></View>
-                  <Text style={s.featureTitle}>General Science</Text>
-                  <Text style={s.featureText}>Comprehensive science programme with well-equipped laboratories, preparing students for careers in medicine, engineering, and technology.</Text>
-                </View>
-                <View style={[s.featureCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
-                  <View style={s.featureIconWrap}><Text style={s.featureIcon}>�</Text></View>
-                  <Text style={s.featureTitle}>Agriculture Programme</Text>
-                  <Text style={s.featureText}>Hands-on agricultural training that equips students with practical skills for food production and agribusiness.</Text>
-                </View>
-                <View style={[s.featureCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
-                  <View style={s.featureIconWrap}><Text style={s.featureIcon}>�🍳</Text></View>
-                  <Text style={s.featureTitle}>Home Economics</Text>
-                  <Text style={s.featureText}>Practical training in food and nutrition, clothing, and family management, equipping students with essential life skills.</Text>
-                </View>
-                <View style={[s.featureCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
-                  <View style={s.featureIconWrap}><Text style={s.featureIcon}>🎨</Text></View>
-                  <Text style={s.featureTitle}>Visual Art</Text>
-                  <Text style={s.featureText}>Creative programme developing artistic talents in drawing, painting, sculpture, and design, fostering self-expression and creativity.</Text>
-                </View>
-                <View style={[s.featureCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
-                  <View style={s.featureIconWrap}><Text style={s.featureIcon}>📊</Text></View>
-                  <Text style={s.featureTitle}>Business & General Arts</Text>
-                  <Text style={s.featureText}>Comprehensive Business and General Arts programmes that prepare students for university and professional careers.</Text>
-                </View>
+                {tenantProgrammes.length > 0 ? tenantProgrammes.map((p) => (
+                  <View key={p.name} style={[s.featureCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
+                    <View style={s.featureIconWrap}><Text style={s.featureIcon}>{p.icon}</Text></View>
+                    <Text style={s.featureTitle}>{p.name}</Text>
+                    <Text style={s.featureText}>{p.description}</Text>
+                  </View>
+                )) : (
+                  <View style={[s.featureCard, IS_NARROW && { flexBasis: '100%', maxWidth: '100%', padding: spacing.lg }]}>
+                    <View style={s.featureIconWrap}><Text style={s.featureIcon}>📚</Text></View>
+                    <Text style={s.featureTitle}>Quality Education</Text>
+                    <Text style={s.featureText}>Dedicated teachers committed to training learners to high education standards.</Text>
+                  </View>
+                )}
               </View>
             </View>
           </View>
@@ -394,7 +433,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
           {/* Stats Band */}
           <View style={[s.statsBand, IS_NARROW && { paddingHorizontal: spacing.md }]}>
             <View style={[s.statsBandGrid, IS_NARROW && { gap: spacing.lg }]}>
-              {QUICK_STATS.map((st) => (
+              {quickStats.map((st) => (
                 <View key={st.label} style={s.statsBandItem}>
                   <Text style={[s.statsBandValue, IS_NARROW && { fontSize: 28 }]}>{st.value}</Text>
                   <Text style={s.statsBandLabel}>{st.label.toUpperCase()}</Text>
@@ -423,10 +462,10 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
             <View style={s.footerGrid}>
               <View style={[s.footerColWide, IS_NARROW && { minWidth: 200 }]}>
                 <View style={s.footerBrandRow}>
-                  <View style={s.footerBrandBox}><Text style={s.footerBrandText}>TSHS</Text></View>
-                  <Text style={s.footerBrandName}>Terchire Senior High School</Text>
+                  <View style={s.footerBrandBox}><Text style={s.footerBrandText}>{schoolShort}</Text></View>
+                  <Text style={s.footerBrandName}>{schoolName}</Text>
                 </View>
-                <Text style={s.footerAbout}>A public senior high school in Terchire, Ahafo Region, dedicated to quality education and discipline since 2011. "Nimdɛɛ Firi Onyame" — Knowledge comes from God.</Text>
+                <Text style={s.footerAbout}>{aboutText || `${schoolName} — ${motto || 'Excellence in education.'}`}</Text>
               </View>
               <View style={[s.footerCol, IS_NARROW && { minWidth: 140 }]}>
                 <Text style={s.footerColTitle}>Quick Links</Text>
@@ -438,23 +477,19 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
               </View>
               <View style={[s.footerCol, IS_NARROW && { minWidth: 140 }]}>
                 <Text style={s.footerColTitle}>Programmes</Text>
-                <Text style={s.footerLink}>General Science</Text>
-                <Text style={s.footerLink}>General Arts</Text>
-                <Text style={s.footerLink}>Business</Text>
-                <Text style={s.footerLink}>Agriculture</Text>
-                <Text style={s.footerLink}>Home Economics</Text>
-                <Text style={s.footerLink}>Visual Art</Text>
+                {tenantProgrammes.length > 0 ? tenantProgrammes.map((p) => (
+                  <Text key={p.name} style={s.footerLink}>{p.name}</Text>
+                )) : <Text style={s.footerLink}>Programmes available</Text>}
               </View>
               <View style={[s.footerCol, IS_NARROW && { minWidth: 140 }]}>
                 <Text style={s.footerColTitle}>Contact Us</Text>
-                <View style={s.footerContactRow}><Text style={s.footerContactIcon}>📍</Text><Text style={s.footerContactText}>P.O. Box 1, Terchire, Ahafo Region</Text></View>
-                <View style={s.footerContactRow}><Text style={s.footerContactIcon}>📞</Text><Text style={s.footerContactText}>+233 24 471 3468</Text></View>
-                <View style={s.footerContactRow}><Text style={s.footerContactIcon}>✉</Text><Text style={s.footerContactText}>terchireshs@ges.gov.gh</Text></View>
-                <View style={s.footerContactRow}><Text style={s.footerContactIcon}>🕐</Text><Text style={s.footerContactText}>Mon–Fri: 7:30 AM – 3:30 PM</Text></View>
+                <View style={s.footerContactRow}><Text style={s.footerContactIcon}>📍</Text><Text style={s.footerContactText}>{address || 'Contact school for address'}</Text></View>
+                {phone ? <View style={s.footerContactRow}><Text style={s.footerContactIcon}>📞</Text><Text style={s.footerContactText}>{phone}</Text></View> : null}
+                {email ? <View style={s.footerContactRow}><Text style={s.footerContactIcon}>✉</Text><Text style={s.footerContactText}>{email}</Text></View> : null}
               </View>
             </View>
             <View style={s.footerBottom}>
-              <Text style={s.footerCopyright}>© 2026 Terchire Senior High School · SIMS v0.1.0 · All rights reserved</Text>
+              <Text style={s.footerCopyright}>© 2026 {schoolName} · SIMS v0.1.0 · All rights reserved</Text>
             </View>
           </View>
         </ScrollView>
@@ -462,8 +497,8 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
         <View style={s.portalOverlay}>
           <View style={s.portalCloseBar}>
             <TouchableOpacity style={s.portalCloseLogo} onPress={goHome}>
-              <View style={s.portalCloseLogoBox}><Text style={s.portalCloseLogoText}>TSHS</Text></View>
-              {!IS_VERY_NARROW && <Text style={s.portalCloseSchool}>Terchire SHS</Text>}
+              <View style={s.portalCloseLogoBox}><Text style={s.portalCloseLogoText}>{schoolShort}</Text></View>
+              {!IS_VERY_NARROW && <Text style={s.portalCloseSchool}>{schoolShort === 'SCHL' ? 'School' : schoolName.split(' ').slice(0, 2).join(' ')}</Text>}
             </TouchableOpacity>
             <View style={s.portalCloseBtnRow}>
               {!IS_VERY_NARROW && (
@@ -492,28 +527,28 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
             <View style={s.brandOverlay} />
             <View style={s.brandContent}>
               <View style={s.brandLogoSection}>
-                <View style={s.logoRing}><View style={s.logoInner}><Text style={s.logoText}>TSHS</Text></View></View>
-                <Text style={s.brandTitle}>Terchire Senior{'\n'}High School</Text>
-                <Text style={s.brandTagline}>Nimdɛɛ Firi Onyame — Knowledge comes from God</Text>
+                <View style={s.logoRing}><View style={s.logoInner}><Text style={s.logoText}>{schoolShort}</Text></View></View>
+                <Text style={s.brandTitle}>{schoolName}</Text>
+                <Text style={s.brandTagline}>{motto || 'Excellence in education'}</Text>
               </View>
               <View style={s.carouselContainer}>
                 <Animated.View style={[s.carouselSlide, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-                  <Image source={{ uri: INFO_SLIDES[slideIndex].image }} style={s.carouselImage} resizeMode="cover" />
+                  <Image source={{ uri: infoSlides[slideIndex].image }} style={s.carouselImage} resizeMode="cover" />
                   <View style={s.carouselImageOverlay} />
                   <View style={s.carouselTextWrap}>
-                    <View style={[s.carouselAccentBar, { backgroundColor: INFO_SLIDES[slideIndex].accent }]} />
-                    <Text style={s.carouselTitle}>{INFO_SLIDES[slideIndex].title}</Text>
-                    <Text style={s.carouselText}>{INFO_SLIDES[slideIndex].text}</Text>
+                    <View style={[s.carouselAccentBar, { backgroundColor: infoSlides[slideIndex].accent }]} />
+                    <Text style={s.carouselTitle}>{infoSlides[slideIndex].title}</Text>
+                    <Text style={s.carouselText}>{infoSlides[slideIndex].text}</Text>
                   </View>
                 </Animated.View>
                 <View style={s.carouselDots}>
-                  {INFO_SLIDES.map((_, i) => (
-                    <View key={i} style={[s.carouselDot, i === slideIndex && s.carouselDotActive, i === slideIndex && { backgroundColor: INFO_SLIDES[slideIndex].accent }]} />
+                  {infoSlides.map((_, i) => (
+                    <View key={i} style={[s.carouselDot, i === slideIndex && s.carouselDotActive, i === slideIndex && { backgroundColor: infoSlides[slideIndex].accent }]} />
                   ))}
                 </View>
               </View>
               <View style={s.statsRow}>
-                {QUICK_STATS.map((st) => (
+                {quickStats.map((st) => (
                   <View key={st.label} style={s.statItem}>
                     <Text style={s.statValue}>{st.value}</Text>
                     <Text style={s.statLabel}>{st.label}</Text>
@@ -530,7 +565,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
             {!IS_NARROW && (
               <View style={s.formHeader}>
                 <Text style={s.formWelcome}>{activeTab === 'signin' ? 'Welcome Back' : activeTab === 'apply' ? 'Admission Application' : 'Check Application Status'}</Text>
-                <Text style={s.formWelcomeSub}>{activeTab === 'signin' ? 'Sign in to your account' : activeTab === 'apply' ? 'Apply for admission to Terchire SHS' : 'Enter your details to check your status'}</Text>
+                <Text style={s.formWelcomeSub}>{activeTab === 'signin' ? 'Sign in to your account' : activeTab === 'apply' ? `Apply for admission to ${schoolName}` : 'Enter your details to check your status'}</Text>
               </View>
             )}
             {/* Direct form view - no tabs, each button links directly */}
