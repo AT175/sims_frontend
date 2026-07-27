@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Alert, TextInput, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Alert, TextInput, Platform, Linking } from 'react-native';
 import { DashboardLayout, NavItem, StatCard, CardGrid, KitchenMenuWidget } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
 import { useAuthStore } from '@store/authStore';
@@ -41,6 +41,11 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'menu', label: "Today's Menu" },
   { key: 'library', label: 'Library Account' },
   { key: 'health', label: 'Health Record' },
+  { key: 'exeats', label: 'Exeat Requests' },
+  { key: 'announcements', label: 'Announcements' },
+  { key: 'teacher-content', label: 'Teacher Content' },
+  { key: 'house', label: 'My House' },
+  { key: 'messages', label: 'Messages' },
   { key: 'elections', label: 'Elections' },
   { key: 'feedback', label: 'Grievance / Feedback' },
 ];
@@ -72,6 +77,17 @@ export function StudentDashboard() {
   // Timetable state
   const [timetableDay, setTimetableDay] = useState('Monday');
   const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+  // Exeat modal state
+  const [showExeatModal, setShowExeatModal] = useState(false);
+  const [exeatForm, setExeatForm] = useState({ reason: '', reasonDetail: '', destination: '', departureDate: '', returnDate: '', transportMode: 'Bus' });
+
+  // Message modal state
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [messageForm, setMessageForm] = useState({ recipientType: 'parent', recipientName: '', subject: '', body: '' });
+
+  // Teacher content sub-tab
+  const [contentTab, setContentTab] = useState<'materials' | 'live' | 'av' | 'shared' | 'quizzes'>('materials');
 
   // Fees state
   const feeRecords = useBursaryStore((s) => s.fees);
@@ -465,6 +481,238 @@ export function StudentDashboard() {
             )}
           </View>
         );
+      case 'exeats':
+        return (
+          <View>
+            <Text style={styles.pageTitle}>Exeat Requests</Text>
+            <Text style={styles.pageSubtitle}>Request permission to leave campus</Text>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => setShowExeatModal(true)}>
+              <Text style={styles.actionBtnText}>+ Request New Exeat</Text>
+            </TouchableOpacity>
+            {sStore.exeats.length > 0 ? (
+              sStore.exeats.map((ex) => (
+                <View key={ex.id} style={styles.exeatCard}>
+                  <View style={styles.exeatHeader}>
+                    <Text style={styles.exeatNo}>{ex.exeatNo}</Text>
+                    <Text style={[styles.exeatStatusBadge, ex.status === 'Approved' && styles.exeatStatusApproved, ex.status === 'Pending' && styles.exeatStatusPending, ex.status === 'Rejected' && styles.exeatStatusRejected]}>{ex.status}</Text>
+                  </View>
+                  <Text style={styles.exeatReason}>{ex.reason}</Text>
+                  {ex.reasonDetail ? <Text style={styles.exeatDetail}>{ex.reasonDetail}</Text> : null}
+                  {ex.destination ? <Text style={styles.exeatMeta}>Destination: {ex.destination}</Text> : null}
+                  <Text style={styles.exeatMeta}>Departure: {ex.departureDate} | Return: {ex.returnDate}</Text>
+                  {ex.transportMode ? <Text style={styles.exeatMeta}>Transport: {ex.transportMode}</Text> : null}
+                  {ex.approvedBy ? <Text style={styles.exeatMeta}>Approved by: {ex.approvedBy} on {ex.approvedDate}</Text> : null}
+                </View>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>No exeat requests yet.</Text>
+            )}
+          </View>
+        );
+      case 'announcements':
+        return (
+          <View>
+            <Text style={styles.pageTitle}>Announcements</Text>
+            <Text style={styles.pageSubtitle}>Notices from your teachers</Text>
+            {sStore.announcements.length > 0 ? (
+              sStore.announcements.map((a) => (
+                <View key={a.id} style={[styles.announcementCard, a.priority === 'High' && styles.announcementHigh]}>
+                  <View style={styles.announcementHeader}>
+                    <Text style={styles.announcementTitle}>{a.title}</Text>
+                    {a.priority === 'High' ? <Text style={styles.announcementPriority}>HIGH</Text> : null}
+                  </View>
+                  {a.body ? <Text style={styles.announcementBody}>{a.body}</Text> : null}
+                  <Text style={styles.announcementMeta}>By {a.postedBy} | {a.date} | {a.classForm}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>No announcements available.</Text>
+            )}
+          </View>
+        );
+      case 'teacher-content':
+        return (
+          <View>
+            <Text style={styles.pageTitle}>Teacher Content</Text>
+            <Text style={styles.pageSubtitle}>Learning resources shared by your teachers</Text>
+            <View style={styles.dayRow}>
+              {([['materials', 'Materials'], ['live', 'Live Sessions'], ['av', 'AV Recordings'], ['shared', 'Shared Resources'], ['quizzes', 'Quizzes']] as const).map(([key, label]) => (
+                <TouchableOpacity key={key} style={[styles.dayChip, contentTab === key && styles.dayChipActive]} onPress={() => setContentTab(key)}>
+                  <Text style={[styles.dayChipText, contentTab === key && styles.dayChipTextActive]}>{label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            {contentTab === 'materials' && (
+              sStore.teacherMaterials.length > 0 ? sStore.teacherMaterials.map((m) => (
+                <View key={m.id} style={styles.materialCard}>
+                  <View style={styles.materialInfo}>
+                    <Text style={styles.materialTitle}>{m.title}</Text>
+                    <Text style={styles.materialMeta}>{m.subject} | {m.classForm} | {m.type}</Text>
+                    {m.topic ? <Text style={styles.materialMeta}>Topic: {m.topic}</Text> : null}
+                    {m.description ? <Text style={styles.materialMeta}>{m.description}</Text> : null}
+                    <Text style={styles.materialMeta}>By {m.uploadedBy} | {m.dateUploaded}</Text>
+                  </View>
+                  {m.fileUrl ? (
+                    <TouchableOpacity style={styles.downloadBadge} onPress={() => isWeb ? window.open(m.fileUrl!, '_blank') : Linking.openURL(m.fileUrl!)}>
+                      <Text style={styles.downloadText}>Open</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+              )) : <Text style={styles.emptyText}>No materials available.</Text>
+            )}
+            {contentTab === 'live' && (
+              sStore.liveSessions.length > 0 ? sStore.liveSessions.map((s) => (
+                <View key={s.id} style={styles.liveSessionCard}>
+                  <Text style={styles.liveSessionTitle}>{s.topic}</Text>
+                  <Text style={styles.materialMeta}>{s.subject} | {s.classForm}</Text>
+                  <Text style={styles.materialMeta}>Scheduled: {s.scheduledTime}</Text>
+                  <Text style={styles.liveSessionStatus}>Status: {s.status}</Text>
+                  {s.startedBy ? <Text style={styles.materialMeta}>Started by: {s.startedBy}</Text> : null}
+                  {s.recordingUrl ? (
+                    <TouchableOpacity style={styles.downloadBadge} onPress={() => isWeb ? window.open(s.recordingUrl!, '_blank') : Linking.openURL(s.recordingUrl!)}>
+                      <Text style={styles.downloadText}>Recording</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+              )) : <Text style={styles.emptyText}>No live sessions scheduled.</Text>
+            )}
+            {contentTab === 'av' && (
+              sStore.avRecordings.length > 0 ? sStore.avRecordings.map((r) => (
+                <View key={r.id} style={styles.materialCard}>
+                  <View style={styles.materialInfo}>
+                    <Text style={styles.materialTitle}>{r.title}</Text>
+                    <Text style={styles.materialMeta}>{r.subject} | {r.classForm} | {r.type}</Text>
+                    {r.topic ? <Text style={styles.materialMeta}>Topic: {r.topic}</Text> : null}
+                    {r.duration ? <Text style={styles.materialMeta}>Duration: {r.duration}</Text> : null}
+                    <Text style={styles.materialMeta}>By {r.recordedBy} | {r.dateRecorded}</Text>
+                  </View>
+                  {r.url ? (
+                    <TouchableOpacity style={styles.downloadBadge} onPress={() => isWeb ? window.open(r.url!, '_blank') : Linking.openURL(r.url!)}>
+                      <Text style={styles.downloadText}>Play</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+              )) : <Text style={styles.emptyText}>No AV recordings available.</Text>
+            )}
+            {contentTab === 'shared' && (
+              sStore.sharedResources.length > 0 ? sStore.sharedResources.map((r) => (
+                <View key={r.id} style={styles.materialCard}>
+                  <View style={styles.materialInfo}>
+                    <Text style={styles.materialTitle}>{r.title}</Text>
+                    <Text style={styles.materialMeta}>{r.subject} | {r.type}</Text>
+                    {r.description ? <Text style={styles.materialMeta}>{r.description}</Text> : null}
+                    <Text style={styles.materialMeta}>By {r.sharedBy} | {r.sharedDate}</Text>
+                  </View>
+                  {r.fileUrl ? (
+                    <TouchableOpacity style={styles.downloadBadge} onPress={() => isWeb ? window.open(r.fileUrl!, '_blank') : Linking.openURL(r.fileUrl!)}>
+                      <Text style={styles.downloadText}>Open</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+              )) : <Text style={styles.emptyText}>No shared resources available.</Text>
+            )}
+            {contentTab === 'quizzes' && (
+              sStore.quizzes.length > 0 ? sStore.quizzes.map((q) => (
+                <View key={q.id} style={styles.quizCard}>
+                  <Text style={styles.materialTitle}>{q.title}</Text>
+                  <Text style={styles.materialMeta}>{q.subject} | {q.classForm}</Text>
+                  <Text style={styles.materialMeta}>Marks: {q.totalMarks} | Duration: {q.duration} min</Text>
+                  <Text style={styles.materialMeta}>Due: {q.dueDate} | Expires: {q.expiryDate}</Text>
+                  <Text style={styles.liveSessionStatus}>Status: {q.status}</Text>
+                </View>
+              )) : <Text style={styles.emptyText}>No quizzes published.</Text>
+            )}
+          </View>
+        );
+      case 'house':
+        return (
+          <View>
+            <Text style={styles.pageTitle}>My House</Text>
+            <Text style={styles.pageSubtitle}>Boarding house information and records</Text>
+            {sStore.profile?.house ? (
+              <>
+                <View style={styles.houseInfoCard}>
+                  <Text style={styles.houseInfoTitle}>House: {sStore.profile.house}</Text>
+                  <Text style={styles.houseInfoMeta}>Student: {sStore.profile.fullName}</Text>
+                  <Text style={styles.houseInfoMeta}>Adm No: {sStore.profile.admissionNumber}</Text>
+                </View>
+
+                <Text style={styles.sectionTitle}>Recent Roll Calls</Text>
+                {sStore.rollCalls.length > 0 ? (
+                  sStore.rollCalls.map((rc) => (
+                    <View key={rc.id} style={styles.rollCallCard}>
+                      <View style={styles.rollCallHeader}>
+                        <Text style={styles.rollCallDate}>{rc.date}</Text>
+                        <Text style={[styles.rollCallStatus, rc.status === 'Present' && styles.exeatStatusApproved, rc.status === 'Absent' && styles.exeatStatusRejected]}>{rc.status}</Text>
+                      </View>
+                      <Text style={styles.materialMeta}>{rc.studentName} | Room: {rc.room || '—'}</Text>
+                      {rc.notes ? <Text style={styles.materialMeta}>Notes: {rc.notes}</Text> : null}
+                      <Text style={styles.materialMeta}>Recorded by: {rc.recordedBy}</Text>
+                    </View>
+                  ))
+                ) : (
+                  <Text style={styles.emptyText}>No roll call records.</Text>
+                )}
+
+                <Text style={styles.sectionTitle}>Discipline Records</Text>
+                {sStore.disciplineRecords.length > 0 ? (
+                  sStore.disciplineRecords.map((d) => (
+                    <View key={d.id} style={styles.disciplineCard}>
+                      <View style={styles.rollCallHeader}>
+                        <Text style={styles.rollCallDate}>{d.date}</Text>
+                        <Text style={[styles.exeatStatusBadge, d.severity === 'Major' && styles.exeatStatusRejected, d.severity === 'Minor' && styles.exeatStatusPending]}>{d.severity}</Text>
+                      </View>
+                      <Text style={styles.materialMeta}>{d.studentName}</Text>
+                      <Text style={styles.disciplineIncident}>{d.incident}</Text>
+                      {d.actionTaken ? <Text style={styles.materialMeta}>Action: {d.actionTaken}</Text> : null}
+                      {d.escalated ? <Text style={styles.escalatedText}>ESCALATED</Text> : null}
+                    </View>
+                  ))
+                ) : (
+                  <Text style={styles.emptyText}>No discipline records.</Text>
+                )}
+              </>
+            ) : (
+              <Text style={styles.emptyText}>You are not assigned to a house.</Text>
+            )}
+          </View>
+        );
+      case 'messages':
+        return (
+          <View>
+            <Text style={styles.pageTitle}>Messages</Text>
+            <Text style={styles.pageSubtitle}>Communicate with your parent/guardian, teachers, or administration</Text>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => {
+              setMessageForm({ recipientType: 'parent', recipientName: sStore.profile?.guardianName || '', subject: '', body: '' });
+              setShowMessageModal(true);
+            }}>
+              <Text style={styles.actionBtnText}>+ New Message</Text>
+            </TouchableOpacity>
+            {sStore.messages.length > 0 ? (
+              sStore.messages.map((msg) => (
+                <View key={msg.id} style={styles.messageCard}>
+                  <View style={styles.messageHeader}>
+                    <Text style={styles.messageSubject}>{msg.subject}</Text>
+                    <Text style={styles.messageRecipient}>{msg.recipientType === 'parent' ? 'Parent' : msg.recipientType}</Text>
+                  </View>
+                  <Text style={styles.messageBody}>{msg.body}</Text>
+                  <Text style={styles.materialMeta}>To: {msg.recipientName || msg.recipientType} | {new Date(msg.createdAt).toLocaleDateString()}</Text>
+                  {msg.reply ? (
+                    <View style={styles.replyBox}>
+                      <Text style={styles.replyLabel}>Reply:</Text>
+                      <Text style={styles.replyText}>{msg.reply}</Text>
+                      <Text style={styles.materialMeta}>By {msg.replyBy} on {msg.replyDate}</Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.messagePending}>Awaiting reply...</Text>
+                  )}
+                </View>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>No messages sent yet.</Text>
+            )}
+          </View>
+        );
       default:
         return null;
     }
@@ -612,6 +860,91 @@ export function StudentDashboard() {
           </View>
         </ScrollView></View></View>
       </Modal>
+
+      {/* Exeat Request Modal */}
+      <Modal visible={showExeatModal} transparent animationType="fade" onRequestClose={() => setShowExeatModal(false)}>
+        <View style={styles.modalOverlay}><View style={styles.modalContent}><ScrollView showsVerticalScrollIndicator={false}>
+          <Text style={styles.modalTitle}>Request Exeat</Text>
+          <Text style={styles.modalSubtitle}>Fill in the details to request permission to leave campus</Text>
+          <Text style={styles.inputLabel}>Reason *</Text>
+          <View style={styles.selectRow}>
+            {['Medical', 'Family Emergency', 'Personal', 'Official Assignment', 'Other'].map((opt) => (
+              <TouchableOpacity key={opt} style={[styles.selectChip, exeatForm.reason === opt && styles.selectChipActive]} onPress={() => setExeatForm({ ...exeatForm, reason: opt })}>
+                <Text style={[styles.selectChipText, exeatForm.reason === opt && styles.selectChipTextActive]}>{opt}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={styles.inputLabel}>Additional Details</Text>
+          <TextInput style={[styles.input, styles.textArea]} placeholder="Provide more details about your reason" placeholderTextColor={colors.textLight} value={exeatForm.reasonDetail} onChangeText={(v) => setExeatForm({ ...exeatForm, reasonDetail: v })} multiline />
+          <Text style={styles.inputLabel}>Destination</Text>
+          <TextInput style={styles.input} placeholder="Where will you be going?" placeholderTextColor={colors.textLight} value={exeatForm.destination} onChangeText={(v) => setExeatForm({ ...exeatForm, destination: v })} />
+          <Text style={styles.inputLabel}>Departure Date *</Text>
+          {isWeb ? (
+            <input type="date" value={exeatForm.departureDate} onChange={(e) => setExeatForm({ ...exeatForm, departureDate: e.target.value })} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: radius.sm, width: '100%', fontSize: fontSize.md, marginBottom: spacing.sm }} />
+          ) : (
+            <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={exeatForm.departureDate} onChangeText={(v) => setExeatForm({ ...exeatForm, departureDate: v })} />
+          )}
+          <Text style={styles.inputLabel}>Return Date *</Text>
+          {isWeb ? (
+            <input type="date" value={exeatForm.returnDate} onChange={(e) => setExeatForm({ ...exeatForm, returnDate: e.target.value })} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: radius.sm, width: '100%', fontSize: fontSize.md, marginBottom: spacing.sm }} />
+          ) : (
+            <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={exeatForm.returnDate} onChangeText={(v) => setExeatForm({ ...exeatForm, returnDate: v })} />
+          )}
+          <Text style={styles.inputLabel}>Transport Mode</Text>
+          <View style={styles.selectRow}>
+            {['Bus', 'Car', 'Taxi', 'Walk', 'Other'].map((opt) => (
+              <TouchableOpacity key={opt} style={[styles.selectChip, exeatForm.transportMode === opt && styles.selectChipActive]} onPress={() => setExeatForm({ ...exeatForm, transportMode: opt })}>
+                <Text style={[styles.selectChipText, exeatForm.transportMode === opt && styles.selectChipTextActive]}>{opt}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <View style={styles.modalActions}>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowExeatModal(false)}><Text style={styles.modalBtnText}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={() => {
+              if (!exeatForm.reason.trim() || !exeatForm.departureDate.trim() || !exeatForm.returnDate.trim()) { Alert.alert('Error', 'Reason, departure date, and return date are required'); return; }
+              sStore.requestExeat(exeatForm.reason, exeatForm.reasonDetail, exeatForm.destination, exeatForm.departureDate, exeatForm.returnDate, exeatForm.transportMode);
+              setExeatForm({ reason: '', reasonDetail: '', destination: '', departureDate: '', returnDate: '', transportMode: 'Bus' });
+              setShowExeatModal(false);
+              Alert.alert('Success', 'Exeat request submitted. Awaiting approval.');
+            }}><Text style={styles.modalBtnText}>Submit</Text></TouchableOpacity>
+          </View>
+        </ScrollView></View></View>
+      </Modal>
+
+      {/* Message Modal */}
+      <Modal visible={showMessageModal} transparent animationType="fade" onRequestClose={() => setShowMessageModal(false)}>
+        <View style={styles.modalOverlay}><View style={styles.modalContent}><ScrollView showsVerticalScrollIndicator={false}>
+          <Text style={styles.modalTitle}>New Message</Text>
+          <Text style={styles.inputLabel}>Send To</Text>
+          <View style={styles.selectRow}>
+            {['parent', 'teacher', 'headmaster', 'counsellor', 'bursary'].map((opt) => (
+              <TouchableOpacity key={opt} style={[styles.selectChip, messageForm.recipientType === opt && styles.selectChipActive]} onPress={() => setMessageForm({ ...messageForm, recipientType: opt, recipientName: opt === 'parent' ? (sStore.profile?.guardianName || '') : '' })}>
+                <Text style={[styles.selectChipText, messageForm.recipientType === opt && styles.selectChipTextActive]}>{opt.charAt(0).toUpperCase() + opt.slice(1)}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          {messageForm.recipientType === 'parent' && (
+            <>
+              <Text style={styles.inputLabel}>Guardian Name</Text>
+              <TextInput style={styles.input} placeholder="Guardian name" placeholderTextColor={colors.textLight} value={messageForm.recipientName} onChangeText={(v) => setMessageForm({ ...messageForm, recipientName: v })} />
+            </>
+          )}
+          <Text style={styles.inputLabel}>Subject *</Text>
+          <TextInput style={styles.input} placeholder="Message subject" placeholderTextColor={colors.textLight} value={messageForm.subject} onChangeText={(v) => setMessageForm({ ...messageForm, subject: v })} />
+          <Text style={styles.inputLabel}>Message *</Text>
+          <TextInput style={[styles.input, styles.textArea]} placeholder="Type your message" placeholderTextColor={colors.textLight} value={messageForm.body} onChangeText={(v) => setMessageForm({ ...messageForm, body: v })} multiline />
+          <View style={styles.modalActions}>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowMessageModal(false)}><Text style={styles.modalBtnText}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={() => {
+              if (!messageForm.subject.trim() || !messageForm.body.trim()) { Alert.alert('Error', 'Subject and message are required'); return; }
+              sStore.createMessage(messageForm.recipientType, messageForm.recipientName, messageForm.subject, messageForm.body);
+              setMessageForm({ recipientType: 'parent', recipientName: '', subject: '', body: '' });
+              setShowMessageModal(false);
+              Alert.alert('Success', 'Message sent.');
+            }}><Text style={styles.modalBtnText}>Send</Text></TouchableOpacity>
+          </View>
+        </ScrollView></View></View>
+      </Modal>
     </DashboardLayout>
   );
 }
@@ -753,4 +1086,50 @@ const styles = StyleSheet.create({
   selectChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   selectChipText: { fontSize: fontSize.sm, color: colors.textSecondary },
   selectChipTextActive: { color: colors.white, fontWeight: fontWeight.semibold },
+  // Exeat styles
+  exeatCard: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm, borderLeftWidth: 3, borderLeftColor: colors.primary },
+  exeatHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
+  exeatNo: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, color: colors.primary },
+  exeatStatusBadge: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.sm, fontSize: fontSize.xs, fontWeight: fontWeight.semibold, color: colors.text, overflow: 'hidden' },
+  exeatStatusApproved: { backgroundColor: colors.successBg },
+  exeatStatusPending: { backgroundColor: colors.warningBg },
+  exeatStatusRejected: { backgroundColor: colors.danger + '20' },
+  exeatReason: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.text, marginBottom: spacing.xs },
+  exeatDetail: { fontSize: fontSize.sm, color: colors.textSecondary, marginBottom: spacing.xs },
+  exeatMeta: { fontSize: fontSize.sm, color: colors.textLight, marginTop: spacing.xs },
+  // Announcement styles
+  announcementCard: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm, borderLeftWidth: 3, borderLeftColor: colors.info },
+  announcementHigh: { borderLeftColor: colors.danger, backgroundColor: colors.danger + '08' },
+  announcementHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  announcementTitle: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.text, flex: 1 },
+  announcementPriority: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, color: colors.danger, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, backgroundColor: colors.danger + '15', borderRadius: radius.sm, marginLeft: spacing.sm },
+  announcementBody: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: spacing.xs },
+  announcementMeta: { fontSize: fontSize.xs, color: colors.textLight, marginTop: spacing.sm },
+  // Live session styles
+  liveSessionCard: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm, borderLeftWidth: 3, borderLeftColor: colors.success },
+  liveSessionTitle: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.text },
+  liveSessionStatus: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.primary, marginTop: spacing.xs },
+  // Quiz styles
+  quizCard: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm, borderLeftWidth: 3, borderLeftColor: colors.warning },
+  // House styles
+  houseInfoCard: { backgroundColor: colors.primary + '10', borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.primary + '30' },
+  houseInfoTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.primary, marginBottom: spacing.xs },
+  houseInfoMeta: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: spacing.xs },
+  rollCallCard: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm },
+  rollCallHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
+  rollCallDate: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, color: colors.text },
+  rollCallStatus: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.sm, overflow: 'hidden' },
+  disciplineCard: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm },
+  disciplineIncident: { fontSize: fontSize.sm, color: colors.text, marginTop: spacing.xs, fontStyle: 'italic' },
+  escalatedText: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, color: colors.danger, marginTop: spacing.xs },
+  // Message styles
+  messageCard: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm },
+  messageHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
+  messageSubject: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.text, flex: 1 },
+  messageRecipient: { fontSize: fontSize.xs, color: colors.primary, fontWeight: fontWeight.medium, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, backgroundColor: colors.primary + '10', borderRadius: radius.sm },
+  messageBody: { fontSize: fontSize.sm, color: colors.textSecondary, marginBottom: spacing.xs },
+  messagePending: { fontSize: fontSize.xs, color: colors.textLight, fontStyle: 'italic', marginTop: spacing.xs },
+  replyBox: { backgroundColor: colors.surfaceAlt, borderRadius: radius.md, padding: spacing.md, marginTop: spacing.sm },
+  replyLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, color: colors.success, marginBottom: spacing.xs },
+  replyText: { fontSize: fontSize.sm, color: colors.text, marginBottom: spacing.xs },
 });
