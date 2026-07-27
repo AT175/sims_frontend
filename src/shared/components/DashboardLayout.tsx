@@ -49,7 +49,6 @@ export function DashboardLayout({
   const { user, logout, switchRole } = useAuthStore();
   const accessStore = useAccessControlStore();
   const responsive = useResponsive();
-  const isDesktop = responsive.isDesktop;
 
   const currentDashboardKey = user ? ROLE_DASHBOARD_MAP[user.activeRole as RoleId] : '';
   const baseFilteredNavItems = user
@@ -162,26 +161,17 @@ export function DashboardLayout({
 
   return (
     <View style={styles.container}>
-      {/* Persistent sidebar on desktop */}
-      {isDesktop && (
-        <View style={styles.persistentSidebar}>
-          {sidebarContent}
-        </View>
-      )}
-
       <View style={styles.mainArea}>
         <View style={styles.header}>
-          {!isDesktop && (
-            <TouchableOpacity
-              onPress={() => setSidebarOpen(true)}
-              style={styles.hamburger}
-              activeOpacity={0.6}
-            >
-              <View style={styles.hamburgerLine} />
-              <View style={[styles.hamburgerLine, { width: 16 }]} />
-              <View style={styles.hamburgerLine} />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            onPress={() => setSidebarOpen(true)}
+            style={styles.hamburger}
+            activeOpacity={0.6}
+          >
+            <View style={styles.hamburgerLine} />
+            <View style={[styles.hamburgerLine, { width: 16 }]} />
+            <View style={styles.hamburgerLine} />
+          </TouchableOpacity>
           <Text style={styles.headerTitle} numberOfLines={1}>
             {filteredNavItems.find((n) => n.key === activeKey)?.label ?? title}
           </Text>
@@ -200,21 +190,19 @@ export function DashboardLayout({
         </ScrollView>
       </View>
 
-      {/* Sidebar drawer — mobile only */}
-      {!isDesktop && (
-        <Modal
-          visible={sidebarOpen}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setSidebarOpen(false)}
-        >
-          <Pressable style={styles.overlay} onPress={() => setSidebarOpen(false)}>
-            <Pressable style={styles.sidebarDrawer} onPress={(e) => e.stopPropagation()}>
-              {sidebarContent}
-            </Pressable>
+      {/* Sidebar drawer — all platforms */}
+      <Modal
+        visible={sidebarOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setSidebarOpen(false)}
+      >
+        <Pressable style={styles.overlay} onPress={() => setSidebarOpen(false)}>
+          <Pressable style={styles.sidebarDrawer} onPress={(e) => e.stopPropagation()}>
+            {sidebarContent}
           </Pressable>
-        </Modal>
-      )}
+        </Pressable>
+      </Modal>
 
       {/* Role Switcher Modal */}
       <Modal
