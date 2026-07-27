@@ -165,9 +165,15 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
   const accent = '#FFC93C';
   const primaryDark = primary === colors.primary ? colors.primaryDark : primary;
 
-  const heroSlides = branding.bannerImage
-    ? [{ image: branding.bannerImage, caption: motto }, ...DEFAULT_SLIDES.slice(1)]
-    : DEFAULT_SLIDES;
+  const galleryImgs = branding.galleryImages || [];
+  const heroSlides = galleryImgs.length > 0
+    ? galleryImgs.slice(0, 6).map((img, i) => ({
+        image: img,
+        caption: i === 0 ? (motto || `Welcome to ${schoolName}`) : ['Quality Education & Discipline', 'A Center for Excellence', 'Building Future Leaders', 'Serving Our Community', 'Our Campus'][i - 1] || 'Our Campus',
+      }))
+    : branding.bannerImage
+      ? [{ image: branding.bannerImage, caption: motto }, ...DEFAULT_SLIDES.slice(1)]
+      : DEFAULT_SLIDES;
 
   const stats = DEFAULT_STATS;
 
