@@ -219,6 +219,7 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
 
         {/* ── Hero ── */}
         <View style={[s.hero, IS_NARROW && { minHeight: 500 }]}>
+        <View style={s.heroBgWrap} pointerEvents="none">
           {heroSlides.map((slide, i) => (
             <Animated.Image
               key={i}
@@ -234,6 +235,7 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
             />
           ))}
           <View style={[s.heroOverlay, { backgroundColor: `${primary}40` }]} />
+        </View>
           <View style={[s.heroContent, IS_NARROW && { paddingHorizontal: spacing.md, width: '100%' }]}>
             <View style={s.heroBadge}><Text style={s.heroBadgeText}>{branding.region ? `${branding.region.toUpperCase()} · GES ACCREDITED` : 'GES ACCREDITED SCHOOL'}</Text></View>
             <Text style={[s.heroTitle, IS_NARROW && { fontSize: 30, lineHeight: 38 }]}>Welcome to{'\n'}<Text style={[s.heroTitleAccent, { color: accent }]}>{schoolName}</Text></Text>
@@ -559,8 +561,9 @@ const s = StyleSheet.create({
   headerGhostText: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, letterSpacing: 0.3 },
   // Hero
   hero: { position: 'relative', minHeight: 620, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
-  heroBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', pointerEvents: 'none' },
-  heroOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none' },
+  heroBgWrap: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  heroBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
+  heroOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   heroContent: { zIndex: 2, alignItems: 'center', paddingHorizontal: spacing.xl, maxWidth: 720 },
   heroBadge: { backgroundColor: 'rgba(255, 255, 255, 0.25)', borderRadius: 20, paddingHorizontal: spacing.md + 4, paddingVertical: spacing.xs + 2, marginBottom: spacing.lg, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.4)' },
   heroBadgeText: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, color: colors.white, letterSpacing: 1 },

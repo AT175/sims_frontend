@@ -58,7 +58,7 @@ export function SchoolDirectory() {
   const { width } = useWindowDimensions();
   const IS_NARROW = width < 768;
   const scrollViewRef = useRef<any>(null);
-  const sectionYs = useRef<Record<string, number>>({});
+  const sectionRefs = useRef<Record<string, any>>({});
   const heroFade = useRef(new Animated.Value(0)).current;
   const heroSlide = useRef(new Animated.Value(30)).current;
 
@@ -84,7 +84,15 @@ export function SchoolDirectory() {
   };
 
   const scrollToSection = (key: string) => {
-    if (sectionYs.current[key] != null) scrollViewRef.current?.scrollTo?.({ y: sectionYs.current[key], animated: true });
+    const el = sectionRefs.current[key];
+    if (!el) return;
+    if (Platform.OS === 'web' && el.getBoundingClientRect) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      el.measure?.((_x: number, y: number) => {
+        scrollViewRef.current?.scrollTo?.({ y, animated: true });
+      });
+    }
   };
 
   const filtered = tenants.filter(
@@ -180,7 +188,7 @@ export function SchoolDirectory() {
 
       {/* ── Features Section ── */}
       <View
-        onLayout={(e) => { sectionYs.current['features'] = e.nativeEvent.layout.y; }}
+        ref={(el) => { sectionRefs.current['features'] = el; }}
         style={[styles.section, IS_NARROW && { paddingHorizontal: spacing.md, paddingVertical: spacing.xxl }]}
       >
         <View style={[styles.sectionInner, IS_NARROW && { width: '100%' }]}>
@@ -201,7 +209,7 @@ export function SchoolDirectory() {
 
       {/* ── Schools Directory Section ── */}
       <View
-        onLayout={(e) => { sectionYs.current['schools'] = e.nativeEvent.layout.y; }}
+        ref={(el) => { sectionRefs.current['schools'] = el; }}
         style={[styles.schoolsSection, IS_NARROW && { paddingHorizontal: spacing.md, paddingVertical: spacing.xxl }]}
       >
         <View style={[styles.sectionInner, IS_NARROW && { width: '100%' }]}>
@@ -293,7 +301,7 @@ export function SchoolDirectory() {
 
       {/* ── About Section ── */}
       <View
-        onLayout={(e) => { sectionYs.current['about'] = e.nativeEvent.layout.y; }}
+        ref={(el) => { sectionRefs.current['about'] = el; }}
         style={[styles.aboutSection, IS_NARROW && { paddingHorizontal: spacing.md, paddingVertical: spacing.xxl }]}
       >
         <View style={[styles.sectionInner, IS_NARROW && { width: '100%' }]}>
