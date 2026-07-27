@@ -1,5 +1,5 @@
 const CACHE_NAME = 'sims-v2';
-const BRANDING_CACHE_NAME = 'sims-branding-v1';
+const BRANDING_CACHE_NAME = 'sims-branding-v2';
 const IMAGE_CACHE_NAME = 'sims-images-v1';
 const APP_SHELL = [
   '/',
@@ -59,15 +59,15 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Branding API: cache-first with 24h TTL — enables offline homepage
+  // Branding API: cache-first with 5min TTL — enables offline homepage
   if (isBrandingApi) {
     event.respondWith(
       caches.open(BRANDING_CACHE_NAME).then((cache) =>
         cache.match(request).then((cached) => {
           if (cached) {
             const ts = cached.headers.get('X-Cache-Timestamp');
-            if (ts && Date.now() - parseInt(ts) < 86400000) {
-              // Cache is fresh (24h) — return it
+            if (ts && Date.now() - parseInt(ts) < 300000) {
+              // Cache is fresh (5min) — return it
               return cached;
             }
           }

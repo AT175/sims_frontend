@@ -46,6 +46,7 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
   const [showPortal, setShowPortal] = useState(false);
   const [portalTab, setPortalTab] = useState<'signin' | 'apply' | 'status'>('signin');
   const [heroSlide, setHeroSlide] = useState(0);
+  const heroSlidesRef = useRef(6);
   const [, setActiveSection] = useState('home');
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const { isOnline } = useConnectionStatus();
@@ -69,7 +70,7 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
       Animated.parallel([
         Animated.timing(heroFade, { toValue: 0, duration: 600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
       ]).start(() => {
-        setHeroSlide((prev) => (prev + 1) % DEFAULT_SLIDES.length);
+        setHeroSlide((prev) => (prev + 1) % heroSlidesRef.current);
         heroScale.setValue(1.08);
         Animated.parallel([
           Animated.timing(heroFade, { toValue: 1, duration: 700, useNativeDriver: true, easing: Easing.out(Easing.ease) }),
@@ -174,6 +175,8 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
     : branding.bannerImage
       ? [{ image: branding.bannerImage, caption: motto }, ...DEFAULT_SLIDES.slice(1)]
       : DEFAULT_SLIDES;
+  heroSlidesRef.current = heroSlides.length;
+  if (heroSlide >= heroSlides.length) setHeroSlide(0);
 
   const stats = DEFAULT_STATS;
 
