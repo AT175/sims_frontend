@@ -366,21 +366,23 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
 
           {/* Hero with flash animation carousel */}
           <View style={[s.hero, IS_NARROW && { minHeight: 500 }]}>
-            {heroSlides.map((slide, i) => (
-              <Animated.Image
-                key={i}
-                source={{ uri: slide.image }}
-                style={[
-                  s.heroBg,
-                  {
-                    opacity: i === heroSlide ? heroFade : 0,
-                    transform: i === heroSlide ? [{ scale: heroScale }] : [{ scale: 1 }],
-                  },
-                ]}
-                resizeMode="cover"
-              />
-            ))}
-            <View style={s.heroOverlay} />
+            <View style={s.heroBg} pointerEvents="none">
+              {heroSlides.map((slide, i) => (
+                <Animated.Image
+                  key={i}
+                  source={{ uri: slide.image }}
+                  style={[
+                    s.heroBg,
+                    {
+                      opacity: i === heroSlide ? heroFade : 0,
+                      transform: i === heroSlide ? [{ scale: heroScale }] : [{ scale: 1 }],
+                    },
+                  ]}
+                  resizeMode="cover"
+                />
+              ))}
+            </View>
+            <View style={s.heroOverlay} pointerEvents="none" />
             <View style={[s.heroContent, IS_NARROW && { paddingHorizontal: spacing.md, width: '100%' }]}>
               <View style={s.heroBadge}><Text style={s.heroBadgeText}>★ {schoolName.toUpperCase()}</Text></View>
               <Text style={[s.heroTitle, IS_NARROW && { fontSize: 30, lineHeight: 38 }]}>Welcome to{'\n'}<Text style={s.heroTitleAccent}>{schoolName}</Text></Text>
@@ -544,8 +546,10 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
             <View style={[s.splitContainer, IS_NARROW && { flexDirection: 'column' }]}>
         {!IS_NARROW && (
           <View style={s.brandPanel}>
+            <View style={s.brandBgImage} pointerEvents="none">
             <Image source={{ uri: '/banner3.png' }} style={s.brandBgImage} resizeMode="cover" />
-            <View style={s.brandOverlay} />
+          </View>
+            <View style={s.brandOverlay} pointerEvents="none" />
             <View style={s.brandContent}>
               <View style={s.brandLogoSection}>
                 <View style={s.logoRing}><View style={s.logoInner}><Text style={s.logoText}>{schoolShort}</Text></View></View>
@@ -580,8 +584,10 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
           </View>
         )}
         <View style={[s.formPanel, IS_NARROW && { flex: 1 }]}>
-          <Image source={{ uri: '/bg6.jpg' }} style={s.formPanelBg} resizeMode="cover" />
-          <View style={s.formPanelBgOverlay} />
+          <View style={s.formPanelBg} pointerEvents="none">
+            <Image source={{ uri: '/bg6.jpg' }} style={s.formPanelBg} resizeMode="cover" />
+          </View>
+          <View style={s.formPanelBgOverlay} pointerEvents="none" />
           <View style={s.formPanelInner}>
             {!IS_NARROW && (
               <View style={s.formHeader}>
