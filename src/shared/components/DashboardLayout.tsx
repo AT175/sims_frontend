@@ -16,6 +16,7 @@ import type { RoleId } from '@shared/types';
 import { useAccessControlStore } from '@store/accessControlStore';
 import { DASHBOARD_MAP } from '@shared/navigation/dashboardCatalog';
 import { AssignedRolesPage } from './AssignedRolesPage';
+import { EarningsPage } from './EarningsPage';
 import { UserProfileModal } from './UserProfileModal';
 import { NotificationCenter } from './NotificationCenter';
 import { useResponsive } from '@shared/hooks/useResponsive';
@@ -57,7 +58,15 @@ export function DashboardLayout({
 
   // Inject "Assigned Roles" as the first nav item in every dashboard
   const assignedRolesItem: NavItem = { key: 'assigned-roles', label: 'Assigned Roles', icon: '★' };
-  const filteredNavItems: NavItem[] = [assignedRolesItem, ...baseFilteredNavItems];
+
+  // Inject "Earnings" nav item for eligible roles (exclude parent, student, pta, governing_board)
+  const EXCLUDED_EARNING_ROLES = ['parent', 'student', 'pta', 'governing_board'];
+  const isEarningsEligible = user && !EXCLUDED_EARNING_ROLES.some((r) => (user.roles as string[]).includes(r));
+  const earningsItem: NavItem = { key: 'earnings', label: 'Earnings', icon: 'GHS' };
+
+  const filteredNavItems: NavItem[] = isEarningsEligible
+    ? [assignedRolesItem, earningsItem, ...baseFilteredNavItems]
+    : [assignedRolesItem, ...baseFilteredNavItems];
 
   const assignedDashboardKeys = user ? accessStore.getAssignedDashboardRoles(user.id) : [];
   const hasMultipleRoles = user && (user.roles.length > 1 || assignedDashboardKeys.length > 0);
@@ -185,6 +194,8 @@ export function DashboardLayout({
         <ScrollView style={styles.content} contentContainerStyle={{ padding: responsive.contentPadding, maxWidth: responsive.maxContentWidth, width: '100%', alignSelf: 'center' }}>
           {activeKey === 'assigned-roles'
             ? <AssignedRolesPage currentDashboardTitle={title} />
+            : activeKey === 'earnings'
+            ? <EarningsPage />
             : children
           }
         </ScrollView>

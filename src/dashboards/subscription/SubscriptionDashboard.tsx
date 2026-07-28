@@ -9,6 +9,8 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'subscriptions', label: 'All Subscriptions' },
   { key: 'payments', label: 'Payment Records' },
   { key: 'expired', label: 'Expired & Inactive' },
+  { key: 'earnings-config', label: 'Earnings Config' },
+  { key: 'payouts', label: 'Payout Disbursements' },
   { key: 'reports', label: 'Reports' },
 ];
 
@@ -45,15 +47,34 @@ export function SubscriptionDashboard() {
   const [stats, setStats] = useState<SubscriptionStats | null>(null);
   const [extendModal, setExtendModal] = useState<{ visible: boolean; userId: string; displayName: string }>({ visible: false, userId: '', displayName: '' });
   const [extendDays, setExtendDays] = useState('7');
+  const [earningsStats, setEarningsStats] = useState<any>(null);
+  const [pendingPayouts, setPendingPayouts] = useState<any[]>([]);
+  const [configForm, setConfigForm] = useState({ ratePerAction: '0.1', maxActionsPerDay: '100', minPayoutThreshold: '50', enabled: true });
+  const [savingConfig, setSavingConfig] = useState(false);
+  const [disburseModal, setDisburseModal] = useState<{ visible: boolean; payoutId: string; amount: number; momo: string }>({ visible: false, payoutId: '', amount: 0, momo: '' });
+  const [disburseRef, setDisburseRef] = useState('');
 
   const loadData = useCallback(async () => {
     try {
-      const [subsRes, statsRes] = await Promise.all([
+      const [subsRes, statsRes, earnCfgRes, earnStatsRes, payoutsRes] = await Promise.all([
         apiClient.get<SubscriptionRecord[]>('/subscriptions'),
         apiClient.get<SubscriptionStats>('/subscriptions/stats'),
+        apiClient.get<any>('/earnings/config').catch(() => null),
+        apiClient.get<any>('/earnings/stats').catch(() => null),
+        apiClient.get<any[]>('/earnings/pending-payouts').catch(() => []),
       ]);
       setSubscriptions(subsRes || []);
       setStats(statsRes || null);
+      if (earnCfgRes) {
+        setConfigForm({
+          ratePerAction: String(earnCfgRes.ratePerAction),
+          maxActionsPerDay: String(earnCfgRes.maxActionsPerDay),
+          minPayoutThreshold: String(earnCfgRes.minPayoutThreshold),
+          enabled: earnCfgRes.enabled,
+        });
+      }
+      if (earnStatsRes) setEarningsStats(earnStatsRes);
+      setPendingPayouts(payoutsRes || []);
     } catch (err: any) {
       Alert.alert('Error', err?.message || 'Failed to load subscription data');
     } finally {
@@ -97,6 +118,63 @@ export function SubscriptionDashboard() {
               loadData();
             } catch (err: any) {
               Alert.alert('Error', err?.message || 'Failed to cancel subscription');
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleSaveConfig = async () => {
+    setSavingConfig(true);
+    try {
+      await apiClient.post('/earnings/config', {
+        ratePerAction: parseFloat(configForm.ratePerAction),
+        maxActionsPerDay: parseInt(configForm.maxActionsPerDay, 10),
+        minPayoutThreshold: parseFloat(configForm.minPayoutThreshold),
+        enabled: configForm.enabled,
+      });
+      Alert.alert('Success', 'Earnings configuration saved');
+      loadData();
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Failed to save config');
+    } finally {
+      setSavingConfig(false);
+    }
+  };
+
+  const handleDisburse = async () => {
+    if (!disburseRef.trim()) {
+      Alert.alert('Error', 'Please enter a payment reference');
+      return;
+    }
+    try {
+      await apiClient.post(`/earnings/disburse?payoutId=${disburseModal.payoutId}`, { reference: disburseRef.trim() });
+      Alert.alert('Success', 'Payout disbursed successfully');
+      setDisburseModal({ visible: false, payoutId: '', amount: 0, momo: '' });
+      setDisburseRef('');
+      loadData();
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Failed to disburse payout');
+    }
+  };
+
+  const handleCancelPayout = (payoutId: string) => {
+    Alert.alert(
+      'Cancel Payout',
+      'Are you sure you want to cancel this payout? The credits will be returned to the user.',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await apiClient.post(`/earnings/cancel-payout?payoutId=${payoutId}`);
+              Alert.alert('Success', 'Payout cancelled');
+              loadData();
+            } catch (err: any) {
+              Alert.alert('Error', err?.message || 'Failed to cancel payout');
             }
           },
         },
@@ -292,6 +370,125 @@ export function SubscriptionDashboard() {
         </View>
       )}
 
+      {activePage === 'earnings-config' && (
+        <View>
+          <Text style={styles.pageTitle}>Earnings Configuration</Text>
+          <Text style={styles.pageSubtitle}>Configure how portal users earn credits for activity</Text>
+
+          {earningsStats && (
+            <CardGrid>
+              <StatCard label="Total Earned" value={`GHS ${Number(earningsStats.totalEarned || 0).toFixed(2)}`} accentColor={colors.success} />
+              <StatCard label="Total Disbursed" value={`GHS ${Number(earningsStats.totalDisbursed || 0).toFixed(2)}`} accentColor={colors.primary} />
+              <StatCard label="Pending Payouts" value={earningsStats.pendingPayouts || 0} accentColor={colors.warning} />
+              <StatCard label="Active Users" value={earningsStats.uniqueUsers || 0} accentColor={colors.info} />
+            </CardGrid>
+          )}
+
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTitle}>Earning Rules</Text>
+
+            <Text style={styles.inputLabel}>Rate Per Action (GHS)</Text>
+            <TextInput
+              style={styles.input}
+              value={configForm.ratePerAction}
+              onChangeText={(v) => setConfigForm({ ...configForm, ratePerAction: v })}
+              placeholder="0.10"
+              placeholderTextColor={colors.textLight}
+              keyboardType="decimal-pad"
+            />
+
+            <Text style={styles.inputLabel}>Max Actions Per Day</Text>
+            <TextInput
+              style={styles.input}
+              value={configForm.maxActionsPerDay}
+              onChangeText={(v) => setConfigForm({ ...configForm, maxActionsPerDay: v })}
+              placeholder="100"
+              placeholderTextColor={colors.textLight}
+              keyboardType="number-pad"
+            />
+
+            <Text style={styles.inputLabel}>Minimum Payout Threshold (GHS)</Text>
+            <TextInput
+              style={styles.input}
+              value={configForm.minPayoutThreshold}
+              onChangeText={(v) => setConfigForm({ ...configForm, minPayoutThreshold: v })}
+              placeholder="50"
+              placeholderTextColor={colors.textLight}
+              keyboardType="decimal-pad"
+            />
+
+            <TouchableOpacity
+              style={[styles.selectChip, { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md }]}
+              onPress={() => setConfigForm({ ...configForm, enabled: !configForm.enabled })}
+            >
+              <Text style={{ fontSize: fontSize.md, color: configForm.enabled ? colors.success : colors.textLight }}>
+                {configForm.enabled ? '✓' : '○'}
+              </Text>
+              <Text style={{ fontSize: fontSize.sm, color: colors.textSecondary }}>
+                Earnings program {configForm.enabled ? 'enabled' : 'disabled'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.modalBtn, styles.modalBtnSubmit, { marginTop: spacing.lg, opacity: savingConfig ? 0.6 : 1 }]}
+              onPress={handleSaveConfig}
+              disabled={savingConfig}
+            >
+              <Text style={styles.modalBtnTextLight}>{savingConfig ? 'Saving...' : 'Save Configuration'}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTitle}>Excluded Roles</Text>
+            <Text style={styles.infoText}>The following roles do not earn credits:</Text>
+            <Text style={styles.infoText}>• Parent • Student • PTA • Board of Governors</Text>
+          </View>
+        </View>
+      )}
+
+      {activePage === 'payouts' && (
+        <View>
+          <Text style={styles.pageTitle}>Payout Disbursements</Text>
+          <Text style={styles.pageSubtitle}>Review and disburse pending payout claims</Text>
+
+          {pendingPayouts.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No pending payouts. All claims have been processed.</Text>
+            </View>
+          ) : (
+            pendingPayouts.map((payout) => (
+              <View key={payout.id} style={styles.infoCard}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm }}>
+                  <Text style={styles.infoTitle}>GHS {Number(payout.amount).toFixed(2)}</Text>
+                  <Text style={{ fontSize: fontSize.xs, color: colors.warning }}>PENDING</Text>
+                </View>
+                <Text style={styles.infoText}>User: {payout.userId}</Text>
+                <Text style={styles.infoText}>Mobile Money: {payout.mobileMoneyNumber}</Text>
+                <Text style={styles.infoText}>Requested: {new Date(payout.createdAt).toLocaleDateString()}</Text>
+
+                <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md }}>
+                  <TouchableOpacity
+                    style={[styles.modalBtn, styles.modalBtnSubmit, { flex: 1 }]}
+                    onPress={() => {
+                      setDisburseModal({ visible: true, payoutId: payout.id, amount: Number(payout.amount), momo: payout.mobileMoneyNumber });
+                      setDisburseRef('');
+                    }}
+                  >
+                    <Text style={styles.modalBtnTextLight}>Disburse</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalBtn, styles.modalBtnCancel, { flex: 1 }]}
+                    onPress={() => handleCancelPayout(payout.id)}
+                  >
+                    <Text style={styles.modalBtnTextDark}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))
+          )}
+        </View>
+      )}
+
       <Modal visible={extendModal.visible} animationType="slide" transparent onRequestClose={() => setExtendModal({ visible: false, userId: '', displayName: '' })}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -317,6 +514,39 @@ export function SubscriptionDashboard() {
               </TouchableOpacity>
               <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={handleExtend}>
                 <Text style={styles.modalBtnTextLight}>Extend</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={disburseModal.visible} animationType="slide" transparent onRequestClose={() => setDisburseModal({ visible: false, payoutId: '', amount: 0, momo: '' })}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Disburse Payout</Text>
+            <Text style={styles.modalSubtitle}>Amount: GHS {disburseModal.amount.toFixed(2)}</Text>
+            <Text style={styles.infoText}>Mobile Money: {disburseModal.momo}</Text>
+
+            <Text style={styles.inputLabel}>Payment Reference</Text>
+            <TextInput
+              style={styles.input}
+              value={disburseRef}
+              onChangeText={setDisburseRef}
+              placeholder="e.g. MM-TRAN-12345"
+              placeholderTextColor={colors.textLight}
+            />
+
+            <Text style={styles.infoText}>Enter the transaction reference from your mobile money payment to this user.</Text>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalBtnCancel]}
+                onPress={() => setDisburseModal({ visible: false, payoutId: '', amount: 0, momo: '' })}
+              >
+                <Text style={styles.modalBtnTextDark}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={handleDisburse}>
+                <Text style={styles.modalBtnTextLight}>Confirm Disbursement</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -360,4 +590,5 @@ const styles = StyleSheet.create({
   modalBtnSubmit: { backgroundColor: colors.primary },
   modalBtnTextDark: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.text },
   modalBtnTextLight: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.white },
+  selectChip: { backgroundColor: colors.surfaceAlt, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderWidth: 1, borderColor: colors.border },
 });

@@ -9,3 +9,4 @@ export { KitchenMenuWidget } from './KitchenMenuWidget';
 export { AssignedRolesPage } from './AssignedRolesPage';
 export { UserProfileModal } from './UserProfileModal';
 export { NotificationCenter } from './NotificationCenter';
+export { EarningsPage } from './EarningsPage';
