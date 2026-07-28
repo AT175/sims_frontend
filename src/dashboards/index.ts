@@ -36,3 +36,4 @@ export { SafeSpaceDashboard } from './safeSpace/SafeSpaceDashboard';
 export { InternalAuditorDashboard } from './internalAuditor/InternalAuditorDashboard';
 export { HeadmasterSecretaryDashboard } from './headmasterSecretary/HeadmasterSecretaryDashboard';
 export { SubscriptionDashboard } from './subscription/SubscriptionDashboard';
+export { GesDashboard } from './ges/GesDashboard';

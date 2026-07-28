@@ -635,6 +635,21 @@ export const DASHBOARD_CATALOG: DashboardDef[] = [
       { key: 'reports', label: 'Reports' },
     ],
   },
+  {
+    key: 'GES',
+    label: 'GES Oversight',
+    role: 'ges_national',
+    pages: [
+      { key: 'overview', label: 'National Overview' },
+      { key: 'offices', label: 'Office Hierarchy' },
+      { key: 'regions', label: 'Regional Offices' },
+      { key: 'schools', label: 'All Schools' },
+      { key: 'reports', label: 'Compliance Reports' },
+      { key: 'inspections', label: 'Inspection Schedule' },
+      { key: 'statistics', label: 'National Statistics' },
+      { key: 'directives', label: 'GES Directives' },
+    ],
+  },
 ];
 
 export const DASHBOARD_MAP: Record<string, DashboardDef> = DASHBOARD_CATALOG.reduce(

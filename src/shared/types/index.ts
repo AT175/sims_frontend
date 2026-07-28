@@ -69,7 +69,11 @@ export type RoleId =
   | 'internal_auditor'
   | 'headmaster_secretary'
   | 'system_admin'
-  | 'subscription_payment';
+  | 'subscription_payment'
+  | 'ges_national'
+  | 'ges_regional'
+  | 'ges_district'
+  | 'ges_circuit';
 
 /** Authenticated user session */
 export interface AuthUser {

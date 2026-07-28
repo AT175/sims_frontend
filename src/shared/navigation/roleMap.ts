@@ -42,6 +42,10 @@ export const ROLE_DASHBOARD_MAP: Record<RoleId, string> = {
   headmaster_secretary: 'HeadmasterSecretary',
   system_admin: 'SystemAdmin',
   subscription_payment: 'Subscription',
+  ges_national: 'GES',
+  ges_regional: 'GES',
+  ges_district: 'GES',
+  ges_circuit: 'GES',
 };
 
 /** Human-readable role labels */
@@ -86,4 +90,8 @@ export const ROLE_LABELS: Record<RoleId, string> = {
   headmaster_secretary: 'Headmaster Secretary',
   system_admin: 'System Administrator',
   subscription_payment: 'Subscription & Payment',
+  ges_national: 'GES National Director',
+  ges_regional: 'GES Regional Director',
+  ges_district: 'GES District Director',
+  ges_circuit: 'GES Circuit Supervisor',
 };
