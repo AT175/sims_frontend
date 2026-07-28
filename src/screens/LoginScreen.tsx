@@ -266,6 +266,13 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
     setAdmissionStep('payment');
   };
 
+  const handleDirectApplication = () => {
+    if (!wardName.trim()) { Alert.alert('Error', "Please enter your ward's name"); return; }
+    setMatchedPlacement(null);
+    setPlacementRef('');
+    setAdmissionStep('payment');
+  };
+
   const handlePaymentSubmit = () => {
     if (!paymentMethod) { Alert.alert('Error', 'Please select a payment method'); return; }
     if (paymentMethod === 'Mobile Money') {
@@ -291,6 +298,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
         parentEmail: parentEmail.trim() || undefined,
         csspsPlacementRef: placementRef.trim() || undefined,
         programme: selectedProgramme,
+        isDirectApplication: !placementRef.trim(),
       });
       setAdmissionLoading(false);
       setAdmissionStep('submitted');
@@ -300,13 +308,26 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
     }
   };
 
+  const [statusLookupMethod, setStatusLookupMethod] = useState<'cssps' | 'phone'>('cssps');
+  const [statusPhone, setStatusPhone] = useState('');
+
   const handleStatusCheck = async () => {
-    if (!statusName.trim() || !statusRef.trim()) { Alert.alert('Error', 'Please enter both name and CSSPS reference'); return; }
+    if (!statusName.trim()) { Alert.alert('Error', 'Please enter applicant name'); return; }
     try {
-      const result = await apiClient.post<any>('/admissions/check-status', {
-        applicantName: statusName.trim(),
-        csspsPlacementRef: statusRef.trim(),
-      });
+      let result: any;
+      if (statusLookupMethod === 'cssps') {
+        if (!statusRef.trim()) { Alert.alert('Error', 'Please enter CSSPS reference'); return; }
+        result = await apiClient.post<any>('/admissions/check-status', {
+          applicantName: statusName.trim(),
+          csspsPlacementRef: statusRef.trim(),
+        });
+      } else {
+        if (!statusPhone.trim()) { Alert.alert('Error', 'Please enter parent phone number'); return; }
+        result = await apiClient.post<any>('/admissions/check-status-by-phone', {
+          applicantName: statusName.trim(),
+          parentPhone: statusPhone.trim(),
+        });
+      }
       setStatusResult(result);
       setStatusStep('result');
     } catch (err: any) {
@@ -320,7 +341,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
     setPaymentMethod(null); setMmNumber(''); setMmRef(''); setScratchPin(''); setScratchSerial('');
   };
 
-  const resetStatus = () => { setStatusStep('lookup'); setStatusName(''); setStatusRef(''); setStatusResult(null); };
+  const resetStatus = () => { setStatusStep('lookup'); setStatusName(''); setStatusRef(''); setStatusPhone(''); setStatusResult(null); };
 
   // ── Render ──
   return (
@@ -646,7 +667,8 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
                         </View>
                         <Text style={s.privacyNotice}>By continuing, you consent to the school collecting and processing the information provided for admission purposes. Parental consent is required for applicants under 18.</Text>
                         <TouchableOpacity style={s.primaryButton} onPress={handleAdmissionSearch} activeOpacity={0.85}><Text style={s.primaryButtonText}>Search Placement</Text><Text style={s.primaryButtonArrow}>→</Text></TouchableOpacity>
-                        <TouchableOpacity style={s.secondaryButton} onPress={() => { resetAdmission(); switchTab('status'); }} activeOpacity={0.85}><Text style={s.secondaryButtonText}>Check Admission Status</Text></TouchableOpacity>
+                        <TouchableOpacity style={s.secondaryButton} onPress={handleDirectApplication} activeOpacity={0.85}><Text style={s.secondaryButtonText}>Apply Directly (No CSSPS)</Text></TouchableOpacity>
+                        <TouchableOpacity style={s.backBtn} onPress={() => { resetAdmission(); switchTab('status'); }}><Text style={s.backBtnText}>Check Admission Status</Text></TouchableOpacity>
                       </View>
                     )}
                     {admissionStep === 'payment' && (
@@ -721,8 +743,16 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
                       <View>
                         <Text style={s.formSectionTitle}>Check Admission Status</Text>
                         <Text style={s.formSectionSub}>Enter your details to track your application</Text>
+                        <View style={s.paymentMethodRow}>
+                          <TouchableOpacity style={[s.paymentMethodCard, statusLookupMethod === 'cssps' && s.paymentMethodActive]} onPress={() => setStatusLookupMethod('cssps')} activeOpacity={0.85}><Text style={s.paymentMethodLabel}>By CSSPS Ref</Text></TouchableOpacity>
+                          <TouchableOpacity style={[s.paymentMethodCard, statusLookupMethod === 'phone' && s.paymentMethodActive]} onPress={() => setStatusLookupMethod('phone')} activeOpacity={0.85}><Text style={s.paymentMethodLabel}>By Phone</Text></TouchableOpacity>
+                        </View>
                         <View style={s.fieldGroup}><Text style={s.fieldLabel}>Applicant Full Name</Text><View style={s.inputContainer}><Text style={s.inputIcon}>👤</Text><TextInput style={s.textInput} placeholder="Enter ward's name" placeholderTextColor={colors.textLight} value={statusName} onChangeText={setStatusName} /></View></View>
-                        <View style={s.fieldGroup}><Text style={s.fieldLabel}>CSSPS Placement Reference</Text><View style={s.inputContainer}><Text style={s.inputIcon}>📋</Text><TextInput style={s.textInput} placeholder="e.g. CSSPS/2026/0451" placeholderTextColor={colors.textLight} value={statusRef} onChangeText={setStatusRef} autoCapitalize="none" /></View></View>
+                        {statusLookupMethod === 'cssps' ? (
+                          <View style={s.fieldGroup}><Text style={s.fieldLabel}>CSSPS Placement Reference</Text><View style={s.inputContainer}><Text style={s.inputIcon}>📋</Text><TextInput style={s.textInput} placeholder="e.g. CSSPS/2026/0451" placeholderTextColor={colors.textLight} value={statusRef} onChangeText={setStatusRef} autoCapitalize="none" /></View></View>
+                        ) : (
+                          <View style={s.fieldGroup}><Text style={s.fieldLabel}>Parent Phone Number</Text><View style={s.inputContainer}><Text style={s.inputIcon}>📞</Text><TextInput style={s.textInput} placeholder="024-XXX-XXXX" placeholderTextColor={colors.textLight} value={statusPhone} onChangeText={setStatusPhone} keyboardType="phone-pad" /></View></View>
+                        )}
                         <TouchableOpacity style={s.primaryButton} onPress={handleStatusCheck} activeOpacity={0.85}><Text style={s.primaryButtonText}>Check Status</Text><Text style={s.primaryButtonArrow}>→</Text></TouchableOpacity>
                         <TouchableOpacity style={s.backBtn} onPress={() => { resetStatus(); switchTab('apply'); }}><Text style={s.backBtnText}>← Back to Apply</Text></TouchableOpacity>
                       </View>
@@ -739,6 +769,18 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
                               <Text style={s.resultDetailText}>Status: {statusResult.status}</Text>
                               <Text style={s.resultDetailText}>Date Applied: {statusResult.createdAt ? new Date(statusResult.createdAt).toLocaleDateString() : 'N/A'}</Text>
                             </View>
+                            {statusResult.generatedUsername && (
+                              <View style={[s.resultBoxSuccess, { marginTop: 12 }]}>
+                                <Text style={[s.resultTitleSuccess, { fontSize: 16 }]}>Parent Dashboard Login</Text>
+                                <Text style={s.resultTextSuccess}>Your parent account has been created. Use these credentials to log in:</Text>
+                                <View style={{ backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 8, padding: 12, marginTop: 8 }}>
+                                  <Text style={{ fontSize: 14, color: colors.text, fontWeight: '600' }}>Username: {statusResult.generatedUsername}</Text>
+                                  <Text style={{ fontSize: 14, color: colors.text, fontWeight: '600' }}>Password: {statusResult.generatedPassword}</Text>
+                                </View>
+                                <Text style={[s.resultDetailText, { marginTop: 8, fontSize: 12 }]}>You now have access to the Parent Portal. Log in to view your ward's information and pay your subscription.</Text>
+                                <TouchableOpacity style={[s.primaryButton, { marginTop: 12 }]} onPress={() => { resetStatus(); switchTab('signin'); }} activeOpacity={0.85}><Text style={s.primaryButtonText}>Login to Parent Portal</Text><Text style={s.primaryButtonArrow}>→</Text></TouchableOpacity>
+                              </View>
+                            )}
                           </View>
                         ) : statusResult.status === 'rejected' ? (
                           <View style={s.resultBoxDanger}>
