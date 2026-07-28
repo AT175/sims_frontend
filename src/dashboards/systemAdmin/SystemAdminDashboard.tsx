@@ -109,6 +109,25 @@ export function SystemAdminDashboard() {
     }
   };
 
+  const loadTenantConfig = async (tenantKey: string) => {
+    if (!tenantKey) return;
+    await store.loadTenantFromBackend(tenantKey);
+    const allTenants = await store._getTenantsCached();
+    const bt = allTenants.find((t: any) => t.tenantKey === tenantKey);
+    if (bt) {
+      try {
+        const hm = await apiClient.get<any>(`/auth/users/${bt.id}/headmaster`);
+        if (hm && hm.id) {
+          setHeadmasterForm({ headmasterId: hm.id, username: hm.username, displayName: hm.displayName, password: '' });
+        } else {
+          setHeadmasterForm({ headmasterId: '', username: '', displayName: '', password: '' });
+        }
+      } catch {
+        setHeadmasterForm({ headmasterId: '', username: '', displayName: '', password: '' });
+      }
+    }
+  };
+
   useEffect(() => {
     fetchTenants();
   }, []);
@@ -127,6 +146,9 @@ export function SystemAdminDashboard() {
 
   // Tenant filter for user management
   const [tenantFilter, setTenantFilter] = useState<string>('all');
+
+  // Selected tenant for School Configuration page
+  const [selectedConfigTenantKey, setSelectedConfigTenantKey] = useState<string>('');
 
   // Website Settings state
   const [websiteForm, setWebsiteForm] = useState<Partial<SchoolBranding> & { tenantId?: string }>({
@@ -422,9 +444,16 @@ export function SystemAdminDashboard() {
                     <Text style={styles.miniBtnText}>View</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.miniApproveBtn} onPress={() => {
+                    setSelectedConfigTenantKey(t.tenantKey);
+                    loadTenantConfig(t.tenantKey);
+                    setActivePage('tenant');
+                  }}>
+                    <Text style={styles.miniApproveBtnText}>Configure</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.miniBtn} onPress={() => {
                     apiClient.updateTenant(t.id, { active: !t.active }).then(() => fetchTenants()).catch((err) => Alert.alert('Error', err.message));
                   }}>
-                    <Text style={styles.miniApproveBtnText}>{t.active ? 'Deactivate' : 'Activate'}</Text>
+                    <Text style={styles.miniBtnText}>{t.active ? 'Deactivate' : 'Activate'}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.miniDeleteBtn} onPress={() => {
                     Alert.alert('Confirm Delete', `Delete tenant "${t.schoolName}"? This will NOT delete associated users.`, [
@@ -447,6 +476,25 @@ export function SystemAdminDashboard() {
           <ScrollView>
             <Text style={styles.pageTitle}>School Configuration</Text>
             <Text style={styles.pageSubtitle}>Manage tenant/school settings, subscription and headmaster</Text>
+
+            <Text style={styles.sectionTitle}>Select School to Configure</Text>
+            <View style={styles.rolePickerRow}>
+              {tenants.map((t) => (
+                <TouchableOpacity
+                  key={t.id}
+                  style={[styles.roleChip, (selectedConfigTenantKey || user?.tenantId) === t.tenantKey && styles.roleChipActive]}
+                  onPress={() => {
+                    setSelectedConfigTenantKey(t.tenantKey);
+                    loadTenantConfig(t.tenantKey);
+                  }}
+                >
+                  <Text style={[styles.roleChipText, (selectedConfigTenantKey || user?.tenantId) === t.tenantKey && styles.roleChipTextActive]}>{t.schoolName}</Text>
+                </TouchableOpacity>
+              ))}
+              {tenants.length === 0 && (
+                <Text style={styles.emptyText}>No tenants available. Add one from the Tenants page.</Text>
+              )}
+            </View>
 
             <Text style={styles.sectionTitle}>School Information</Text>
             <Text style={styles.inputLabel}>School Name</Text>
