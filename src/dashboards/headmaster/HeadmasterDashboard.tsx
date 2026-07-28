@@ -67,7 +67,6 @@ const ALL_ROLES: { id: RoleId; label: string }[] = [
   { id: 'staff', label: 'General Staff' },
   { id: 'student', label: 'Student' },
   { id: 'parent', label: 'Parent' },
-  { id: 'system_admin', label: 'System Admin' },
 ];
 
 export function HeadmasterDashboard() {
