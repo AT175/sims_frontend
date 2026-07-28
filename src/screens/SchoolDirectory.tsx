@@ -50,7 +50,7 @@ const STATS = [
   { value: '24/7', label: 'Access Anywhere' },
 ];
 
-export function SchoolDirectory() {
+export function SchoolDirectory({ onNavigateToSchool }: { onNavigateToSchool?: (tenantKey: string) => void }) {
   const [tenants, setTenants] = useState<PublicTenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +59,7 @@ export function SchoolDirectory() {
   const IS_NARROW = width < 768;
   const scrollViewRef = useRef<any>(null);
   const sectionRefs = useRef<Record<string, any>>({});
+  const sectionOffsets = useRef<Record<string, number>>({});
   const heroFade = useRef(new Animated.Value(0)).current;
   const heroSlide = useRef(new Animated.Value(30)).current;
 
@@ -77,7 +78,9 @@ export function SchoolDirectory() {
   }, []);
 
   const navigateToSchool = (tenantKey: string) => {
-    if (typeof window !== 'undefined') {
+    if (onNavigateToSchool) {
+      onNavigateToSchool(tenantKey);
+    } else if (typeof window !== 'undefined') {
       window.history.pushState({}, '', `/${tenantKey}`);
       window.dispatchEvent(new PopStateEvent('popstate'));
     }
@@ -89,9 +92,16 @@ export function SchoolDirectory() {
     if (Platform.OS === 'web' && el.getBoundingClientRect) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
-      el.measure?.((_x: number, y: number) => {
+      const y = sectionOffsets.current[key];
+      if (y !== undefined) {
         scrollViewRef.current?.scrollTo?.({ y, animated: true });
-      });
+      } else {
+        el.measureLayout?.(
+          scrollViewRef.current,
+          (_x: number, y: number) => { scrollViewRef.current?.scrollTo?.({ y, animated: true }); },
+          () => {},
+        );
+      }
     }
   };
 
@@ -189,6 +199,7 @@ export function SchoolDirectory() {
       {/* ── Features Section ── */}
       <View
         ref={(el) => { sectionRefs.current['features'] = el; }}
+        onLayout={(e) => { sectionOffsets.current['features'] = e.nativeEvent.layout.y; }}
         style={[styles.section, IS_NARROW && { paddingHorizontal: spacing.md, paddingVertical: spacing.xxl }]}
       >
         <View style={[styles.sectionInner, IS_NARROW && { width: '100%' }]}>
@@ -210,6 +221,7 @@ export function SchoolDirectory() {
       {/* ── Schools Directory Section ── */}
       <View
         ref={(el) => { sectionRefs.current['schools'] = el; }}
+        onLayout={(e) => { sectionOffsets.current['schools'] = e.nativeEvent.layout.y; }}
         style={[styles.schoolsSection, IS_NARROW && { paddingHorizontal: spacing.md, paddingVertical: spacing.xxl }]}
       >
         <View style={[styles.sectionInner, IS_NARROW && { width: '100%' }]}>
@@ -302,6 +314,7 @@ export function SchoolDirectory() {
       {/* ── About Section ── */}
       <View
         ref={(el) => { sectionRefs.current['about'] = el; }}
+        onLayout={(e) => { sectionOffsets.current['about'] = e.nativeEvent.layout.y; }}
         style={[styles.aboutSection, IS_NARROW && { paddingHorizontal: spacing.md, paddingVertical: spacing.xxl }]}
       >
         <View style={[styles.sectionInner, IS_NARROW && { width: '100%' }]}>

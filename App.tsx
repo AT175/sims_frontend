@@ -162,7 +162,7 @@ function AppContent() {
 
   // If no tenant key and not authenticated, show school directory
   if (!isAuthenticated || !user) {
-    return <SchoolDirectory />;
+    return <SchoolDirectory onNavigateToSchool={(tenantKey: string) => setRouteTenantKey(tenantKey)} />;
   }
 
   // If temp login, redirect to Verification Dashboard
