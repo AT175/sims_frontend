@@ -119,18 +119,33 @@ export function GesDashboard() {
       ]);
       setOffices(officesRes || []);
       setOfficeTree(treeRes || []);
-      // Auto-select first office or national
-      const national = (officesRes || []).find((o) => o.level === 'national');
-      const firstOffice = national || (officesRes || [])[0];
-      if (firstOffice) {
-        setSelectedOfficeId(firstOffice.id);
+
+      // Try to resolve the GES user's own office from their tenantId
+      let myOffice: GesOffice | null = null;
+      if (user?.tenantId) {
+        try {
+          myOffice = await apiClient.get<GesOffice>(`/ges/my-office/${user.tenantId}`);
+        } catch {
+          // Not a GES tenant, fall through to default selection
+        }
+      }
+
+      if (myOffice) {
+        setSelectedOfficeId(myOffice.id);
+      } else {
+        // Default to national or first office
+        const national = (officesRes || []).find((o) => o.level === 'national');
+        const firstOffice = national || (officesRes || [])[0];
+        if (firstOffice) {
+          setSelectedOfficeId(firstOffice.id);
+        }
       }
     } catch (err: any) {
       console.error('[GES] Failed to load data:', err.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.tenantId]);
 
   useEffect(() => {
     loadData();
