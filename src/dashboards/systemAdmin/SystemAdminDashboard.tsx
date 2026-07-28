@@ -83,6 +83,7 @@ export function SystemAdminDashboard() {
   const [isSavingConfig, setIsSavingConfig] = useState(false);
   const [configSaveError, setConfigSaveError] = useState<string | null>(null);
   const [configSaved, setConfigSaved] = useState(false);
+  const [isSavingModules, setIsSavingModules] = useState(false);
   const [tenantForm, setTenantForm] = useState({
     tenantKey: '',
     schoolName: '',
@@ -855,34 +856,82 @@ export function SystemAdminDashboard() {
         return (
           <ScrollView>
             <Text style={styles.pageTitle}>Module Management</Text>
-            <Text style={styles.pageSubtitle}>Enable or disable system modules</Text>
+            <Text style={styles.pageSubtitle}>Enable or disable system modules for the selected tenant</Text>
 
             <CardGrid>
-              <StatCard label="Enabled" value={store.modules.filter((m) => m.enabled).length} accentColor={colors.success} />
-              <StatCard label="Disabled" value={store.modules.filter((m) => !m.enabled).length} accentColor={colors.textLight} />
-              <StatCard label="Degraded" value={store.modules.filter((m) => m.health === 'Degraded').length} accentColor={colors.warning} />
+              <StatCard label="Enabled" value={store.modules.filter((m) => m.enabled).length} accentColor={colors.success} icon="✅" />
+              <StatCard label="Disabled" value={store.modules.filter((m) => !m.enabled).length} accentColor={colors.textLight} icon="⭕" />
+              <StatCard label="Total" value={store.modules.length} accentColor={colors.primary} icon="📦" />
             </CardGrid>
 
-            <Text style={styles.sectionTitle}>All Modules</Text>
-            {store.modules.map((mod) => (
-              <View key={mod.id} style={styles.moduleRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.moduleName}>{mod.name}</Text>
-                  <Text style={styles.moduleMeta}>v{mod.version} · Updated {mod.lastUpdated}</Text>
-                </View>
-                <View style={[styles.healthBadge, { backgroundColor: (mod.health === 'Healthy' ? colors.success : mod.health === 'Degraded' ? colors.warning : colors.danger) + '20' }]}>
-                  <Text style={[styles.healthText, { color: mod.health === 'Healthy' ? colors.success : mod.health === 'Degraded' ? colors.warning : colors.danger }]}>{mod.health}</Text>
-                </View>
+            {/* Tenant selector for module config */}
+            <Text style={styles.sectionTitle}>Select Tenant</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.sm }}>
+              {tenants.map((t) => (
                 <TouchableOpacity
-                  style={[styles.toggleBtn, mod.enabled ? styles.toggleBtnOn : styles.toggleBtnOff]}
-                  onPress={() => store.toggleModule(mod.id)}
+                  key={t.id}
+                  style={[styles.roleChip, (selectedConfigTenantKey || user?.tenantId) === t.tenantKey && styles.roleChipActive]}
+                  onPress={() => {
+                    setSelectedConfigTenantKey(t.tenantKey);
+                    store.loadModulesFromTenant(t.enabledModules || []);
+                  }}
                 >
-                  <Text style={[styles.toggleBtnText, mod.enabled ? styles.toggleBtnTextOn : styles.toggleBtnTextOff]}>
-                    {mod.enabled ? 'ON' : 'OFF'}
-                  </Text>
+                  <Text style={[styles.roleChipText, (selectedConfigTenantKey || user?.tenantId) === t.tenantKey && styles.roleChipTextActive]}>{t.schoolName}</Text>
                 </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Group modules by category */}
+            {Array.from(new Set(store.modules.map((m) => m.category))).map((category) => (
+              <View key={category}>
+                <Text style={styles.sectionTitle}>{category}</Text>
+                {store.modules.filter((m) => m.category === category).map((mod) => (
+                  <View key={mod.id} style={styles.moduleRow}>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Text style={{ fontSize: 24 }}>{mod.icon}</Text>
+                        <View>
+                          <Text style={styles.moduleName}>{mod.name}</Text>
+                          <Text style={styles.moduleMeta}>v{mod.version} · Updated {mod.lastUpdated}</Text>
+                        </View>
+                      </View>
+                      <Text style={{ fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 4 }}>{mod.description}</Text>
+                    </View>
+                    <View style={[styles.healthBadge, { backgroundColor: (mod.health === 'Healthy' ? colors.success : mod.health === 'Degraded' ? colors.warning : colors.danger) + '20' }]}>
+                      <Text style={[styles.healthText, { color: mod.health === 'Healthy' ? colors.success : mod.health === 'Degraded' ? colors.warning : colors.danger }]}>{mod.health}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[styles.toggleBtn, mod.enabled ? styles.toggleBtnOn : styles.toggleBtnOff]}
+                      onPress={() => store.toggleModule(mod.id)}
+                    >
+                      <Text style={[styles.toggleBtnText, mod.enabled ? styles.toggleBtnTextOn : styles.toggleBtnTextOff]}>
+                        {mod.enabled ? 'ON' : 'OFF'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
               </View>
             ))}
+
+            <TouchableOpacity
+              style={[styles.saveBtn, isSavingModules && styles.saveBtnDisabled]}
+              disabled={isSavingModules}
+              onPress={async () => {
+                const tenantKey = selectedConfigTenantKey || user?.tenantId;
+                if (!tenantKey) { Alert.alert('Error', 'Please select a tenant first'); return; }
+                setIsSavingModules(true);
+                try {
+                  await store.saveModuleStates(tenantKey);
+                  Alert.alert('Success', 'Module states saved successfully.');
+                } catch (err: any) {
+                  Alert.alert('Error', err.message || 'Failed to save module states.');
+                } finally {
+                  setIsSavingModules(false);
+                }
+              }}
+            >
+              <Text style={styles.saveBtnText}>{isSavingModules ? 'Saving...' : 'Save Module States'}</Text>
+            </TouchableOpacity>
           </ScrollView>
         );
 

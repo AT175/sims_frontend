@@ -66,6 +66,9 @@ export interface ModuleStatus {
   version: string;
   lastUpdated: string;
   health: SyncHealthStatus;
+  description: string;
+  icon: string;
+  category: string;
 }
 
 export interface DatabaseHealth {
@@ -102,7 +105,38 @@ const INITIAL_TENANT: TenantConfig = {
 
 const INITIAL_BACKUPS: BackupRecord[] = [];
 
-const INITIAL_MODULES: ModuleStatus[] = [];
+const INITIAL_MODULES: ModuleStatus[] = [
+  { id: 'attendance', name: 'Attendance', enabled: true, version: '2.1.0', lastUpdated: '2026-07-01', health: 'Healthy', description: 'Daily attendance tracking for students and staff', icon: '✅', category: 'Academic' },
+  { id: 'exams', name: 'Exam Management', enabled: true, version: '2.1.0', lastUpdated: '2026-07-01', health: 'Healthy', description: 'Exam scheduling, marks entry, and grading', icon: '📝', category: 'Academic' },
+  { id: 'reports', name: 'Report Cards', enabled: true, version: '2.0.5', lastUpdated: '2026-06-15', health: 'Healthy', description: 'Generate and print student report cards', icon: '📄', category: 'Academic' },
+  { id: 'curriculum', name: 'Curriculum Tracker', enabled: true, version: '1.9.0', lastUpdated: '2026-06-10', health: 'Healthy', description: 'Track curriculum coverage and lesson plans', icon: '📚', category: 'Academic' },
+  { id: 'timetable', name: 'Timetable Manager', enabled: true, version: '2.1.0', lastUpdated: '2026-07-01', health: 'Healthy', description: 'Create and manage class and exam timetables', icon: '🗓', category: 'Academic' },
+  { id: 'promotion', name: 'Student Promotion', enabled: true, version: '1.5.0', lastUpdated: '2026-06-20', health: 'Healthy', description: 'Promote, repeat, or graduate students based on performance', icon: '🎓', category: 'Academic' },
+  { id: 'bece_prep', name: 'BECE Preparation', enabled: false, version: '1.2.0', lastUpdated: '2026-05-01', health: 'Offline', description: 'BECE exam registration and preparation tools', icon: '📖', category: 'Academic' },
+  { id: 'fees', name: 'Fees & Billing', enabled: true, version: '2.1.0', lastUpdated: '2026-07-01', health: 'Healthy', description: 'Fee collection, invoicing, and arrears tracking', icon: '💰', category: 'Finance' },
+  { id: 'bursary', name: 'Bursary Management', enabled: true, version: '2.0.0', lastUpdated: '2026-06-01', health: 'Healthy', description: 'School bursary and financial transactions', icon: '🏦', category: 'Finance' },
+  { id: 'stores', name: 'Stores & Inventory', enabled: true, version: '2.0.0', lastUpdated: '2026-06-01', health: 'Healthy', description: 'Inventory management and requisitions', icon: '📦', category: 'Operations' },
+  { id: 'boarding', name: 'Boarding/House System', enabled: true, version: '2.1.0', lastUpdated: '2026-07-01', health: 'Healthy', description: 'House management, dormitories, and boarding life', icon: '🏠', category: 'Student Life' },
+  { id: 'catering', name: 'Catering/Kitchen', enabled: true, version: '2.0.0', lastUpdated: '2026-06-01', health: 'Healthy', description: 'Meal planning, kitchen stores, and dining', icon: '🍽', category: 'Student Life' },
+  { id: 'dining', name: 'Dining Hall', enabled: true, version: '1.8.0', lastUpdated: '2026-05-15', health: 'Healthy', description: 'Dining hall attendance and management', icon: '🍴', category: 'Student Life' },
+  { id: 'health', name: 'Health/Sick Bay', enabled: true, version: '2.0.0', lastUpdated: '2026-06-01', health: 'Healthy', description: 'Student health records and sick bay management', icon: '🏥', category: 'Student Life' },
+  { id: 'transport', name: 'Transport', enabled: true, version: '1.9.0', lastUpdated: '2026-06-10', health: 'Healthy', description: 'School bus and transport management', icon: '🚌', category: 'Operations' },
+  { id: 'security', name: 'Security', enabled: true, version: '2.0.0', lastUpdated: '2026-06-01', health: 'Healthy', description: 'Visitor logging, patrols, and incident tracking', icon: '🛡', category: 'Operations' },
+  { id: 'cleaning', name: 'Cleaning/Janitorial', enabled: true, version: '1.7.0', lastUpdated: '2026-05-10', health: 'Healthy', description: 'Cleaning schedules and janitorial staff management', icon: '🧹', category: 'Operations' },
+  { id: 'library', name: 'Library & ICT', enabled: true, version: '2.0.0', lastUpdated: '2026-06-01', health: 'Healthy', description: 'Library catalog, book loans, and ICT resources', icon: '📕', category: 'Academic' },
+  { id: 'sports', name: 'Sports & Clubs', enabled: true, version: '1.9.0', lastUpdated: '2026-06-10', health: 'Healthy', description: 'Sports teams, clubs, and extracurricular activities', icon: '⚽', category: 'Student Life' },
+  { id: 'counselling', name: 'Counselling Unit', enabled: true, version: '2.0.0', lastUpdated: '2026-06-01', health: 'Healthy', description: 'Student counselling sessions and case management', icon: '🧠', category: 'Student Life' },
+  { id: 'chaplain', name: 'Chaplaincy', enabled: true, version: '1.8.0', lastUpdated: '2026-05-15', health: 'Healthy', description: 'Chaplaincy services and spiritual activities', icon: '✝', category: 'Student Life' },
+  { id: 'src', name: 'SRC', enabled: true, version: '1.9.0', lastUpdated: '2026-06-10', health: 'Healthy', description: 'Student Representative Council management', icon: '🗳', category: 'Governance' },
+  { id: 'elections', name: 'Elections', enabled: true, version: '1.9.0', lastUpdated: '2026-06-10', health: 'Healthy', description: 'Student elections and voting system', icon: '🗳', category: 'Governance' },
+  { id: 'pta', name: 'PTA', enabled: true, version: '1.8.0', lastUpdated: '2026-05-15', health: 'Healthy', description: 'Parent-Teacher Association management', icon: '👨‍👩‍👧', category: 'Governance' },
+  { id: 'welfare', name: 'Welfare Committee', enabled: true, version: '1.7.0', lastUpdated: '2026-05-10', health: 'Healthy', description: 'Staff welfare and support management', icon: '🤝', category: 'Governance' },
+  { id: 'plc', name: 'PLC', enabled: true, version: '1.6.0', lastUpdated: '2026-05-01', health: 'Healthy', description: 'Professional Learning Community and requisitions', icon: '📋', category: 'Academic' },
+  { id: 'parent_portal', name: 'Parent Portal', enabled: true, version: '2.1.0', lastUpdated: '2026-07-01', health: 'Healthy', description: 'Parent dashboard for wards, fees, and communication', icon: ' 👨‍👩‍👦', category: 'Communication' },
+  { id: 'communication', name: 'Communication', enabled: true, version: '2.0.0', lastUpdated: '2026-06-01', health: 'Healthy', description: 'SMS, email, and in-app messaging', icon: '💬', category: 'Communication' },
+  { id: 'admissions', name: 'Admissions', enabled: true, version: '2.1.0', lastUpdated: '2026-07-01', health: 'Healthy', description: 'Admission applications and enrollment', icon: '📋', category: 'Operations' },
+  { id: 'registry', name: 'Registry', enabled: true, version: '2.0.0', lastUpdated: '2026-06-01', health: 'Healthy', description: 'Student records, admissions registry, and exeat', icon: '🗂', category: 'Operations' },
+];
 
 const INITIAL_DB_HEALTH: DatabaseHealth = {
   status: 'Healthy',
@@ -147,6 +181,8 @@ export interface SystemAdminState {
   createBackup: (performedBy: string) => void;
 
   toggleModule: (id: string) => void;
+  loadModulesFromTenant: (enabledModuleIds: string[]) => void;
+  saveModuleStates: (tenantId: string) => Promise<void>;
 }
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -378,5 +414,35 @@ export const useSystemAdminStore = create<SystemAdminState>((set, get) => ({
       modules: st.modules.map((m) => (m.id === id ? { ...m, enabled: !m.enabled, health: !m.enabled ? 'Healthy' : 'Offline' } : m)),
       logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'INFO', source: 'Modules', message: `Module ${st.modules.find((m) => m.id === id)?.name} ${st.modules.find((m) => m.id === id)?.enabled ? 'disabled' : 'enabled'}`, user: 'admin' }, ...st.logs],
     }));
+  },
+
+  loadModulesFromTenant: (enabledModuleIds: string[]) => {
+    set((st) => ({
+      modules: st.modules.map((m) => ({
+        ...m,
+        enabled: enabledModuleIds.length === 0 || enabledModuleIds.includes(m.id),
+        health: (enabledModuleIds.length === 0 || enabledModuleIds.includes(m.id)) ? 'Healthy' : 'Offline',
+      })),
+    }));
+  },
+
+  saveModuleStates: async (tenantId: string) => {
+    const enabledIds = get().modules.filter((m) => m.enabled).map((m) => m.id);
+    try {
+      const tenants = await get()._getTenantsCached();
+      const backendTenant = tenants.find((bt: any) => bt.tenantKey === tenantId);
+      if (backendTenant) {
+        await apiClient.updateTenant(backendTenant.id, { enabledModules: enabledIds });
+      }
+      set({ _tenantsCache: null, _tenantsCacheTime: 0 });
+      set((st) => ({
+        logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'INFO', source: 'Modules', message: `Module states saved to backend for tenant ${tenantId}`, user: 'admin' }, ...st.logs],
+      }));
+    } catch (err: any) {
+      set((st) => ({
+        logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'ERROR', source: 'Modules', message: `Failed to save module states: ${err.message}`, user: 'admin' }, ...st.logs],
+      }));
+      throw err;
+    }
   },
 }));
