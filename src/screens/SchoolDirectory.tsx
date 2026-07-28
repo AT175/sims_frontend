@@ -378,7 +378,7 @@ export function SchoolDirectory({ onNavigateToSchool }: { onNavigateToSchool?: (
           <View style={styles.footerLinksCol}>
             <Text style={styles.footerColTitle}>Contact</Text>
             <Text style={styles.footerLink}>📧 admin@sims.edu</Text>
-            <Text style={styles.footerLink}>📞 +233 (0) 24 471 3468</Text>
+            <Text style={styles.footerLink}>📞 0352020612 / 0208789114 / 0559789870</Text>
             <Text style={styles.footerLink}>🌐 sims-platform.com</Text>
           </View>
         </View>
