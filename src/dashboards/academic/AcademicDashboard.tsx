@@ -7,6 +7,7 @@ import { useRequisitionStore } from '@store/requisitionStore';
 import { usePLCStore } from '@store/plcStore';
 import { useAcademicStore } from '@store/academicStore';
 import { academicApi } from '@shared/api/academicApi';
+import { apiClient } from '@shared/api/apiClient';
 import {
   RESULTS_ENTRY_STATUSES, SPIP_PRIORITIES, SPIP_FOCUS_AREAS, SPIP_GOAL_STATUSES,
   CURRICULUM_STATUSES, CALENDAR_EVENT_TYPES, TERM_NAMES,
@@ -27,6 +28,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'hod', label: 'HOD Approvals' },
   { key: 'subject-selection', label: 'Subject Selection' },
   { key: 'class-list', label: 'Class Lists' },
+  { key: 'promotion', label: 'Promotion' },
   { key: 'report-supervision', label: 'Report Supervision' },
   { key: 'supplies', label: 'Stationery Requests' },
   { key: 'plc', label: 'PLC Requisitions' },
@@ -82,6 +84,51 @@ export function AcademicDashboard() {
     useAcademicStore.getState().loadAll();
   }, []);
 
+  // Promotion helpers
+  const loadPromotionList = async (level: string) => {
+    setPromoLoading(true);
+    try {
+      const data = await apiClient.get<any>(`/academic/promotion/list?level=${level}`);
+      setPromoData(data);
+    } catch (err: any) {
+      console.error('[Promotion] Failed to load list:', err.message);
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
+  const loadGraduationList = async () => {
+    setPromoLoading(true);
+    try {
+      const data = await apiClient.get<any[]>('/academic/promotion/graduation-list');
+      setGradList(data);
+    } catch (err: any) {
+      console.error('[Promotion] Failed to load graduation list:', err.message);
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
+  const loadPromoConfig = async () => {
+    try {
+      const config = await apiClient.get<any>('/academic/promotion/config');
+      setPromoConfigForm({
+        promotionAverage: String(config.promotionAverage),
+        repeatAverage: String(config.repeatAverage),
+        promotionTerm: config.promotionTerm || 'Term 3',
+        enabled: config.enabled,
+      });
+    } catch (err: any) {
+      console.error('[Promotion] Failed to load config:', err.message);
+    }
+    try {
+      const history = await apiClient.get<any[]>('/academic/promotion/history');
+      setPromoHistory(history);
+    } catch (err: any) {
+      console.error('[Promotion] Failed to load history:', err.message);
+    }
+  };
+
   // Modal states
   const [showExamModal, setShowExamModal] = useState(false);
   const [showTimetableModal, setShowTimetableModal] = useState(false);
@@ -101,6 +148,17 @@ export function AcademicDashboard() {
   const [showSubjectSelectionModal, setShowSubjectSelectionModal] = useState(false);
   const [showClassListModal, setShowClassListModal] = useState(false);
   const [showReportSupervisionModal, setShowReportSupervisionModal] = useState(false);
+
+  // Promotion state
+  const [promoTab, setPromoTab] = useState<'promote' | 'repeat' | 'graduate' | 'config'>('promote');
+  const [promoLevel, setPromoLevel] = useState('SHS1');
+  const [promoData, setPromoData] = useState<any>(null);
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoConfigForm, setPromoConfigForm] = useState({ promotionAverage: '50', repeatAverage: '40', promotionTerm: 'Term 3', enabled: true });
+  const [savingPromoConfig, setSavingPromoConfig] = useState(false);
+  const [gradList, setGradList] = useState<any[]>([]);
+  const [promoHistory, setPromoHistory] = useState<any[]>([]);
+  const [promoBusy, setPromoBusy] = useState<string>('');
   const [subjectSelectionReview, setSubjectSelectionReview] = useState<{ id: string; action: 'approve' | 'reject' } | null>(null);
   const [subjectSelectionNote, setSubjectSelectionNote] = useState('');
 
@@ -570,6 +628,360 @@ export function AcademicDashboard() {
               </View>
             ))}
           </View>
+        );
+
+      case 'promotion':
+        return (
+          <ScrollView>
+            <Text style={styles.pageTitle}>Student Promotion</Text>
+            <Text style={styles.pageSubtitle}>Promote, repeat, or graduate students based on academic performance</Text>
+
+            {/* Tab selector */}
+            <View style={styles.pickerRow}>
+              {(['promote', 'repeat', 'graduate', 'config'] as const).map((tab) => (
+                <TouchableOpacity
+                  key={tab}
+                  style={[styles.pickerChip, promoTab === tab && styles.pickerChipActive]}
+                  onPress={() => {
+                    setPromoTab(tab);
+                    if (tab === 'promote' || tab === 'repeat') {
+                      loadPromotionList(promoLevel);
+                    } else if (tab === 'graduate') {
+                      loadGraduationList();
+                    } else if (tab === 'config') {
+                      loadPromoConfig();
+                    }
+                  }}
+                >
+                  <Text style={[styles.pickerChipText, promoTab === tab && styles.pickerChipTextActive]}>
+                    {tab === 'promote' ? 'Promotion' : tab === 'repeat' ? 'Repeat' : tab === 'graduate' ? 'Graduation' : 'Configuration'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* PROMOTE TAB */}
+            {promoTab === 'promote' && (
+              <View>
+                <View style={styles.pickerRow}>
+                  {['SHS1', 'SHS2'].map((lvl) => (
+                    <TouchableOpacity
+                      key={lvl}
+                      style={[styles.pickerChip, promoLevel === lvl && styles.pickerChipActive]}
+                      onPress={() => { setPromoLevel(lvl); loadPromotionList(lvl); }}
+                    >
+                      <Text style={[styles.pickerChipText, promoLevel === lvl && styles.pickerChipTextActive]}>{lvl} → {lvl === 'SHS1' ? 'SHS2' : 'SHS3'}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {promoLoading && <Text style={styles.emptyText}>Loading students...</Text>}
+
+                {!promoLoading && promoData && !promoData.enabled && (
+                  <View style={styles.alertCard}>
+                    <Text style={styles.alertTitle}>Promotion Not Enabled</Text>
+                    <Text style={styles.alertText}>Enable promotion in the Configuration tab to proceed.</Text>
+                  </View>
+                )}
+
+                {!promoLoading && promoData && promoData.enabled && (
+                  <>
+                    <CardGrid>
+                      <StatCard label="Promotable" value={promoData.promotable?.length || 0} accentColor={colors.success} icon="↑" />
+                      <StatCard label="At Risk (Repeat)" value={promoData.repeatable?.length || 0} accentColor={colors.danger} icon="↓" />
+                      <StatCard label="No Results" value={promoData.noResults?.length || 0} accentColor={colors.warning} icon="?" />
+                      <StatCard label="Pass Mark" value={`${promoData.promotionAverage}%`} accentColor={colors.primary} icon="✓" />
+                    </CardGrid>
+
+                    <View style={styles.rowBtns}>
+                      <TouchableOpacity
+                        style={[styles.actionBtn, { backgroundColor: colors.success }]}
+                        onPress={async () => {
+                          Alert.alert('Promote All', `Promote all ${promoData.promotable?.length || 0} eligible students from ${promoLevel}?`, [
+                            { text: 'Cancel', style: 'cancel' },
+                            { text: 'Promote All', onPress: async () => {
+                              setPromoBusy('all');
+                              try {
+                                const res = await apiClient.post<any>(`/academic/promotion/promote-all/${promoLevel}`, {});
+                                Alert.alert('Done', `Promoted: ${res.promoted}, Failed: ${res.failed}`);
+                                loadPromotionList(promoLevel);
+                              } catch (err: any) {
+                                Alert.alert('Error', err.message);
+                              } finally { setPromoBusy(''); }
+                            }},
+                          ]);
+                        }}
+                      >
+                        <Text style={styles.actionBtnText}>{promoBusy === 'all' ? 'Promoting...' : 'Promote All Eligible'}</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <Text style={styles.sectionTitle}>Eligible for Promotion ({promoData.promotable?.length || 0})</Text>
+                    {(promoData.promotable || []).map((s: any) => (
+                      <View key={s.studentId} style={styles.reqCard}>
+                        <View style={styles.reqHeader}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.reqTitle}>{s.studentName}</Text>
+                            <Text style={styles.reqMeta}>{s.admissionNumber} · Avg: {s.overallAverage}% · {s.subjectCount} subjects</Text>
+                          </View>
+                          <TouchableOpacity
+                            style={[styles.smallBtn, { backgroundColor: colors.success }]}
+                            disabled={promoBusy === s.studentId}
+                            onPress={async () => {
+                              setPromoBusy(s.studentId);
+                              try {
+                                const res = await apiClient.post<any>(`/academic/promotion/promote/${s.studentId}`, {});
+                                Alert.alert('Promoted', res.message);
+                                loadPromotionList(promoLevel);
+                              } catch (err: any) {
+                                Alert.alert('Error', err.message);
+                              } finally { setPromoBusy(''); }
+                            }}
+                          >
+                            <Text style={styles.smallBtnText}>{promoBusy === s.studentId ? '...' : 'Promote'}</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ))}
+
+                    <Text style={styles.sectionTitle}>Below Threshold ({promoData.repeatable?.length || 0})</Text>
+                    {(promoData.repeatable || []).map((s: any) => (
+                      <View key={s.studentId} style={styles.reqCard}>
+                        <View style={styles.reqHeader}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.reqTitle}>{s.studentName}</Text>
+                            <Text style={styles.reqMeta}>{s.admissionNumber} · Avg: {s.overallAverage}% · {s.subjectCount} subjects</Text>
+                          </View>
+                        </View>
+                      </View>
+                    ))}
+
+                    {promoData.noResults?.length > 0 && (
+                      <>
+                        <Text style={styles.sectionTitle}>No Results ({promoData.noResults.length})</Text>
+                        {promoData.noResults.map((s: any) => (
+                          <View key={s.studentId} style={styles.reqCard}>
+                            <Text style={styles.reqTitle}>{s.studentName}</Text>
+                            <Text style={styles.reqMeta}>{s.admissionNumber} · No exam results found</Text>
+                          </View>
+                        ))}
+                      </>
+                    )}
+                  </>
+                )}
+              </View>
+            )}
+
+            {/* REPEAT TAB */}
+            {promoTab === 'repeat' && (
+              <View>
+                <View style={styles.pickerRow}>
+                  {['SHS1', 'SHS2', 'SHS3'].map((lvl) => (
+                    <TouchableOpacity
+                      key={lvl}
+                      style={[styles.pickerChip, promoLevel === lvl && styles.pickerChipActive]}
+                      onPress={() => { setPromoLevel(lvl); loadPromotionList(lvl); }}
+                    >
+                      <Text style={[styles.pickerChipText, promoLevel === lvl && styles.pickerChipTextActive]}>{lvl}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {promoLoading && <Text style={styles.emptyText}>Loading students...</Text>}
+
+                {!promoLoading && promoData && promoData.enabled && (
+                  <>
+                    <CardGrid>
+                      <StatCard label="Below Threshold" value={promoData.repeatable?.length || 0} accentColor={colors.danger} icon="↓" />
+                      <StatCard label="Repeat Mark" value={`Below ${promoData.promotionAverage}%`} accentColor={colors.warning} icon="!" />
+                    </CardGrid>
+
+                    <Text style={styles.sectionTitle}>Students to Repeat ({promoData.repeatable?.length || 0})</Text>
+                    {(promoData.repeatable || []).map((s: any) => (
+                      <View key={s.studentId} style={styles.reqCard}>
+                        <View style={styles.reqHeader}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.reqTitle}>{s.studentName}</Text>
+                            <Text style={styles.reqMeta}>{s.admissionNumber} · {s.currentLevel} · Avg: {s.overallAverage}%</Text>
+                          </View>
+                          <TouchableOpacity
+                            style={[styles.smallBtn, { backgroundColor: colors.warning }]}
+                            disabled={promoBusy === s.studentId}
+                            onPress={async () => {
+                              setPromoBusy(s.studentId);
+                              try {
+                                const res = await apiClient.post<any>(`/academic/promotion/repeat/${s.studentId}`, {});
+                                Alert.alert('Repeated', res.message);
+                                loadPromotionList(promoLevel);
+                              } catch (err: any) {
+                                Alert.alert('Error', err.message);
+                              } finally { setPromoBusy(''); }
+                            }}
+                          >
+                            <Text style={styles.smallBtnText}>{promoBusy === s.studentId ? '...' : 'Mark Repeat'}</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ))}
+
+                    {(promoData.repeatable?.length || 0) === 0 && (
+                      <Text style={styles.emptyText}>No students below threshold for {promoLevel}.</Text>
+                    )}
+                  </>
+                )}
+              </View>
+            )}
+
+            {/* GRADUATE TAB */}
+            {promoTab === 'graduate' && (
+              <View>
+                <CardGrid>
+                  <StatCard label="SHS3 Students" value={gradList.length} accentColor={colors.primary} icon="🎓" />
+                  <StatCard label="With Results" value={gradList.filter((s) => s.hasResults).length} accentColor={colors.success} icon="✓" />
+                  <StatCard label="No Results" value={gradList.filter((s) => !s.hasResults).length} accentColor={colors.warning} icon="?" />
+                </CardGrid>
+
+                <View style={styles.rowBtns}>
+                  <TouchableOpacity
+                    style={[styles.actionBtn, { backgroundColor: colors.primary }]}
+                    disabled={promoBusy === 'gradAll'}
+                    onPress={() => {
+                      Alert.alert('Graduate All', `Graduate all ${gradList.length} SHS3 students?`, [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Graduate All', onPress: async () => {
+                          setPromoBusy('gradAll');
+                          try {
+                            const res = await apiClient.post<any>('/academic/promotion/graduate-all', {});
+                            Alert.alert('Done', `Graduated: ${res.graduated}, Failed: ${res.failed}`);
+                            loadGraduationList();
+                          } catch (err: any) {
+                            Alert.alert('Error', err.message);
+                          } finally { setPromoBusy(''); }
+                        }},
+                      ]);
+                    }}
+                  >
+                    <Text style={styles.actionBtnText}>{promoBusy === 'gradAll' ? 'Graduating...' : 'Graduate All SHS3'}</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.sectionTitle}>Graduation List ({gradList.length})</Text>
+                {gradList.map((s) => (
+                  <View key={s.studentId} style={styles.reqCard}>
+                    <View style={styles.reqHeader}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.reqTitle}>{s.studentName}</Text>
+                        <Text style={styles.reqMeta}>{s.admissionNumber} · Avg: {s.overallAverage}% · {s.subjectCount} subjects</Text>
+                      </View>
+                      <TouchableOpacity
+                        style={[styles.smallBtn, { backgroundColor: colors.primary }]}
+                        disabled={promoBusy === s.studentId}
+                        onPress={async () => {
+                          setPromoBusy(s.studentId);
+                          try {
+                            const res = await apiClient.post<any>(`/academic/promotion/graduate/${s.studentId}`, {});
+                            Alert.alert('Graduated', res.message);
+                            loadGraduationList();
+                          } catch (err: any) {
+                            Alert.alert('Error', err.message);
+                          } finally { setPromoBusy(''); }
+                        }}
+                      >
+                        <Text style={styles.smallBtnText}>{promoBusy === s.studentId ? '...' : 'Graduate'}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+                {gradList.length === 0 && <Text style={styles.emptyText}>No SHS3 students found.</Text>}
+              </View>
+            )}
+
+            {/* CONFIG TAB */}
+            {promoTab === 'config' && (
+              <View>
+                <Text style={styles.sectionTitle}>Promotion Configuration</Text>
+                <Text style={styles.reqMeta}>Set the overall average threshold for promotion. Students below this average will be flagged for repetition.</Text>
+
+                <Text style={styles.inputLabel}>Promotion Average (%) — Students at or above this will be promoted</Text>
+                <TextInput
+                  style={styles.input}
+                  value={promoConfigForm.promotionAverage}
+                  onChangeText={(v) => setPromoConfigForm({ ...promoConfigForm, promotionAverage: v })}
+                  keyboardType="numeric"
+                  placeholder="e.g. 50"
+                />
+
+                <Text style={styles.inputLabel}>Repeat Average (%) — Students below this will be flagged for repeat</Text>
+                <TextInput
+                  style={styles.input}
+                  value={promoConfigForm.repeatAverage}
+                  onChangeText={(v) => setPromoConfigForm({ ...promoConfigForm, repeatAverage: v })}
+                  keyboardType="numeric"
+                  placeholder="e.g. 40"
+                />
+
+                <Text style={styles.inputLabel}>Promotion Term</Text>
+                <TextInput
+                  style={styles.input}
+                  value={promoConfigForm.promotionTerm}
+                  onChangeText={(v) => setPromoConfigForm({ ...promoConfigForm, promotionTerm: v })}
+                  placeholder="e.g. Term 3"
+                />
+
+                <TouchableOpacity
+                  style={[styles.pickerChip, promoConfigForm.enabled && styles.pickerChipActive]}
+                  onPress={() => setPromoConfigForm({ ...promoConfigForm, enabled: !promoConfigForm.enabled })}
+                >
+                  <Text style={[styles.pickerChipText, promoConfigForm.enabled && styles.pickerChipTextActive]}>
+                    {promoConfigForm.enabled ? '✓ Enabled' : 'Disabled'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.actionBtn, { marginTop: spacing.md }, savingPromoConfig && { opacity: 0.6 }]}
+                  disabled={savingPromoConfig}
+                  onPress={async () => {
+                    setSavingPromoConfig(true);
+                    try {
+                      await apiClient.post('/academic/promotion/config', {
+                        promotionAverage: parseFloat(promoConfigForm.promotionAverage) || 50,
+                        repeatAverage: parseFloat(promoConfigForm.repeatAverage) || 40,
+                        promotionTerm: promoConfigForm.promotionTerm,
+                        enabled: promoConfigForm.enabled,
+                      });
+                      Alert.alert('Saved', 'Promotion configuration saved successfully.');
+                    } catch (err: any) {
+                      Alert.alert('Error', err.message);
+                    } finally { setSavingPromoConfig(false); }
+                  }}
+                >
+                  <Text style={styles.actionBtnText}>{savingPromoConfig ? 'Saving...' : 'Save Configuration'}</Text>
+                </TouchableOpacity>
+
+                {/* History */}
+                <Text style={styles.sectionTitle}>Promotion History</Text>
+                {promoHistory.length === 0 && <Text style={styles.emptyText}>No promotion records yet.</Text>}
+                {promoHistory.slice(0, 20).map((h) => (
+                  <View key={h.id} style={styles.reqCard}>
+                    <View style={styles.reqHeader}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.reqTitle}>{h.studentName}</Text>
+                        <Text style={styles.reqMeta}>{h.admissionNumber} · {h.fromLevel} → {h.toLevel} · Avg: {h.overallAverage}%</Text>
+                        <Text style={styles.reqMeta}>{new Date(h.createdAt).toLocaleDateString()} · by {h.performedBy || 'N/A'}</Text>
+                      </View>
+                      <View style={[styles.statusBadge, {
+                        backgroundColor: h.action === 'promoted' ? colors.success + '20' : h.action === 'graduated' ? colors.primary + '20' : colors.warning + '20',
+                      }]}>
+                        <Text style={[styles.statusText, {
+                          color: h.action === 'promoted' ? colors.success : h.action === 'graduated' ? colors.primary : colors.warning,
+                        }]}>{h.action}</Text>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </ScrollView>
         );
 
       case 'report-supervision':
