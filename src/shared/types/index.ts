@@ -90,14 +90,43 @@ export interface AuthUser {
 /** Term enum used across many entities */
 export type Term = 'Term 1' | 'Term 2' | 'Term 3';
 
-/** SHS level */
+/** School levels for pre-tertiary education in Ghana */
+export type SchoolLevel = 'kg' | 'primary' | 'jhs' | 'shs' | 'combined';
+
+/** Grading schemes */
+export type GradingScheme = 'wassce' | 'bece' | 'continuous' | 'descriptive';
+
+/** Class level (replaces SHSLevel to support all school levels) */
+export type ClassLevel = string;
+
+/** SHS level (kept for backward compatibility) */
 export type SHSLevel = 'SHS1' | 'SHS2' | 'SHS3';
 
-/** Programme of study */
+/** Programme of study (SHS-specific, nullable for other levels) */
 export type Programme =
   | 'General Science'
   | 'General Arts'
   | 'Business'
   | 'Agriculture'
   | 'Home Economics'
-  | 'Visual Art';
+  | 'Visual Art'
+  | 'Technical'
+  | 'None';
+
+/** School level label mapping */
+export const SCHOOL_LEVEL_LABELS: Record<SchoolLevel, string> = {
+  kg: 'Kindergarten',
+  primary: 'Primary School',
+  jhs: 'Junior High School',
+  shs: 'Senior High School',
+  combined: 'Combined (KG/Primary/JHS/SHS)',
+};
+
+/** Short labels for school levels */
+export const SCHOOL_LEVEL_SHORT: Record<SchoolLevel, string> = {
+  kg: 'KG',
+  primary: 'Primary',
+  jhs: 'JHS',
+  shs: 'SHS',
+  combined: 'Combined',
+};

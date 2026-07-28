@@ -15,11 +15,13 @@ import {
 } from 'react-native';
 import { apiClient } from '@shared/api/apiClient';
 import { colors, spacing, fontSize, fontWeight, radius, shadows } from '@theme/index';
+import { SCHOOL_LEVEL_SHORT } from '@shared/types';
 
 interface PublicTenant {
   tenantKey: string;
   schoolName: string;
   schoolCode: string | null;
+  schoolLevel?: string | null;
   logoUrl: string | null;
   motto: string | null;
   primaryColor: string;
@@ -279,6 +281,12 @@ export function SchoolDirectory({ onNavigateToSchool }: { onNavigateToSchool?: (
                     </View>
                   </View>
                   <View style={styles.schoolCardMetaRow}>
+                    {t.schoolLevel && (
+                      <View style={[styles.schoolCardMetaChip, { backgroundColor: (t.primaryColor || colors.primary) + '15' }]}>
+                        <Text style={styles.schoolCardMetaIcon}>🏫</Text>
+                        <Text style={[styles.schoolCardMetaText, { color: t.primaryColor || colors.primary, fontWeight: '700' }]}>{SCHOOL_LEVEL_SHORT[t.schoolLevel as keyof typeof SCHOOL_LEVEL_SHORT] || t.schoolLevel.toUpperCase()}</Text>
+                      </View>
+                    )}
                     {t.region && (
                       <View style={styles.schoolCardMetaChip}>
                         <Text style={styles.schoolCardMetaIcon}>📍</Text>

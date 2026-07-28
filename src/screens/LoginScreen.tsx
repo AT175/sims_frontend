@@ -21,6 +21,7 @@ import { colors, spacing, fontSize } from '@theme/index';
 import { getCachedBranding, cacheBranding } from '@shared/db/indexedDBAdapter';
 import { useConnectionStatus } from '@shared/hooks/useConnectionStatus';
 import { loginStyles as s } from './loginStyles';
+import { SCHOOL_LEVEL_LABELS } from '@shared/types';
 
 type Tab = 'signin' | 'apply' | 'status';
 type AdmissionStep = 'search' | 'payment' | 'form' | 'submitted';
@@ -150,6 +151,13 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
   const [selectedProgramme, setSelectedProgramme] = useState<Programme>('General Science');
   const [matchedPlacement, setMatchedPlacement] = useState<any>(null);
   const [admissionLoading, setAdmissionLoading] = useState(false);
+
+  // Level-aware admission fields
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [gender, setGender] = useState('');
+  const [previousSchool, setPreviousSchool] = useState('');
+  const [previousClass, setPreviousClass] = useState('');
+  const [appliedClassLevel, setAppliedClassLevel] = useState('');
 
   // Payment
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
@@ -298,6 +306,11 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
         parentEmail: parentEmail.trim() || undefined,
         csspsPlacementRef: placementRef.trim() || undefined,
         programme: selectedProgramme,
+        appliedClassLevel: appliedClassLevel.trim() || undefined,
+        previousSchool: previousSchool.trim() || undefined,
+        previousClass: previousClass.trim() || undefined,
+        dateOfBirth: dateOfBirth.trim() || undefined,
+        gender: gender.trim() || undefined,
         isDirectApplication: !placementRef.trim(),
       });
       setAdmissionLoading(false);
@@ -339,6 +352,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
     setAdmissionStep('search'); setWardName(''); setPlacementRef(''); setParentName('');
     setParentPhone(''); setParentEmail(''); setSelectedProgramme('General Science'); setMatchedPlacement(null);
     setPaymentMethod(null); setMmNumber(''); setMmRef(''); setScratchPin(''); setScratchSerial('');
+    setDateOfBirth(''); setGender(''); setPreviousSchool(''); setPreviousClass(''); setAppliedClassLevel('');
   };
 
   const resetStatus = () => { setStatusStep('lookup'); setStatusName(''); setStatusRef(''); setStatusPhone(''); setStatusResult(null); };
@@ -714,12 +728,53 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
                       <View>
                         <View style={s.alertBoxSuccess}><View style={s.alertIconWrapSuccess}><Text style={s.alertIcon}>✓</Text></View><Text style={s.alertTextSuccess}>Payment confirmed. Complete your application.</Text></View>
                         <Text style={s.formSectionTitle}>Application Form</Text>
-                        <Text style={s.fieldLabel}>Programme</Text>
-                        <View style={s.paymentMethodRow}>
-                          {PROGRAMMES.map((p) => (
-                            <TouchableOpacity key={p} style={[s.paymentMethodCard, selectedProgramme === p && s.paymentMethodActive]} onPress={() => setSelectedProgramme(p)} activeOpacity={0.85}><Text style={s.paymentMethodLabel}>{p}</Text></TouchableOpacity>
-                          ))}
-                        </View>
+                        {branding?.schoolLevel && branding.schoolLevel !== 'shs' && (
+                          <View style={s.alertBoxWarning}><View style={s.alertIconWrapWarning}><Text style={s.alertIcon}>!</Text></View><Text style={s.alertTextWarning}>Applying for: {SCHOOL_LEVEL_LABELS[branding.schoolLevel as keyof typeof SCHOOL_LEVEL_LABELS] || branding.schoolLevel}</Text></View>
+                        )}
+                        {branding?.schoolLevel === 'shs' || !branding?.schoolLevel ? (
+                          <>
+                            <Text style={s.fieldLabel}>Programme</Text>
+                            <View style={s.paymentMethodRow}>
+                              {PROGRAMMES.map((p) => (
+                                <TouchableOpacity key={p} style={[s.paymentMethodCard, selectedProgramme === p && s.paymentMethodActive]} onPress={() => setSelectedProgramme(p)} activeOpacity={0.85}><Text style={s.paymentMethodLabel}>{p}</Text></TouchableOpacity>
+                              ))}
+                            </View>
+                          </>
+                        ) : (
+                          <>
+                            <View style={s.fieldGroup}>
+                              <Text style={s.fieldLabel}>Date of Birth</Text>
+                              <View style={s.inputContainer}><Text style={s.inputIcon}>🎂</Text><TextInput style={s.textInput} placeholder="DD/MM/YYYY" placeholderTextColor={colors.textLight} value={dateOfBirth} onChangeText={setDateOfBirth} /></View>
+                            </View>
+                            <View style={s.fieldGroup}>
+                              <Text style={s.fieldLabel}>Gender</Text>
+                              <View style={s.paymentMethodRow}>
+                                <TouchableOpacity style={[s.paymentMethodCard, gender === 'Male' && s.paymentMethodActive]} onPress={() => setGender('Male')} activeOpacity={0.85}><Text style={s.paymentMethodLabel}>Male</Text></TouchableOpacity>
+                                <TouchableOpacity style={[s.paymentMethodCard, gender === 'Female' && s.paymentMethodActive]} onPress={() => setGender('Female')} activeOpacity={0.85}><Text style={s.paymentMethodLabel}>Female</Text></TouchableOpacity>
+                              </View>
+                            </View>
+                            {branding?.offeredLevels && branding.offeredLevels.length > 0 && (
+                              <View style={s.fieldGroup}>
+                                <Text style={s.fieldLabel}>Class Level Applying For</Text>
+                                <View style={s.paymentMethodRow}>
+                                  {branding.offeredLevels.map((lvl: string) => (
+                                    <TouchableOpacity key={lvl} style={[s.paymentMethodCard, appliedClassLevel === lvl && s.paymentMethodActive]} onPress={() => setAppliedClassLevel(lvl)} activeOpacity={0.85}>
+                                      <Text style={s.paymentMethodLabel}>{branding.classLevelNames?.[lvl] || lvl}</Text>
+                                    </TouchableOpacity>
+                                  ))}
+                                </View>
+                              </View>
+                            )}
+                            <View style={s.fieldGroup}>
+                              <Text style={s.fieldLabel}>Previous School (if transferring)</Text>
+                              <View style={s.inputContainer}><Text style={s.inputIcon}>🏫</Text><TextInput style={s.textInput} placeholder="Previous school name" placeholderTextColor={colors.textLight} value={previousSchool} onChangeText={setPreviousSchool} /></View>
+                            </View>
+                            <View style={s.fieldGroup}>
+                              <Text style={s.fieldLabel}>Previous Class (if transferring)</Text>
+                              <View style={s.inputContainer}><Text style={s.inputIcon}>📚</Text><TextInput style={s.textInput} placeholder="e.g. Basic 5" placeholderTextColor={colors.textLight} value={previousClass} onChangeText={setPreviousClass} /></View>
+                            </View>
+                          </>
+                        )}
                         <View style={s.fieldGroup}><Text style={s.fieldLabel}>Parent / Guardian Name</Text><View style={s.inputContainer}><Text style={s.inputIcon}>👤</Text><TextInput style={s.textInput} placeholder="Full name" placeholderTextColor={colors.textLight} value={parentName} onChangeText={setParentName} /></View></View>
                         <View style={s.fieldGroup}><Text style={s.fieldLabel}>Phone Number</Text><View style={s.inputContainer}><Text style={s.inputIcon}>📞</Text><TextInput style={s.textInput} placeholder="024-XXX-XXXX" placeholderTextColor={colors.textLight} value={parentPhone} onChangeText={setParentPhone} keyboardType="phone-pad" /></View></View>
                         <View style={s.fieldGroup}><Text style={s.fieldLabel}>Email (optional)</Text><View style={s.inputContainer}><Text style={s.inputIcon}>✉</Text><TextInput style={s.textInput} placeholder="parent@example.com" placeholderTextColor={colors.textLight} value={parentEmail} onChangeText={setParentEmail} keyboardType="email-address" autoCapitalize="none" /></View></View>

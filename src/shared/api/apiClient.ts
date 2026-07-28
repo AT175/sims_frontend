@@ -148,6 +148,7 @@ class ApiClient {
     tenantKey: string;
     schoolName: string;
     schoolCode?: string;
+    schoolLevel?: string;
     region?: string;
     district?: string;
     address?: string;
@@ -193,6 +194,12 @@ export interface SchoolBranding {
   tenantKey: string;
   schoolName: string;
   schoolCode: string | null;
+  schoolLevel?: string | null;
+  gradingScheme?: string | null;
+  classLevelNames?: Record<string, string> | null;
+  offeredLevels?: string[] | null;
+  termsPerYear?: number;
+  disabledRoles?: string[] | null;
   logoUrl: string | null;
   motto: string | null;
   primaryColor: string;

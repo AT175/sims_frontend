@@ -8,6 +8,7 @@ import { useSystemAdminStore } from '@store/systemAdminStore';
 import type { SystemUser, UserStatus } from '@store/systemAdminStore';
 import { ROLE_LABELS } from '@shared/navigation/roleMap';
 import type { RoleId } from '@shared/types';
+import { SCHOOL_LEVEL_LABELS } from '@shared/types';
 import { GeneratedPasswordModal } from '@shared/components/GeneratedPasswordModal';
 
 const NAV_ITEMS: NavItem[] = [
@@ -86,6 +87,7 @@ export function SystemAdminDashboard() {
     tenantKey: '',
     schoolName: '',
     schoolCode: '',
+    schoolLevel: 'shs' as string,
     region: '',
     district: '',
     address: '',
@@ -384,7 +386,7 @@ export function SystemAdminDashboard() {
             <Text style={styles.pageSubtitle}>Create and manage school tenants in the system</Text>
 
             <TouchableOpacity style={styles.addBtn} onPress={() => {
-              setTenantForm({ tenantKey: '', schoolName: '', schoolCode: '', region: '', district: '', address: '', phone: '', email: '', maxStudents: '2000', maxStaff: '150', subscriptionPlan: 'Standard', subscriptionExpiry: '', headmasterUsername: '', headmasterPassword: '', headmasterDisplayName: '' });
+              setTenantForm({ tenantKey: '', schoolName: '', schoolCode: '', schoolLevel: 'shs', region: '', district: '', address: '', phone: '', email: '', maxStudents: '2000', maxStaff: '150', subscriptionPlan: 'Standard', subscriptionExpiry: '', headmasterUsername: '', headmasterPassword: '', headmasterDisplayName: '' });
               setTenantError(null);
               setShowTenantModal(true);
             }}>
@@ -400,7 +402,7 @@ export function SystemAdminDashboard() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.userActionName}>{t.schoolName}</Text>
                   <Text style={styles.userActionStatus}>{t.tenantKey} · {t.region ?? 'N/A'} · {t.subscriptionPlan}</Text>
-                  <Text style={styles.logMeta}>{t.active ? 'Active' : 'Inactive'} · {t.maxStudents} students max · {t.maxStaff} staff max</Text>
+                  <Text style={styles.logMeta}>{t.active ? 'Active' : 'Inactive'} · {t.maxStudents} students max · {t.maxStaff} staff max{t.schoolLevel ? ` · ${SCHOOL_LEVEL_LABELS[t.schoolLevel as keyof typeof SCHOOL_LEVEL_LABELS] || t.schoolLevel}` : ''}</Text>
                 </View>
                 <View style={styles.userActionBtns}>
                   <TouchableOpacity style={styles.miniBtn} onPress={async () => {
@@ -501,6 +503,18 @@ export function SystemAdminDashboard() {
             <TextInput style={styles.textInput} value={store.tenant.schoolName} onChangeText={(v) => store.updateTenant({ schoolName: v })} />
             <Text style={styles.inputLabel}>School Code</Text>
             <TextInput style={styles.textInput} value={store.tenant.schoolCode} onChangeText={(v) => store.updateTenant({ schoolCode: v })} />
+            <Text style={styles.inputLabel}>School Level</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.sm }}>
+              {Object.entries(SCHOOL_LEVEL_LABELS).map(([key, label]) => (
+                <TouchableOpacity
+                  key={key}
+                  style={[styles.roleChip, (store.tenant as any).schoolLevel === key && styles.roleChipActive]}
+                  onPress={() => store.updateTenant({ schoolLevel: key } as any)}
+                >
+                  <Text style={[styles.roleChipText, (store.tenant as any).schoolLevel === key && styles.roleChipTextActive]}>{label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
             <Text style={styles.inputLabel}>Region</Text>
             <TextInput style={styles.textInput} value={store.tenant.region} onChangeText={(v) => store.updateTenant({ region: v })} />
             <Text style={styles.inputLabel}>District</Text>
@@ -1169,6 +1183,19 @@ export function SystemAdminDashboard() {
               <Text style={styles.inputLabel}>School Code</Text>
               <TextInput style={styles.textInput} value={tenantForm.schoolCode} onChangeText={(v) => setTenantForm({ ...tenantForm, schoolCode: v })} placeholder="e.g. TSHS-001" />
 
+              <Text style={styles.inputLabel}>School Level</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.sm }}>
+                {Object.entries(SCHOOL_LEVEL_LABELS).map(([key, label]) => (
+                  <TouchableOpacity
+                    key={key}
+                    style={[styles.roleChip, tenantForm.schoolLevel === key && styles.roleChipActive]}
+                    onPress={() => setTenantForm({ ...tenantForm, schoolLevel: key })}
+                  >
+                    <Text style={[styles.roleChipText, tenantForm.schoolLevel === key && styles.roleChipTextActive]}>{label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
               <Text style={styles.inputLabel}>Region</Text>
               <TextInput style={styles.textInput} value={tenantForm.region} onChangeText={(v) => setTenantForm({ ...tenantForm, region: v })} placeholder="e.g. Greater Accra" />
 
@@ -1243,6 +1270,7 @@ export function SystemAdminDashboard() {
                         tenantKey: tenantForm.tenantKey.trim(),
                         schoolName: tenantForm.schoolName.trim(),
                         schoolCode: tenantForm.schoolCode.trim() || undefined,
+                        schoolLevel: tenantForm.schoolLevel,
                         region: tenantForm.region.trim() || undefined,
                         district: tenantForm.district.trim() || undefined,
                         address: tenantForm.address.trim() || undefined,
