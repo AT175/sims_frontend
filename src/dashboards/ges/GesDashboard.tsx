@@ -9,16 +9,16 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'Overview' },
   { key: 'offices', label: 'Office Hierarchy' },
   { key: 'schools', label: 'Schools' },
-  { key: 'reports', label: 'Compliance Reports' },
-  { key: 'inspections', label: 'Inspections' },
-  { key: 'statistics', label: 'Statistics' },
+  { key: 'reports', label: 'Supervisory Reports' },
+  { key: 'users', label: 'User Management' },
+  { key: 'emis', label: 'EMIS Statistics' },
+  { key: 'statistics', label: 'Compliance Stats' },
 ];
 
 const GES_LEVEL_LABELS: Record<string, string> = {
   national: 'National',
   regional: 'Regional',
   district: 'District / Municipal',
-  circuit: 'Circuit',
 };
 
 const REPORT_TYPE_LABELS: Record<string, string> = {
@@ -31,6 +31,18 @@ const REPORT_TYPE_LABELS: Record<string, string> = {
   inspection: 'Inspection',
   compliance: 'Compliance',
   special_report: 'Special Report',
+  supervisory: 'Supervisory',
+  audit: 'Audit',
+  emis: 'EMIS',
+};
+
+const GES_ROLE_LABELS: Record<string, string> = {
+  ges_national: 'National Director',
+  ges_regional: 'Regional Director',
+  ges_district: 'District Director',
+  siso: 'SISO',
+  ges_auditor: 'Auditor',
+  emis: 'EMIS Officer',
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -85,8 +97,19 @@ interface GesSchool {
   schoolLevel: string | null;
   region: string | null;
   district: string | null;
-  gesCircuitId: string | null;
+  gesOfficeId: string | null;
   active: boolean;
+  subscriptionPlan?: string | null;
+}
+
+interface GesUser {
+  id: string;
+  username: string;
+  displayName: string;
+  roles: string[];
+  activeRole: string;
+  mustChangePassword: boolean;
+  createdAt: string;
 }
 
 export function GesDashboard() {
@@ -97,15 +120,21 @@ export function GesDashboard() {
   const [reports, setReports] = useState<GesReport[]>([]);
   const [schools, setSchools] = useState<GesSchool[]>([]);
   const [stats, setStats] = useState<any>(null);
+  const [emisStats, setEmisStats] = useState<any>(null);
+  const [gesUsers, setGesUsers] = useState<GesUser[]>([]);
   const [selectedOfficeId, setSelectedOfficeId] = useState<string | null>(null);
   const [showOfficeModal, setShowOfficeModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showUserModal, setShowUserModal] = useState(false);
   const [officeForm, setOfficeForm] = useState({
     officeKey: '', name: '', level: 'regional', parentId: '',
     gesCode: '', region: '', district: '', headName: '', headTitle: '',
   });
   const [reportForm, setReportForm] = useState({
-    reportType: 'enrollment', title: '', description: '', academicYear: '2026/2027', term: 'Term 1',
+    reportType: 'supervisory', title: '', description: '', academicYear: '2026/2027', term: 'Term 1',
+  });
+  const [userForm, setUserForm] = useState({
+    username: '', displayName: '', password: '', role: 'siso',
   });
   const [, setLoading] = useState(false);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
@@ -156,19 +185,33 @@ export function GesDashboard() {
     if (!selectedOfficeId) return;
     (async () => {
       try {
-        const [reportsRes, schoolsRes, statsRes] = await Promise.all([
+        const [reportsRes, schoolsRes, statsRes, emisRes] = await Promise.all([
           apiClient.get<GesReport[]>(`/ges/reports?officeId=${selectedOfficeId}&includeChildren=true`),
           apiClient.get<GesSchool[]>(`/ges/schools?officeId=${selectedOfficeId}&includeChildren=true`),
           apiClient.get<any>(`/ges/stats/${selectedOfficeId}?includeChildren=true`),
+          apiClient.get<any>(`/ges/emis-stats/${selectedOfficeId}?includeChildren=true`),
         ]);
         setReports(reportsRes || []);
         setSchools(schoolsRes || []);
         setStats(statsRes);
+        setEmisStats(emisRes);
       } catch (err: any) {
         console.error('[GES] Failed to load office data:', err.message);
       }
     })();
-  }, [selectedOfficeId]);
+
+    // Load GES users for this office's tenant
+    if (user?.tenantId) {
+      (async () => {
+        try {
+          const usersRes = await apiClient.get<GesUser[]>(`/ges/users/${user.tenantId}`);
+          setGesUsers(usersRes || []);
+        } catch {
+          setGesUsers([]);
+        }
+      })();
+    }
+  }, [selectedOfficeId, user?.tenantId]);
 
   const toggleNode = (id: string) => {
     setExpandedNodes((prev) => {
@@ -287,7 +330,7 @@ export function GesDashboard() {
             <View style={styles.rowBetween}>
               <View>
                 <Text style={styles.pageTitle}>GES Office Hierarchy</Text>
-                <Text style={styles.pageSubtitle}>National → Regional → District → Circuit</Text>
+                <Text style={styles.pageSubtitle}>National → Regional → District</Text>
               </View>
               <TouchableOpacity style={styles.addBtn} onPress={() => setShowOfficeModal(true)}>
                 <Text style={styles.addBtnText}>+ Add Office</Text>
@@ -312,7 +355,7 @@ export function GesDashboard() {
 
             {selectedOfficeId && (
               <View style={styles.officeChipsRow}>
-                {offices.filter((o) => o.level === 'circuit' || o.level === 'district').slice(0, 10).map((o) => (
+                {offices.filter((o) => o.level === 'district').slice(0, 10).map((o) => (
                   <TouchableOpacity
                     key={o.id}
                     style={[styles.officeChip, selectedOfficeId === o.id && styles.officeChipActive]}
@@ -353,12 +396,32 @@ export function GesDashboard() {
           <ScrollView>
             <View style={styles.rowBetween}>
               <View>
-                <Text style={styles.pageTitle}>Compliance Reports</Text>
-                <Text style={styles.pageSubtitle}>Reports submitted by schools under this office</Text>
+                <Text style={styles.pageTitle}>Supervisory Reports</Text>
+                <Text style={styles.pageSubtitle}>Reports on schools under this office's jurisdiction</Text>
               </View>
-              <TouchableOpacity style={styles.addBtn} onPress={() => setShowReportModal(true)}>
-                <Text style={styles.addBtnText}>+ New Report</Text>
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity
+                  style={[styles.addBtn, { backgroundColor: colors.info }]}
+                  onPress={async () => {
+                    if (!selectedOfficeId) return;
+                    try {
+                      const res = await apiClient.post<any>(`/ges/reports/batch-supervisory/${selectedOfficeId}`, {
+                        academicYear: '2026/2027',
+                        term: 'Term 1',
+                      });
+                      Alert.alert('Success', `Generated ${res.generated} supervisory reports.`);
+                      loadData();
+                    } catch (err: any) {
+                      Alert.alert('Error', err.message || 'Failed to generate reports.');
+                    }
+                  }}
+                >
+                  <Text style={styles.addBtnText}>⚡ Generate All</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.addBtn} onPress={() => setShowReportModal(true)}>
+                  <Text style={styles.addBtnText}>+ New Report</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             <CardGrid>
@@ -428,19 +491,136 @@ export function GesDashboard() {
           </ScrollView>
         );
 
-      case 'inspections':
+      case 'users':
         return (
           <ScrollView>
-            <Text style={styles.pageTitle}>Inspection Schedule</Text>
-            <Text style={styles.pageSubtitle}>Plan and track school inspections</Text>
-            <View style={styles.infoCard}>
-              <Text style={styles.infoText}>Inspection scheduling features will be available once inspection data is configured.</Text>
-              <Text style={styles.infoText}>This module will support:</Text>
-              <Text style={styles.infoText}>• Scheduled school inspections by circuit supervisors</Text>
-              <Text style={styles.infoText}>• Inspection checklists and forms</Text>
-              <Text style={styles.infoText}>• Findings and recommendations tracking</Text>
-              <Text style={styles.infoText}>• Follow-up inspection scheduling</Text>
+            <View style={styles.rowBetween}>
+              <View>
+                <Text style={styles.pageTitle}>User Management</Text>
+                <Text style={styles.pageSubtitle}>Manage GES staff accounts for this office</Text>
+              </View>
+              <TouchableOpacity style={styles.addBtn} onPress={() => setShowUserModal(true)}>
+                <Text style={styles.addBtnText}>+ Add User</Text>
+              </TouchableOpacity>
             </View>
+
+            <CardGrid>
+              <StatCard label="Total Users" value={gesUsers.length} accentColor={colors.primary} icon="👥" />
+              <StatCard label="SISOs" value={gesUsers.filter((u) => u.roles.includes('siso')).length} accentColor={colors.info} icon="🎓" />
+              <StatCard label="Auditors" value={gesUsers.filter((u) => u.roles.includes('ges_auditor')).length} accentColor={colors.warning} icon="🔍" />
+              <StatCard label="EMIS" value={gesUsers.filter((u) => u.roles.includes('emis')).length} accentColor={colors.success} icon="📊" />
+            </CardGrid>
+
+            <Text style={styles.sectionTitle}>All Users</Text>
+            {gesUsers.length === 0 ? (
+              <Text style={styles.emptyText}>No GES users found. Create users for this office.</Text>
+            ) : (
+              gesUsers.map((u) => (
+                <View key={u.id} style={styles.reportCard}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.reportTitle}>{u.displayName}</Text>
+                    <Text style={styles.reportMeta}>@{u.username} · {GES_ROLE_LABELS[u.activeRole] || u.activeRole}</Text>
+                    <Text style={styles.reportDate}>Created: {new Date(u.createdAt).toLocaleDateString()}</Text>
+                    {u.mustChangePassword && <Text style={[styles.reportDate, { color: colors.warning }]}>Password reset required</Text>}
+                  </View>
+                  <View style={styles.reportActions}>
+                    <TouchableOpacity
+                      style={[styles.miniBtn, { backgroundColor: colors.warning + '20' }]}
+                      onPress={async () => {
+                        try {
+                          const res = await apiClient.post<any>(`/ges/users/${u.id}/reset-password`, {});
+                          Alert.alert('Password Reset', `New password: ${res.generatedPassword || 'N/A'}`);
+                        } catch (err: any) {
+                          Alert.alert('Error', err.message || 'Failed to reset password.');
+                        }
+                      }}
+                    >
+                      <Text style={[styles.miniBtnText, { color: colors.warning }]}>Reset PW</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.miniBtn, { backgroundColor: colors.danger + '20' }]}
+                      onPress={() => {
+                        Alert.alert('Delete User', `Delete @${u.username}?`, [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Delete', style: 'destructive', onPress: async () => {
+                              try {
+                                await apiClient.delete(`/ges/users/${u.id}`);
+                                Alert.alert('Success', 'User deleted.');
+                                if (user?.tenantId) {
+                                  const usersRes = await apiClient.get<GesUser[]>(`/ges/users/${user.tenantId}`);
+                                  setGesUsers(usersRes || []);
+                                }
+                              } catch (err: any) {
+                                Alert.alert('Error', err.message || 'Failed to delete user.');
+                              }
+                            },
+                          },
+                        ]);
+                      }}
+                    >
+                      <Text style={[styles.miniBtnText, { color: colors.danger }]}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            )}
+          </ScrollView>
+        );
+
+      case 'emis':
+        return (
+          <ScrollView>
+            <Text style={styles.pageTitle}>EMIS Statistics</Text>
+            <Text style={styles.pageSubtitle}>Education Management Information System — aggregate numbers</Text>
+
+            {emisStats && (
+              <>
+                <CardGrid>
+                  <StatCard label="Total Schools" value={emisStats.totalSchools || 0} accentColor={colors.primary} icon="🏫" />
+                  <StatCard label="Total Enrollment" value={emisStats.totalEnrollment || 0} accentColor={colors.info} icon="🎓" />
+                  <StatCard label="Total Staff" value={emisStats.totalStaff || 0} accentColor={colors.warning} icon="👨‍🏫" />
+                  <StatCard label="Avg Enrollment" value={emisStats.avgEnrollmentPerSchool || 0} accentColor={colors.success} icon="📈" />
+                </CardGrid>
+
+                {emisStats.byLevel && Object.keys(emisStats.byLevel).length > 0 && (
+                  <>
+                    <Text style={styles.sectionTitle}>Schools by Level</Text>
+                    <View style={styles.infoCard}>
+                      {Object.entries(emisStats.byLevel).map(([level, count]) => (
+                        <View key={level} style={styles.statRow}>
+                          <Text style={styles.statLabel}>{GES_LEVEL_LABELS[level] || level}</Text>
+                          <Text style={styles.statValue}>{count as number}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </>
+                )}
+
+                {emisStats.byRegion && Object.keys(emisStats.byRegion).length > 0 && (
+                  <>
+                    <Text style={styles.sectionTitle}>Schools by Region</Text>
+                    <View style={styles.infoCard}>
+                      {Object.entries(emisStats.byRegion).map(([region, count]) => (
+                        <View key={region} style={styles.statRow}>
+                          <Text style={styles.statLabel}>{region}</Text>
+                          <Text style={styles.statValue}>{count as number}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </>
+                )}
+
+                <CardGrid>
+                  <StatCard label="Enrollment Reports" value={emisStats.enrollmentReports || 0} accentColor={colors.info} icon="📋" />
+                  <StatCard label="Staffing Reports" value={emisStats.staffingReports || 0} accentColor={colors.warning} icon="📋" />
+                </CardGrid>
+              </>
+            )}
+
+            {!emisStats && (
+              <Text style={styles.emptyText}>No EMIS data available. Select an office to view statistics.</Text>
+            )}
           </ScrollView>
         );
 
@@ -677,6 +857,78 @@ export function GesDashboard() {
                   <Text style={styles.modalBtnTextWhite}>Create Report</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowReportModal(false)}>
+                  <Text style={styles.modalBtnTextSecondary}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Create User Modal */}
+      <Modal visible={showUserModal} transparent animationType="fade" onRequestClose={() => setShowUserModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <ScrollView>
+              <Text style={styles.modalTitle}>Add GES User</Text>
+
+              <Text style={styles.inputLabel}>Display Name</Text>
+              <TextInput style={styles.textInput} value={userForm.displayName} onChangeText={(v) => setUserForm({ ...userForm, displayName: v })} placeholder="e.g. John Doe" />
+
+              <Text style={styles.inputLabel}>Username</Text>
+              <TextInput style={styles.textInput} value={userForm.username} onChangeText={(v) => setUserForm({ ...userForm, username: v })} placeholder="e.g. jdoe" autoCapitalize="none" />
+
+              <Text style={styles.inputLabel}>Password (optional — auto-generated if blank)</Text>
+              <TextInput style={styles.textInput} value={userForm.password} onChangeText={(v) => setUserForm({ ...userForm, password: v })} placeholder="Leave blank for auto-generated" secureTextEntry />
+
+              <Text style={styles.inputLabel}>Role</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.sm }}>
+                {Object.entries(GES_ROLE_LABELS).map(([key, label]) => (
+                  <TouchableOpacity
+                    key={key}
+                    style={[styles.officeChip, userForm.role === key && styles.officeChipActive]}
+                    onPress={() => setUserForm({ ...userForm, role: key })}
+                  >
+                    <Text style={[styles.officeChipText, userForm.role === key && styles.officeChipTextActive]}>{label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.modalApproveBtn}
+                  onPress={async () => {
+                    if (!userForm.displayName.trim() || !userForm.username.trim()) {
+                      Alert.alert('Error', 'Display name and username are required.');
+                      return;
+                    }
+                    try {
+                      const res = await apiClient.post<any>('/ges/users', {
+                        username: userForm.username.trim(),
+                        displayName: userForm.displayName.trim(),
+                        password: userForm.password.trim() || undefined,
+                        role: userForm.role,
+                        tenantId: user?.tenantId || '',
+                      });
+                      setShowUserModal(false);
+                      setUserForm({ username: '', displayName: '', password: '', role: 'siso' });
+                      if (res.generatedPassword) {
+                        Alert.alert('User Created', `Temporary password: ${res.generatedPassword}`);
+                      } else {
+                        Alert.alert('Success', 'User created successfully.');
+                      }
+                      if (user?.tenantId) {
+                        const usersRes = await apiClient.get<GesUser[]>(`/ges/users/${user.tenantId}`);
+                        setGesUsers(usersRes || []);
+                      }
+                    } catch (err: any) {
+                      Alert.alert('Error', err.message || 'Failed to create user.');
+                    }
+                  }}
+                >
+                  <Text style={styles.modalBtnTextWhite}>Create User</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowUserModal(false)}>
                   <Text style={styles.modalBtnTextSecondary}>Cancel</Text>
                 </TouchableOpacity>
               </View>

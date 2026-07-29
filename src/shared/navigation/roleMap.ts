@@ -45,7 +45,9 @@ export const ROLE_DASHBOARD_MAP: Record<RoleId, string> = {
   ges_national: 'GES',
   ges_regional: 'GES',
   ges_district: 'GES',
-  ges_circuit: 'GES',
+  siso: 'GES',
+  ges_auditor: 'GES',
+  emis: 'GES',
 };
 
 /** Human-readable role labels */
@@ -93,5 +95,7 @@ export const ROLE_LABELS: Record<RoleId, string> = {
   ges_national: 'GES National Director',
   ges_regional: 'GES Regional Director',
   ges_district: 'GES District Director',
-  ges_circuit: 'GES Circuit Supervisor',
+  siso: 'SISO (School Improvement Support Officer)',
+  ges_auditor: 'GES Auditor',
+  emis: 'EMIS Officer',
 };

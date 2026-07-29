@@ -73,7 +73,9 @@ export type RoleId =
   | 'ges_national'
   | 'ges_regional'
   | 'ges_district'
-  | 'ges_circuit';
+  | 'siso'
+  | 'ges_auditor'
+  | 'emis';
 
 /** Authenticated user session */
 export interface AuthUser {
