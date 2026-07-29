@@ -190,9 +190,13 @@ export function SystemAdminDashboard() {
       return;
     }
     if (editingUser) {
-      store.updateUserRoles(editingUser.id, userForm.roles);
-      Alert.alert('Success', 'User updated successfully');
-      setShowUserModal(false);
+      try {
+        await store.updateUserRoles(editingUser.id, userForm.roles);
+        Alert.alert('Success', 'User updated successfully');
+        setShowUserModal(false);
+      } catch (err: any) {
+        Alert.alert('Error', err.message || 'Failed to update user.');
+      }
     } else {
       setIsSavingUser(true);
       setUserError(null);

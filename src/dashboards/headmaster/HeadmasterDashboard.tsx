@@ -255,15 +255,19 @@ export function HeadmasterDashboard() {
     setRoleDraft((d) => d.includes(role) ? d.filter((r) => r !== role) : [...d, role]);
   };
 
-  const handleSaveRoles = () => {
+  const handleSaveRoles = async () => {
     if (showRoleModal) {
-      sysAdminStore.updateUserRoles(showRoleModal.id, roleDraft);
-      Alert.alert('Success', `Roles updated for ${showRoleModal.displayName}.`);
-      setShowRoleModal(null);
+      try {
+        await sysAdminStore.updateUserRoles(showRoleModal.id, roleDraft);
+        Alert.alert('Success', `Roles updated for ${showRoleModal.displayName}.`);
+        setShowRoleModal(null);
+      } catch (err: any) {
+        Alert.alert('Error', err.message || 'Failed to update roles.');
+      }
     }
   };
 
-  const handleAssignAccess = () => {
+  const handleAssignAccess = async () => {
     if (!accessForm.userId || !accessForm.dashboardKey) {
       Alert.alert('Error', 'Select a user and a dashboard.');
       return;
@@ -285,22 +289,31 @@ export function HeadmasterDashboard() {
     const roleToAdd = dashDef.role;
     const updatedRoles = targetUser.roles.includes(roleToAdd) ? targetUser.roles : [...targetUser.roles, roleToAdd];
     if (updatedRoles.length !== targetUser.roles.length) {
-      sysAdminStore.updateUserRoles(targetUser.id, updatedRoles);
+      try {
+        await sysAdminStore.updateUserRoles(targetUser.id, updatedRoles);
+      } catch (err: any) {
+        Alert.alert('Error', err.message || 'Failed to assign role.');
+        return;
+      }
     }
     const isEditing = !!editingGrantId;
-    accessStore.assignAccess({
-      userId: targetUser.id,
-      username: targetUser.username,
-      displayName: targetUser.displayName,
-      dashboardKey: accessForm.dashboardKey,
-      dashboardLabel: dashDef.label,
-      allowedPages: accessForm.fullAccess ? 'all' : accessForm.allowedPages,
-      grantedBy: user?.displayName || 'Headmaster',
-    });
-    setAccessForm({ userId: '', dashboardKey: '', allowedPages: [], fullAccess: false });
-    setEditingGrantId(null);
-    setShowAccessModal(false);
-    Alert.alert('Success', isEditing ? 'Access assignment updated.' : `Access assigned to ${targetUser.displayName}.`);
+    try {
+      await accessStore.assignAccess({
+        userId: targetUser.id,
+        username: targetUser.username,
+        displayName: targetUser.displayName,
+        dashboardKey: accessForm.dashboardKey,
+        dashboardLabel: dashDef.label,
+        allowedPages: accessForm.fullAccess ? 'all' : accessForm.allowedPages,
+        grantedBy: user?.displayName || 'Headmaster',
+      });
+      setAccessForm({ userId: '', dashboardKey: '', allowedPages: [], fullAccess: false });
+      setEditingGrantId(null);
+      setShowAccessModal(false);
+      Alert.alert('Success', isEditing ? 'Access assignment updated.' : `Access assigned to ${targetUser.displayName}.`);
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to assign access.');
+    }
   };
 
   const togglePageInAccessForm = (pageKey: string) => {
