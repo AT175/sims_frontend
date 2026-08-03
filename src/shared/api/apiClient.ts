@@ -111,8 +111,8 @@ class ApiClient {
     return this.request<T>(path);
   }
 
-  post<T>(path: string, body?: Record<string, unknown>): Promise<T> {
-    return this.request<T>(path, { method: 'POST', body });
+  post<T>(path: string, body?: Record<string, unknown>, options?: RequestOptions): Promise<T> {
+    return this.request<T>(path, { method: 'POST', body, ...options });
   }
 
   put<T>(path: string, body?: Record<string, unknown>): Promise<T> {
