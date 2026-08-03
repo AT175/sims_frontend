@@ -47,7 +47,6 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
   const [portalTab, setPortalTab] = useState<'signin' | 'apply' | 'status'>('signin');
   const [heroSlide, setHeroSlide] = useState(0);
   const heroSlidesRef = useRef(6);
-  const [, setActiveSection] = useState('home');
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const { isOnline } = useConnectionStatus();
 
@@ -55,6 +54,8 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
   const heroScale = useRef(new Animated.Value(1)).current;
   const scrollViewRef = useRef<any>(null);
   const aboutY = useRef(0);
+  const newsY = useRef(0);
+  const admissionsY = useRef(0);
 
   const { width: windowWidth } = useWindowDimensions();
   const IS_NARROW = windowWidth < 768;
@@ -119,8 +120,15 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
   }, [tenantKey, isOnline]);
 
   const scrollToAbout = () => {
-    setActiveSection('home');
     setTimeout(() => scrollViewRef.current?.scrollTo?.({ y: aboutY.current, animated: true }), 100);
+  };
+
+  const scrollToNews = () => {
+    setTimeout(() => scrollViewRef.current?.scrollTo?.({ y: newsY.current, animated: true }), 100);
+  };
+
+  const scrollToAdmissions = () => {
+    setTimeout(() => scrollViewRef.current?.scrollTo?.({ y: admissionsY.current, animated: true }), 100);
   };
 
   const openPortal = (tab: 'signin' | 'apply' | 'status') => {
@@ -210,8 +218,8 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
               <>
                 <TouchableOpacity onPress={() => scrollViewRef.current?.scrollTo?.({ y: 0, animated: true })}><Text style={s.headerNavLink}>Home</Text></TouchableOpacity>
                 <TouchableOpacity onPress={scrollToAbout}><Text style={s.headerNavLink}>About Us</Text></TouchableOpacity>
-                {newsItems.length > 0 && <TouchableOpacity onPress={() => setActiveSection('news')}><Text style={s.headerNavLink}>News</Text></TouchableOpacity>}
-                <TouchableOpacity onPress={() => setActiveSection('admissions')}><Text style={s.headerNavLink}>Admissions</Text></TouchableOpacity>
+                {newsItems.length > 0 && <TouchableOpacity onPress={scrollToNews}><Text style={s.headerNavLink}>News</Text></TouchableOpacity>}
+                <TouchableOpacity onPress={scrollToAdmissions}><Text style={s.headerNavLink}>Admissions</Text></TouchableOpacity>
               </>
             )}
             <TouchableOpacity style={[s.headerGhostBtn, { borderColor: primary }, IS_NARROW && { paddingVertical: spacing.sm, paddingHorizontal: spacing.md }]} onPress={() => openPortal('signin')}>
@@ -305,7 +313,7 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
 
         {/* ── News Section ── */}
         {newsItems.length > 0 && (
-          <View style={[s.section, s.aboutBg, IS_NARROW && { paddingHorizontal: spacing.md }]}>
+          <View style={[s.section, s.aboutBg, IS_NARROW && { paddingHorizontal: spacing.md }]} onLayout={(e) => { newsY.current = e.nativeEvent.layout.y; }}>
             <View style={s.sectionNarrow}>
               <Text style={[s.sectionTitle, { color: primary }]}>Latest <Text style={[s.sectionTitleAccent, { color: colors.accentDark }]}>News</Text></Text>
               <Text style={s.sectionSubtitle}>Stay updated with the latest announcements and events</Text>
@@ -460,7 +468,7 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
         </View>
 
         {/* ── Admissions Section ── */}
-        <View style={[s.section, s.aboutBg, IS_NARROW && { paddingHorizontal: spacing.md }]}>
+        <View style={[s.section, s.aboutBg, IS_NARROW && { paddingHorizontal: spacing.md }]} onLayout={(e) => { admissionsY.current = e.nativeEvent.layout.y; }}>
           <View style={s.sectionNarrow}>
             <Text style={[s.sectionTitle, { color: primary }]}>Admissions <Text style={[s.sectionTitleAccent, { color: colors.accentDark }]}>Information</Text></Text>
             <Text style={s.sectionSubtitle}>
