@@ -161,9 +161,9 @@ export interface SystemAdminState {
 
   loadUsers: (tenantId?: string) => Promise<void>;
   addUser: (user: Omit<SystemUser, 'id' | 'createdAt' | 'lastLogin' | 'failedAttempts'>) => Promise<any>;
-  updateUserStatus: (id: string, status: UserStatus) => Promise<void>;
-  updateUserRoles: (id: string, roles: RoleId[]) => Promise<void>;
-  deleteUser: (id: string) => Promise<void>;
+  updateUserStatus: (id: string, status: UserStatus) => void;
+  updateUserRoles: (id: string, roles: RoleId[]) => void;
+  deleteUser: (id: string) => void;
   resetUserPassword: (id: string, newPassword?: string) => Promise<any>;
   unlockUser: (id: string) => void;
 
@@ -250,45 +250,22 @@ export const useSystemAdminStore = create<SystemAdminState>((set, get) => ({
       }));
       throw err;
     }
-  },  updateUserStatus: async (id, status) => {
-    try {
-      await apiClient.put<any>(`/auth/users/${id}`, { status });
-    } catch (err: any) {
-      set((st) => ({
-        logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'ERROR', source: 'User Management', message: `Failed to update status for ${st.users.find((u) => u.id === id)?.username}: ${err.message}`, user: 'admin' }, ...st.logs],
-      }));
-    }
+  },  updateUserStatus: (id, status) => {
     set((st) => ({
       users: st.users.map((u) => (u.id === id ? { ...u, status } : u)),
       logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'INFO', source: 'User Management', message: `User ${st.users.find((u) => u.id === id)?.username} status changed to ${status}`, user: 'admin' }, ...st.logs],
     }));
   },
 
-  updateUserRoles: async (id, roles) => {
-    try {
-      await apiClient.put<any>(`/auth/users/${id}`, { roles });
-      set((st) => ({
-        users: st.users.map((u) => (u.id === id ? { ...u, roles } : u)),
-        logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'INFO', source: 'User Management', message: `User ${st.users.find((u) => u.id === id)?.username} roles updated`, user: 'admin' }, ...st.logs],
-      }));
-    } catch (err: any) {
-      set((st) => ({
-        logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'ERROR', source: 'User Management', message: `Failed to update roles for ${st.users.find((u) => u.id === id)?.username}: ${err.message}`, user: 'admin' }, ...st.logs],
-      }));
-      throw err;
-    }
+  updateUserRoles: (id, roles) => {
+    set((st) => ({
+      users: st.users.map((u) => (u.id === id ? { ...u, roles } : u)),
+      logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'INFO', source: 'User Management', message: `User ${st.users.find((u) => u.id === id)?.username} roles updated`, user: 'admin' }, ...st.logs],
+    }));
   },
 
-  deleteUser: async (id) => {
+  deleteUser: (id) => {
     const username = get().users.find((u) => u.id === id)?.username || 'unknown';
-    try {
-      await apiClient.delete<any>(`/auth/users/${id}`);
-    } catch (err: any) {
-      set((st) => ({
-        logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'ERROR', source: 'User Management', message: `Failed to delete user ${username}: ${err.message}`, user: 'admin' }, ...st.logs],
-      }));
-      throw err;
-    }
     set((st) => ({
       users: st.users.filter((u) => u.id !== id),
       logs: [{ id: String(get().logs.length + 1), timestamp: nowISO(), level: 'WARN', source: 'User Management', message: `User ${username} deleted by admin`, user: 'admin' }, ...st.logs],

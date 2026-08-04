@@ -113,7 +113,7 @@ export function HeadmasterDashboard() {
   const [resolutionNotes, setResolutionNotes] = useState('');
 
   const [showUserModal, setShowUserModal] = useState(false);
-  const [userForm, setUserForm] = useState({ username: '', displayName: '', email: '', password: '', roles: [] as RoleId[], status: 'Active' as UserStatus, tenantId: user?.tenantId || 'tenant-001' });
+  const [userForm, setUserForm] = useState({ username: '', displayName: '', email: '', password: '', roles: [] as RoleId[], status: 'Active' as UserStatus, tenantId: user?.tenantId || 'tenant-001', schoolLevel: null as string | null });
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [createUserError, setCreateUserError] = useState<string | null>(null);
   const [showRoleModal, setShowRoleModal] = useState<SystemUser | null>(null);
@@ -229,8 +229,8 @@ export function HeadmasterDashboard() {
     setIsCreatingUser(true);
     setCreateUserError(null);
     try {
-      const result = await sysAdminStore.addUser({ username: userForm.username.trim(), displayName: userForm.displayName.trim(), email: userForm.email.trim(), roles: userForm.roles, status: userForm.status, tenantId: userForm.tenantId, password: userForm.password } as any);
-      setUserForm({ username: '', displayName: '', email: '', password: '', roles: [], status: 'Active', tenantId: user?.tenantId || 'tenant-001' });
+      const result = await sysAdminStore.addUser({ username: userForm.username.trim(), displayName: userForm.displayName.trim(), email: userForm.email.trim(), roles: userForm.roles, status: userForm.status, tenantId: userForm.tenantId, password: userForm.password, schoolLevel: userForm.schoolLevel } as any);
+      setUserForm({ username: '', displayName: '', email: '', password: '', roles: [], status: 'Active', tenantId: user?.tenantId || 'tenant-001', schoolLevel: null });
       setShowUserModal(false);
       if (result?.defaultPassword) {
         setGeneratedPassword({ username: result.username, password: result.defaultPassword, title: 'User Created' });
@@ -255,19 +255,15 @@ export function HeadmasterDashboard() {
     setRoleDraft((d) => d.includes(role) ? d.filter((r) => r !== role) : [...d, role]);
   };
 
-  const handleSaveRoles = async () => {
+  const handleSaveRoles = () => {
     if (showRoleModal) {
-      try {
-        await sysAdminStore.updateUserRoles(showRoleModal.id, roleDraft);
-        Alert.alert('Success', `Roles updated for ${showRoleModal.displayName}.`);
-        setShowRoleModal(null);
-      } catch (err: any) {
-        Alert.alert('Error', err.message || 'Failed to update roles.');
-      }
+      sysAdminStore.updateUserRoles(showRoleModal.id, roleDraft);
+      Alert.alert('Success', `Roles updated for ${showRoleModal.displayName}.`);
+      setShowRoleModal(null);
     }
   };
 
-  const handleAssignAccess = async () => {
+  const handleAssignAccess = () => {
     if (!accessForm.userId || !accessForm.dashboardKey) {
       Alert.alert('Error', 'Select a user and a dashboard.');
       return;
@@ -289,31 +285,22 @@ export function HeadmasterDashboard() {
     const roleToAdd = dashDef.role;
     const updatedRoles = targetUser.roles.includes(roleToAdd) ? targetUser.roles : [...targetUser.roles, roleToAdd];
     if (updatedRoles.length !== targetUser.roles.length) {
-      try {
-        await sysAdminStore.updateUserRoles(targetUser.id, updatedRoles);
-      } catch (err: any) {
-        Alert.alert('Error', err.message || 'Failed to assign role.');
-        return;
-      }
+      sysAdminStore.updateUserRoles(targetUser.id, updatedRoles);
     }
     const isEditing = !!editingGrantId;
-    try {
-      await accessStore.assignAccess({
-        userId: targetUser.id,
-        username: targetUser.username,
-        displayName: targetUser.displayName,
-        dashboardKey: accessForm.dashboardKey,
-        dashboardLabel: dashDef.label,
-        allowedPages: accessForm.fullAccess ? 'all' : accessForm.allowedPages,
-        grantedBy: user?.displayName || 'Headmaster',
-      });
-      setAccessForm({ userId: '', dashboardKey: '', allowedPages: [], fullAccess: false });
-      setEditingGrantId(null);
-      setShowAccessModal(false);
-      Alert.alert('Success', isEditing ? 'Access assignment updated.' : `Access assigned to ${targetUser.displayName}.`);
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to assign access.');
-    }
+    accessStore.assignAccess({
+      userId: targetUser.id,
+      username: targetUser.username,
+      displayName: targetUser.displayName,
+      dashboardKey: accessForm.dashboardKey,
+      dashboardLabel: dashDef.label,
+      allowedPages: accessForm.fullAccess ? 'all' : accessForm.allowedPages,
+      grantedBy: user?.displayName || 'Headmaster',
+    });
+    setAccessForm({ userId: '', dashboardKey: '', allowedPages: [], fullAccess: false });
+    setEditingGrantId(null);
+    setShowAccessModal(false);
+    Alert.alert('Success', isEditing ? 'Access assignment updated.' : `Access assigned to ${targetUser.displayName}.`);
   };
 
   const togglePageInAccessForm = (pageKey: string) => {
@@ -1278,6 +1265,15 @@ export function HeadmasterDashboard() {
                   </TouchableOpacity>
                 ))}
               </View>
+              <Text style={styles.inputLabel}>School Level Access (for combined schools)</Text>
+              <Text style={styles.autoAssignHint}>Select the school level this user can access. Leave empty for full access.</Text>
+              <View style={styles.chipRow}>
+                {['kg', 'primary', 'jhs', 'shs'].map((level) => (
+                  <TouchableOpacity key={level} style={[styles.chip, userForm.schoolLevel === level && styles.chipActive]} onPress={() => setUserForm((f) => ({ ...f, schoolLevel: f.schoolLevel === level ? null : level }))}>
+                    <Text style={[styles.chipText, userForm.schoolLevel === level && styles.chipTextActive]}>{level.toUpperCase()}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
               {createUserError && (
                 <View style={styles.errorBanner}>
                   <Text style={styles.errorBannerText}>{createUserError}</Text>
@@ -1752,6 +1748,11 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.bold,
     color: colors.text,
     marginBottom: spacing.md,
+  },
+  autoAssignHint: {
+    fontSize: fontSize.xs,
+    color: colors.textLight,
+    marginBottom: spacing.sm,
   },
   inputLabel: {
     fontSize: fontSize.sm,

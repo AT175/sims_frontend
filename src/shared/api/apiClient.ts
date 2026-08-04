@@ -111,8 +111,8 @@ class ApiClient {
     return this.request<T>(path);
   }
 
-  post<T>(path: string, body?: Record<string, unknown>, options?: RequestOptions): Promise<T> {
-    return this.request<T>(path, { method: 'POST', body, ...options });
+  post<T>(path: string, body?: Record<string, unknown>): Promise<T> {
+    return this.request<T>(path, { method: 'POST', body });
   }
 
   put<T>(path: string, body?: Record<string, unknown>): Promise<T> {
@@ -149,6 +149,7 @@ class ApiClient {
     schoolName: string;
     schoolCode?: string;
     schoolLevel?: string;
+    offeredLevels?: string[];
     region?: string;
     district?: string;
     address?: string;

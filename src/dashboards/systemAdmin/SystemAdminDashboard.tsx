@@ -88,7 +88,8 @@ export function SystemAdminDashboard() {
     tenantKey: '',
     schoolName: '',
     schoolCode: '',
-    schoolLevel: 'shs' as string,
+    schoolLevel: 'combined' as string,
+    offeredLevels: [] as string[],
     region: '',
     district: '',
     address: '',
@@ -190,13 +191,9 @@ export function SystemAdminDashboard() {
       return;
     }
     if (editingUser) {
-      try {
-        await store.updateUserRoles(editingUser.id, userForm.roles);
-        Alert.alert('Success', 'User updated successfully');
-        setShowUserModal(false);
-      } catch (err: any) {
-        Alert.alert('Error', err.message || 'Failed to update user.');
-      }
+      store.updateUserRoles(editingUser.id, userForm.roles);
+      Alert.alert('Success', 'User updated successfully');
+      setShowUserModal(false);
     } else {
       setIsSavingUser(true);
       setUserError(null);
@@ -391,7 +388,7 @@ export function SystemAdminDashboard() {
             <Text style={styles.pageSubtitle}>Create and manage school tenants in the system</Text>
 
             <TouchableOpacity style={styles.addBtn} onPress={() => {
-              setTenantForm({ tenantKey: '', schoolName: '', schoolCode: '', schoolLevel: 'shs', region: '', district: '', address: '', phone: '', email: '', maxStudents: '2000', maxStaff: '150', subscriptionPlan: 'Standard', subscriptionExpiry: '', headmasterUsername: '', headmasterPassword: '', headmasterDisplayName: '' });
+              setTenantForm({ tenantKey: '', schoolName: '', schoolCode: '', schoolLevel: 'combined', offeredLevels: [], region: '', district: '', address: '', phone: '', email: '', maxStudents: '2000', maxStaff: '150', subscriptionPlan: 'Standard', subscriptionExpiry: '', headmasterUsername: '', headmasterPassword: '', headmasterDisplayName: '' });
               setTenantError(null);
               setShowTenantModal(true);
             }}>
@@ -1249,6 +1246,27 @@ export function SystemAdminDashboard() {
                 ))}
               </View>
 
+              <Text style={styles.inputLabel}>Offered Levels (Select all that apply)</Text>
+              <Text style={styles.autoAssignHint}>For combined schools, select which levels this school operates</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.sm }}>
+                {['kg', 'primary', 'jhs', 'shs'].map((level) => (
+                  <TouchableOpacity
+                    key={level}
+                    style={[styles.roleChip, tenantForm.offeredLevels.includes(level) && styles.roleChipActive]}
+                    onPress={() => {
+                      const newLevels = tenantForm.offeredLevels.includes(level)
+                        ? tenantForm.offeredLevels.filter((l) => l !== level)
+                        : [...tenantForm.offeredLevels, level];
+                      setTenantForm({ ...tenantForm, offeredLevels: newLevels });
+                    }}
+                  >
+                    <Text style={[styles.roleChipText, tenantForm.offeredLevels.includes(level) && styles.roleChipTextActive]}>
+                      {SCHOOL_LEVEL_LABELS[level as keyof typeof SCHOOL_LEVEL_LABELS]}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
               <Text style={styles.inputLabel}>Region</Text>
               <TextInput style={styles.textInput} value={tenantForm.region} onChangeText={(v) => setTenantForm({ ...tenantForm, region: v })} placeholder="e.g. Greater Accra" />
 
@@ -1324,6 +1342,7 @@ export function SystemAdminDashboard() {
                         schoolName: tenantForm.schoolName.trim(),
                         schoolCode: tenantForm.schoolCode.trim() || undefined,
                         schoolLevel: tenantForm.schoolLevel,
+                        offeredLevels: tenantForm.offeredLevels.length > 0 ? tenantForm.offeredLevels : undefined,
                         region: tenantForm.region.trim() || undefined,
                         district: tenantForm.district.trim() || undefined,
                         address: tenantForm.address.trim() || undefined,

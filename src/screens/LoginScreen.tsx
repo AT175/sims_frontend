@@ -312,8 +312,6 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
         dateOfBirth: dateOfBirth.trim() || undefined,
         gender: gender.trim() || undefined,
         isDirectApplication: !placementRef.trim(),
-      }, {
-        headers: presetTenantKey ? { 'X-Tenant-Id': presetTenantKey } : undefined,
       });
       setAdmissionLoading(false);
       setAdmissionStep('submitted');

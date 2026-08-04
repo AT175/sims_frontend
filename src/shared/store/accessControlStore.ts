@@ -49,8 +49,8 @@ interface AccessControlState {
   grants: PageAccessGrant[];
   activities: AccessActivity[];
   notifications: AccessNotification[];
-  assignAccess: (grant: Omit<PageAccessGrant, 'id' | 'grantedAt'>) => Promise<void>;
-  revokeAccess: (id: string) => Promise<void>;
+  assignAccess: (grant: Omit<PageAccessGrant, 'id' | 'grantedAt'>) => void;
+  revokeAccess: (id: string) => void;
   revokeAllForUser: (userId: string) => void;
   getGrantsForUser: (userId: string) => PageAccessGrant[];
   getGrantForUserDashboard: (userId: string, dashboardKey: string) => PageAccessGrant | undefined;
@@ -76,15 +76,7 @@ export const useAccessControlStore = create<AccessControlState>((set, get) => ({
   activities: [],
   notifications: [],
 
-  assignAccess: async (grant) => {
-    let savedId: string;
-    try {
-      const saved = await apiClient.post<any>('/access-control/grants', grant);
-      savedId = saved?.id || String(get().grants.length + 1);
-    } catch {
-      savedId = String(get().grants.length + 1);
-    }
-
+  assignAccess: (grant) => {
     const existing = get().grants.find(
       (g) => g.userId === grant.userId && g.dashboardKey === grant.dashboardKey
     );
@@ -97,11 +89,13 @@ export const useAccessControlStore = create<AccessControlState>((set, get) => ({
         ),
       }));
     } else {
+      const id = String(get().grants.length + 1);
       set((st) => ({
-        grants: [...st.grants, { ...grant, id: savedId, grantedAt: nowISO() }],
+        grants: [...st.grants, { ...grant, id, grantedAt: nowISO() }],
       }));
     }
 
+    // Generate notification for the role that owns this dashboard
     useNotificationStore.getState().addNotification({
       title: 'Dashboard access assigned',
       message: `${grant.displayName} has been assigned to ${grant.dashboardLabel}`,
@@ -132,13 +126,8 @@ export const useAccessControlStore = create<AccessControlState>((set, get) => ({
     }
   },
 
-  revokeAccess: async (id) => {
+  revokeAccess: (id) => {
     const grant = get().grants.find((g) => g.id === id);
-    try {
-      await apiClient.delete<any>(`/access-control/grants/${id}`);
-    } catch {
-      // proceed with local removal even if backend fails
-    }
     set((st) => ({ grants: st.grants.filter((g) => g.id !== id) }));
     if (grant) {
       useNotificationStore.getState().addNotification({
@@ -231,19 +220,7 @@ export const useAccessControlStore = create<AccessControlState>((set, get) => ({
   loadGrants: async () => {
     try {
       const data = await apiClient.get<any[]>('/access-control/grants');
-      set({
-        grants: (data || []).map((d) => ({
-          id: d.id || String(Date.now()),
-          userId: d.userId,
-          username: d.username,
-          displayName: d.displayName,
-          dashboardKey: d.dashboardKey,
-          dashboardLabel: d.dashboardLabel,
-          allowedPages: d.allowedPages === 'all' ? 'all' : (typeof d.allowedPages === 'string' ? JSON.parse(d.allowedPages) : d.allowedPages || []),
-          grantedBy: d.grantedBy,
-          grantedAt: d.grantedAt || new Date().toISOString(),
-        })),
-      });
+      set({ grants: (data || []).map((d) => ({ ...d, id: d.id || String(Date.now()) })) });
     } catch {}
   },
   loadAll: async () => {
