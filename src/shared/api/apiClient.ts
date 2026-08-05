@@ -189,6 +189,44 @@ class ApiClient {
   async updateTenantBranding(id: string, data: Partial<SchoolBranding>): Promise<any> {
     return this.put<any>(`/tenants/${id}`, data as any);
   }
+
+  // Subscription methods
+  async getSubscriptions(_tenantId?: string): Promise<any[]> {
+    return this.get<any[]>(`/subscriptions${_tenantId ? '' : ''}`);
+  }
+
+  async getSubscriptionStats(_tenantId?: string): Promise<any> {
+    return this.get<any>('/subscriptions/stats');
+  }
+
+  async extendSubscription(userId: string, days: number): Promise<any> {
+    return this.post<any>(`/subscriptions/extend?userId=${encodeURIComponent(userId)}`, { days });
+  }
+
+  async cancelSubscription(userId: string): Promise<any> {
+    return this.post<any>(`/subscriptions/cancel?userId=${encodeURIComponent(userId)}`, {});
+  }
+
+  // Bursary/Payment methods
+  async getFeeRecords(_tenantId?: string): Promise<any[]> {
+    return this.get<any[]>('/bursary/fees');
+  }
+
+  async getPaymentReceipts(_tenantId?: string): Promise<any[]> {
+    return this.get<any[]>('/bursary/receipts');
+  }
+
+  async getFeeSummary(_tenantId?: string): Promise<any> {
+    return this.get<any>('/bursary/summary');
+  }
+
+  async createFeeRecord(data: any): Promise<any> {
+    return this.post<any>('/bursary/fees', data);
+  }
+
+  async recordPayment(data: any): Promise<any> {
+    return this.post<any>('/bursary/payments', data);
+  }
 }
 
 export interface SchoolBranding {

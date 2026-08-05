@@ -18,6 +18,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'tenant', label: 'School Configuration' },
   { key: 'website', label: 'Website Settings' },
   { key: 'modules', label: 'Modules' },
+  { key: 'subscriptions', label: 'Subscriptions & Payments' },
   { key: 'database', label: 'Database & Sync' },
   { key: 'backups', label: 'Backups' },
   { key: 'logs', label: 'System Logs' },
@@ -104,12 +105,35 @@ export function SystemAdminDashboard() {
     headmasterDisplayName: '',
   });
 
+  // Subscription & Payment state
+  const [subscriptions, setSubscriptions] = useState<any[]>([]);
+  const [subscriptionStats, setSubscriptionStats] = useState<any>(null);
+  const [paymentReceipts, setPaymentReceipts] = useState<any[]>([]);
+  const [feeSummary, setFeeSummary] = useState<any>(null);
+
   const fetchTenants = async () => {
     try {
       const data = await apiClient.getTenants();
       setTenants(data);
     } catch (err: any) {
       console.error('[SystemAdmin] Failed to fetch tenants:', err.message);
+    }
+  };
+
+  const fetchSubscriptionData = async () => {
+    try {
+      const [subs, stats, receipts, summary] = await Promise.all([
+        apiClient.getSubscriptions(),
+        apiClient.getSubscriptionStats(),
+        apiClient.getPaymentReceipts(),
+        apiClient.getFeeSummary(),
+      ]);
+      setSubscriptions(subs);
+      setSubscriptionStats(stats);
+      setPaymentReceipts(receipts);
+      setFeeSummary(summary);
+    } catch (err: any) {
+      console.error('[SystemAdmin] Failed to fetch subscription data:', err.message);
     }
   };
 
@@ -135,6 +159,12 @@ export function SystemAdminDashboard() {
   useEffect(() => {
     fetchTenants();
   }, []);
+
+  useEffect(() => {
+    if (activePage === 'subscriptions') {
+      fetchSubscriptionData();
+    }
+  }, [activePage]);
 
   // Reset password modal state
   const [resetUser, setResetUser] = useState<SystemUser | null>(null);
@@ -933,6 +963,74 @@ export function SystemAdminDashboard() {
             >
               <Text style={styles.saveBtnText}>{isSavingModules ? 'Saving...' : 'Save Module States'}</Text>
             </TouchableOpacity>
+          </ScrollView>
+        );
+
+      case 'subscriptions':
+        return (
+          <ScrollView>
+            <Text style={styles.pageTitle}>Subscriptions & Payments</Text>
+            <Text style={styles.pageSubtitle}>Monitor subscription revenue and payment records</Text>
+
+            <CardGrid>
+              <StatCard label="Total Subscriptions" value={subscriptionStats?.total || 0} accentColor={colors.primary} icon="📋" />
+              <StatCard label="Active" value={subscriptionStats?.active || 0} accentColor={colors.success} icon="✅" />
+              <StatCard label="Trial Users" value={subscriptionStats?.trial || 0} accentColor={colors.info} icon="🎯" />
+              <StatCard label="Annual Plans" value={subscriptionStats?.annual || 0} accentColor={colors.warning} icon="💎" />
+            </CardGrid>
+
+            <CardGrid>
+              <StatCard label="Total Revenue" value={`GHS ${subscriptionStats?.revenue || 0}`} accentColor={colors.success} icon="💰" />
+              <StatCard label="Expired" value={subscriptionStats?.expired || 0} accentColor={colors.danger} icon="⏰" />
+              <StatCard label="Total Billed" value={`GHS ${feeSummary?.totalBilled || 0}`} accentColor={colors.info} icon="📊" />
+              <StatCard label="Collected" value={`GHS ${feeSummary?.totalCollected || 0}`} accentColor={colors.success} icon="✅" />
+            </CardGrid>
+
+            <Text style={styles.sectionTitle}>Subscription Statistics</Text>
+            <View style={styles.infoCard}>
+              <Text style={styles.infoText}>• Total Subscriptions: {subscriptionStats?.total || 0}</Text>
+              <Text style={styles.infoText}>• Active Subscriptions: {subscriptionStats?.active || 0}</Text>
+              <Text style={styles.infoText}>• Trial Users: {subscriptionStats?.trial || 0}</Text>
+              <Text style={styles.infoText}>• Annual Plans: {subscriptionStats?.annual || 0}</Text>
+              <Text style={styles.infoText}>• Expired: {subscriptionStats?.expired || 0}</Text>
+              <Text style={styles.infoText}>• Total Revenue: GHS {subscriptionStats?.revenue || 0}</Text>
+            </View>
+
+            <Text style={styles.sectionTitle}>Fee Summary</Text>
+            <View style={styles.infoCard}>
+              <Text style={styles.infoText}>• Total Billed: GHS {feeSummary?.totalBilled || 0}</Text>
+              <Text style={styles.infoText}>• Total Collected: GHS {feeSummary?.totalCollected || 0}</Text>
+              <Text style={styles.infoText}>• Outstanding: GHS {feeSummary?.totalOutstanding || 0}</Text>
+              <Text style={styles.infoText}>• Fee Records: {feeSummary?.recordCount || 0}</Text>
+            </View>
+
+            <Text style={styles.sectionTitle}>Recent Subscriptions</Text>
+            {subscriptions.length === 0 ? (
+              <Text style={styles.emptyText}>No subscriptions found.</Text>
+            ) : (
+              subscriptions.slice(0, 10).map((sub) => (
+                <View key={sub.id} style={styles.logRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.logMessage}>{sub.plan?.toUpperCase()} - {sub.status?.toUpperCase()}</Text>
+                    <Text style={styles.logMeta}>User: {sub.userId} · {sub.startDate} to {sub.endDate} · GHS {sub.amount}</Text>
+                  </View>
+                </View>
+              ))
+            )}
+
+            <Text style={styles.sectionTitle}>Recent Payment Receipts</Text>
+            {paymentReceipts.length === 0 ? (
+              <Text style={styles.emptyText}>No payment receipts found.</Text>
+            ) : (
+              paymentReceipts.slice(0, 10).map((receipt) => (
+                <View key={receipt.id} style={styles.logRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.logMessage}>{receipt.receiptNo} - {receipt.studentName}</Text>
+                    <Text style={styles.logMeta}>GHS {receipt.amount} · {receipt.method} · {receipt.date}</Text>
+                  </View>
+                </View>
+              ))
+            )}
           </ScrollView>
         );
 
