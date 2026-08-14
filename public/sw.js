@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sims-v2';
+const CACHE_NAME = 'sims-v3';
 const BRANDING_CACHE_NAME = 'sims-branding-v2';
 const IMAGE_CACHE_NAME = 'sims-images-v1';
 const APP_SHELL = [
@@ -6,7 +6,6 @@ const APP_SHELL = [
   '/index.html',
   '/manifest.json',
   '/icons/icon-192.png',
-  '/icons/icon-512.png',
 ];
 
 // Install: pre-cache app shell
