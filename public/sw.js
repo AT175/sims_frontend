@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sims-v3';
+const CACHE_NAME = 'sims-v4';
 const BRANDING_CACHE_NAME = 'sims-branding-v2';
 const IMAGE_CACHE_NAME = 'sims-images-v1';
 const APP_SHELL = [
@@ -16,21 +16,23 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate: clean old caches
+// Activate: clean old caches and take control immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.filter((k) => k !== CACHE_NAME && k !== BRANDING_CACHE_NAME && k !== IMAGE_CACHE_NAME).map((k) => caches.delete(k)))
-    )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
+  self.clients.matchAll().then((clients) => {
+    clients.forEach((client) => client.postMessage({ type: 'SW_UPDATED' }));
+  });
 });
 
 // Fetch strategy:
 // - Navigation requests (HTML): network-first, fallback to cache
-// - Branding API (/api/public/tenants/): cache-first with 24h TTL
-// - Image requests: cache-first with long TTL
-// - Static assets: cache-first
+// - Branding API (/api/public/tenants/): cache-first with 5min TTL
+// - Image requests: cache-first with 7-day TTL
+// - Static assets (JS/CSS): network-first, fallback to cache
 // - API calls: network-first with cache fallback (5min TTL)
 self.addEventListener('fetch', (event) => {
   const { request } = event;
@@ -162,18 +164,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first for static assets
+  // Static assets (JS/CSS/etc): network-first, fallback to cache
+  // This ensures new code is always loaded when available
   event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
-      return fetch(request).then((response) => {
+    fetch(request)
+      .then((response) => {
         if (response.ok) {
           const copy = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
         }
         return response;
-      });
-    })
+      })
+      .catch(() => caches.match(request).then((cached) => cached || Response.error()))
   );
 });
 
