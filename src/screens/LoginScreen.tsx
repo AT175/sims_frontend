@@ -610,7 +610,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
               </View>
             )}
             {/* Direct form view - no tabs, each button links directly */}
-            <Animated.View style={[s.formContent, { opacity: tabAnim, transform: [{ translateY: tabAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }]}>
+            <Animated.View style={[s.formContent, { opacity: tabAnim, transform: [{ translateY: tabAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }]} pointerEvents="auto">
               <ScrollView style={s.scrollView} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
                 {activeTab === 'signin' && (
                   <View>
@@ -687,7 +687,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
                         </View>
                         <Text style={s.privacyNotice}>By continuing, you consent to the school collecting and processing the information provided for admission purposes. Parental consent is required for applicants under 18.</Text>
                         <TouchableOpacity style={s.primaryButton} onPress={handleAdmissionSearch} activeOpacity={0.85}><Text style={s.primaryButtonText}>Search Placement</Text><Text style={s.primaryButtonArrow}>→</Text></TouchableOpacity>
-                        <TouchableOpacity style={s.secondaryButton} onPress={handleDirectApplication} activeOpacity={0.85}><Text style={s.secondaryButtonText}>Apply Directly (No CSSPS)</Text></TouchableOpacity>
+                        <TouchableOpacity style={s.secondaryButton} onPress={handleDirectApplication} activeOpacity={0.85} pointerEvents="auto"><Text style={s.secondaryButtonText}>Apply Directly (No CSSPS)</Text></TouchableOpacity>
                         <TouchableOpacity style={s.backBtn} onPress={() => { resetAdmission(); switchTab('status'); }}><Text style={s.backBtnText}>Check Admission Status</Text></TouchableOpacity>
                       </View>
                     )}

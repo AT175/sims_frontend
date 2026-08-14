@@ -86,7 +86,7 @@ export const loginStyles = StyleSheet.create({
   primaryButtonDisabled: { opacity: 0.5 },
   primaryButtonText: { color: colors.primaryDark, fontSize: fontSize.sm, fontWeight: fontWeight.bold, letterSpacing: 0.5 },
   primaryButtonArrow: { color: colors.primaryDark, fontSize: fontSize.md, fontWeight: fontWeight.bold },
-  secondaryButton: { borderRadius: radius.md, paddingVertical: spacing.sm + 2, alignItems: 'center', marginTop: spacing.xs, borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.15)', backgroundColor: 'transparent' },
+  secondaryButton: { borderRadius: radius.md, paddingVertical: spacing.sm + 2, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: spacing.xs, borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.15)', backgroundColor: 'rgba(255, 255, 255, 0.05)', width: '100%', minHeight: 48, zIndex: 10 },
   secondaryButtonText: { color: 'rgba(255, 255, 255, 0.7)', fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
   forgotRow: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: spacing.xs, marginTop: spacing.xs },
   forgotText: { color: colors.accent, fontSize: fontSize.xs, fontWeight: fontWeight.medium },
