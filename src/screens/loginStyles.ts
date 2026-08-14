@@ -88,6 +88,8 @@ export const loginStyles = StyleSheet.create({
   primaryButtonArrow: { color: colors.primaryDark, fontSize: fontSize.md, fontWeight: fontWeight.bold },
   secondaryButton: { borderRadius: radius.md, paddingVertical: spacing.md, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: spacing.sm, borderWidth: 2, borderColor: colors.accent, backgroundColor: 'rgba(255, 201, 60, 0.12)', width: '100%', minHeight: 52 },
   secondaryButtonText: { color: colors.accent, fontSize: fontSize.sm, fontWeight: fontWeight.bold },
+  skipBtn: { borderRadius: radius.md, paddingVertical: spacing.sm + 4, paddingHorizontal: spacing.lg, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.2)', backgroundColor: 'transparent', minHeight: 48 },
+  skipBtnText: { color: 'rgba(255, 255, 255, 0.6)', fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
   forgotRow: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: spacing.xs, marginTop: spacing.xs },
   forgotText: { color: colors.accent, fontSize: fontSize.xs, fontWeight: fontWeight.medium },
   // Divider

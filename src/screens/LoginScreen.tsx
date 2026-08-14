@@ -282,18 +282,29 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
     setAdmissionStep('payment');
   };
 
+  const [paymentSkipped, setPaymentSkipped] = useState(false);
+
   const handlePaymentSubmit = () => {
     if (!paymentMethod) { Alert.alert('Error', 'Please select a payment method'); return; }
     if (paymentMethod === 'Mobile Money') {
       if (!mmNumber.trim() || !mmRef.trim()) { Alert.alert('Error', 'Please enter your mobile money number and transaction reference'); return; }
+      setPaymentSkipped(false);
       setAdmissionStep('form');
     } else {
       if (!scratchPin.trim() || !scratchSerial.trim()) { Alert.alert('Error', 'Please enter the scratch card PIN and serial number'); return; }
       const card = registryStore.validateScratchCard(scratchPin.trim(), scratchSerial.trim(), wardName.trim());
       if (!card) { Alert.alert('Error', 'Invalid or already used scratch card.'); return; }
       setMmRef(card.serial);
+      setPaymentSkipped(false);
       setAdmissionStep('form');
     }
+  };
+
+  const handleSkipPayment = () => {
+    setPaymentSkipped(true);
+    setPaymentMethod(null);
+    setMmNumber(''); setMmRef(''); setScratchPin(''); setScratchSerial('');
+    setAdmissionStep('form');
   };
 
   const handleAdmissionSubmit = async () => {
@@ -313,6 +324,8 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
         dateOfBirth: dateOfBirth.trim() || undefined,
         gender: gender.trim() || undefined,
         isDirectApplication: !placementRef.trim(),
+        paymentStatus: paymentSkipped ? 'skipped' : 'paid',
+        paymentMethod: paymentMethod || undefined,
       });
       setAdmissionLoading(false);
       setAdmissionStep('submitted');
@@ -353,7 +366,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
     setAdmissionStep('search'); setWardName(''); setPlacementRef(''); setParentName('');
     setParentPhone(''); setParentEmail(''); setSelectedProgramme('General Science'); setMatchedPlacement(null);
     setPaymentMethod(null); setMmNumber(''); setMmRef(''); setScratchPin(''); setScratchSerial('');
-    setDateOfBirth(''); setGender(''); setPreviousSchool(''); setPreviousClass(''); setAppliedClassLevel('');
+    setDateOfBirth(''); setGender(''); setPreviousSchool(''); setPreviousClass(''); setAppliedClassLevel(''); setPaymentSkipped(false);
   };
 
   const resetStatus = () => { setStatusStep('lookup'); setStatusName(''); setStatusRef(''); setStatusPhone(''); setStatusResult(null); };
@@ -700,8 +713,8 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
                           <View style={s.alertBoxWarning}><View style={s.alertIconWrapWarning}><Text style={s.alertIcon}>!</Text></View><Text style={s.alertTextWarning}>No placement found for "{wardName}". You can still apply — the school will verify.</Text></View>
                         )}
                         <Text style={s.formSectionTitle}>Application Fee Payment</Text>
-                        <Text style={s.formSectionSub}>Fee: GH₵{registryStore.applicationFeeAmount}</Text>
-                        <Text style={s.fieldLabel}>Select Payment Method</Text>
+                        <Text style={s.formSectionSub}>Fee: GH₵{registryStore.applicationFeeAmount} — Optional, you can skip and pay later</Text>
+                        <Text style={s.fieldLabel}>Select Payment Method (optional)</Text>
                         <View style={s.paymentMethodRow}>
                           <TouchableOpacity style={[s.paymentMethodCard, paymentMethod === 'Mobile Money' && s.paymentMethodActive]} onPress={() => setPaymentMethod('Mobile Money')} activeOpacity={0.85}><Text style={s.paymentMethodIcon}>📱</Text><Text style={s.paymentMethodLabel}>Mobile Money</Text></TouchableOpacity>
                           <TouchableOpacity style={[s.paymentMethodCard, paymentMethod === 'Scratch Card' && s.paymentMethodActive]} onPress={() => setPaymentMethod('Scratch Card')} activeOpacity={0.85}><Text style={s.paymentMethodIcon}>🎫</Text><Text style={s.paymentMethodLabel}>Scratch Card</Text></TouchableOpacity>
@@ -721,13 +734,16 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
                         )}
                         <View style={s.stepNavRow}>
                           <TouchableOpacity style={s.backBtn} onPress={() => setAdmissionStep('search')}><Text style={s.backBtnText}>← Back</Text></TouchableOpacity>
-                          <TouchableOpacity style={s.primaryButtonSmall} onPress={handlePaymentSubmit} activeOpacity={0.85}><Text style={s.primaryButtonText}>Pay & Continue</Text></TouchableOpacity>
+                          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                            <Pressable style={({ pressed }) => [s.skipBtn, pressed && { opacity: 0.7 }]} onPress={handleSkipPayment}><Text style={s.skipBtnText}>Skip Payment</Text></Pressable>
+                            <TouchableOpacity style={s.primaryButtonSmall} onPress={handlePaymentSubmit} activeOpacity={0.85}><Text style={s.primaryButtonText}>Pay & Continue</Text></TouchableOpacity>
+                          </View>
                         </View>
                       </View>
                     )}
                     {admissionStep === 'form' && (
                       <View>
-                        <View style={s.alertBoxSuccess}><View style={s.alertIconWrapSuccess}><Text style={s.alertIcon}>✓</Text></View><Text style={s.alertTextSuccess}>Payment confirmed. Complete your application.</Text></View>
+                        <View style={s.alertBoxSuccess}><View style={s.alertIconWrapSuccess}><Text style={s.alertIcon}>✓</Text></View><Text style={s.alertTextSuccess}>{paymentSkipped ? 'Payment skipped — you can pay later. Complete your application.' : 'Payment confirmed. Complete your application.'}</Text></View>
                         <Text style={s.formSectionTitle}>Application Form</Text>
                         {branding?.schoolLevel && branding.schoolLevel !== 'shs' && (
                           <View style={s.alertBoxWarning}><View style={s.alertIconWrapWarning}><Text style={s.alertIcon}>!</Text></View><Text style={s.alertTextWarning}>Applying for: {SCHOOL_LEVEL_LABELS[branding.schoolLevel as keyof typeof SCHOOL_LEVEL_LABELS] || branding.schoolLevel}</Text></View>
