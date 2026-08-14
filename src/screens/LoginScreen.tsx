@@ -118,11 +118,18 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
       ? [{ image: branding.bannerImage, caption: motto || `Welcome to ${schoolName}` }, ...DEFAULT_HERO_SLIDES.slice(1)]
       : DEFAULT_HERO_SLIDES;
 
-  const infoSlides = DEFAULT_INFO_SLIDES.map((slide, i) => ({
-    ...slide,
-    text: i === 0 && mission ? mission : i === 1 && vision ? vision : i === 2 && tenantProgrammes.length > 0 ? `${tenantProgrammes.map(p => p.name).join(', ')} programmes designed to prepare students for the future.` : slide.text,
-    title: i === 3 && region ? `${region} Region` : slide.title,
-  }));
+  const infoSlides = (branding?.galleryImages && branding.galleryImages.length > 0)
+    ? branding.galleryImages.slice(0, 5).map((img, i) => ({
+        image: img,
+        title: i === 0 ? 'Quality Education' : i === 1 ? 'Discipline & Character' : i === 2 ? 'Our Programmes' : i === 3 ? (region ? `${region} Region` : 'Our Region') : 'Our Community',
+        text: i === 0 && mission ? mission : i === 1 && vision ? vision : i === 2 && tenantProgrammes.length > 0 ? `${tenantProgrammes.map(p => p.name).join(', ')} programmes designed to prepare students for the future.` : DEFAULT_INFO_SLIDES[i].text,
+        accent: DEFAULT_INFO_SLIDES[i].accent,
+      }))
+    : DEFAULT_INFO_SLIDES.map((slide, i) => ({
+        ...slide,
+        text: i === 0 && mission ? mission : i === 1 && vision ? vision : i === 2 && tenantProgrammes.length > 0 ? `${tenantProgrammes.map(p => p.name).join(', ')} programmes designed to prepare students for the future.` : slide.text,
+        title: i === 3 && region ? `${region} Region` : slide.title,
+      }));
 
   const quickStats = [
     { label: 'Programmes', value: String(tenantProgrammes.length || '6') },
@@ -584,7 +591,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
         {!IS_NARROW && (
           <View style={s.brandPanel}>
             <View style={[s.brandBgImage, { pointerEvents: 'none' }]}>
-            <Image source={{ uri: '/banner3.png' }} style={s.brandBgImage} resizeMode="cover" />
+            <Image source={{ uri: branding?.bannerImage || '/banner3.png' }} style={s.brandBgImage} resizeMode="cover" />
           </View>
             <View style={[s.brandOverlay, { pointerEvents: 'none' }]} />
             <View style={s.brandContent}>
