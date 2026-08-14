@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Pressable,
   ActivityIndicator,
   Alert,
   Image,
@@ -276,7 +275,15 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
   };
 
   const handleDirectApplication = () => {
-    if (!wardName.trim()) { Alert.alert('Error', "Please enter your ward's name"); return; }
+    console.log('[handleDirectApplication] called, wardName:', wardName);
+    if (!wardName.trim()) {
+      if (typeof window !== 'undefined' && window.alert) {
+        window.alert("Please enter your ward's name");
+      } else {
+        Alert.alert('Error', "Please enter your ward's name");
+      }
+      return;
+    }
     setMatchedPlacement(null);
     setPlacementRef('');
     setAdmissionStep('payment');
@@ -383,10 +390,12 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
               {!IS_VERY_NARROW && <View><Text style={s.headerSchoolName}>{schoolName}</Text><Text style={s.headerSchoolSub}>{motto}</Text></View>}
             </TouchableOpacity>
             <View style={[s.headerNav, IS_NARROW && { gap: spacing.sm }]}>
-              {!IS_NARROW && <>
-                <TouchableOpacity onPress={goHome}><Text style={s.headerNavLink}>Home</Text></TouchableOpacity>
-                <TouchableOpacity onPress={scrollToAbout}><Text style={s.headerNavLink}>About Us</Text></TouchableOpacity>
-              </>}
+              {!IS_NARROW && (
+                <View style={{ flexDirection: 'row', gap: spacing.lg }}>
+                  <TouchableOpacity onPress={goHome}><Text style={s.headerNavLink}>Home</Text></TouchableOpacity>
+                  <TouchableOpacity onPress={scrollToAbout}><Text style={s.headerNavLink}>About Us</Text></TouchableOpacity>
+                </View>
+              )}
               <TouchableOpacity style={[s.headerGhostBtn, IS_NARROW && { paddingVertical: spacing.sm, paddingHorizontal: spacing.md }]} onPress={() => openPortal('signin')}><Text style={s.headerGhostText}>Login</Text></TouchableOpacity>
               <TouchableOpacity style={[s.headerCtaBtn, IS_NARROW && { paddingVertical: spacing.sm, paddingHorizontal: spacing.md + 4 }]} onPress={() => openPortal('apply')}><Text style={s.headerCtaText}>Apply</Text></TouchableOpacity>
             </View>
@@ -553,7 +562,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
             </TouchableOpacity>
             <View style={s.portalCloseBtnRow}>
               {!IS_VERY_NARROW && (
-                <>
+                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
                   <TouchableOpacity onPress={() => { setActiveTab('signin'); clearError(); }} style={[s.portalCloseBtn, activeTab === 'signin' && { backgroundColor: 'rgba(255,201,60,0.15)' }]}>
                     <Text style={[s.portalCloseText, activeTab === 'signin' && { color: colors.accent }]}>Login</Text>
                   </TouchableOpacity>
@@ -563,7 +572,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
                   <TouchableOpacity onPress={() => { setActiveTab('status'); clearError(); }} style={[s.portalCloseBtn, activeTab === 'status' && { backgroundColor: 'rgba(255,201,60,0.15)' }]}>
                     <Text style={[s.portalCloseText, activeTab === 'status' && { color: colors.accent }]}>Status</Text>
                   </TouchableOpacity>
-                </>
+                </View>
               )}
               <TouchableOpacity style={s.portalCloseBtn} onPress={goHome}>
                 <Text style={s.portalCloseText}>← Home</Text>
@@ -656,7 +665,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
                       <TouchableOpacity><Text style={s.forgotText}>Forgot password?</Text></TouchableOpacity>
                     </View>
                     <TouchableOpacity style={[s.primaryButton, isLoading && s.primaryButtonDisabled]} onPress={handleLogin} disabled={isLoading} activeOpacity={0.85}>
-                      {isLoading ? <ActivityIndicator color={colors.white} /> : (<><Text style={s.primaryButtonText}>Sign In</Text><Text style={s.primaryButtonArrow}>→</Text></>)}
+                      {isLoading ? <ActivityIndicator color={colors.white} /> : (<View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}><Text style={s.primaryButtonText}>Sign In</Text><Text style={s.primaryButtonArrow}>→</Text></View>)}
                     </TouchableOpacity>
                     <View style={s.dividerRow}>
                       <View style={s.dividerLine} /><Text style={s.dividerText}>SECURE LOGIN</Text><View style={s.dividerLine} />
@@ -701,7 +710,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
                         </View>
                         <Text style={s.privacyNotice}>By continuing, you consent to the school collecting and processing the information provided for admission purposes. Parental consent is required for applicants under 18.</Text>
                         <TouchableOpacity style={s.primaryButton} onPress={handleAdmissionSearch} activeOpacity={0.85}><Text style={s.primaryButtonText}>Search Placement</Text><Text style={s.primaryButtonArrow}>→</Text></TouchableOpacity>
-                        <Pressable style={({ pressed }) => [s.secondaryButton, pressed && { opacity: 0.7 }]} onPress={handleDirectApplication}><Text style={s.secondaryButtonText}>Apply Directly (No CSSPS)</Text></Pressable>
+                        <TouchableOpacity style={s.secondaryButton} onPress={handleDirectApplication} activeOpacity={0.7}><Text style={s.secondaryButtonText}>Apply Directly (No CSSPS)</Text></TouchableOpacity>
                         <TouchableOpacity style={s.backBtn} onPress={() => { resetAdmission(); switchTab('status'); }}><Text style={s.backBtnText}>Check Admission Status</Text></TouchableOpacity>
                       </View>
                     )}
@@ -735,7 +744,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
                         <View style={s.stepNavRow}>
                           <TouchableOpacity style={s.backBtn} onPress={() => setAdmissionStep('search')}><Text style={s.backBtnText}>← Back</Text></TouchableOpacity>
                           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                            <Pressable style={({ pressed }) => [s.skipBtn, pressed && { opacity: 0.7 }]} onPress={handleSkipPayment}><Text style={s.skipBtnText}>Skip Payment</Text></Pressable>
+                            <TouchableOpacity style={s.skipBtn} onPress={handleSkipPayment} activeOpacity={0.7}><Text style={s.skipBtnText}>Skip Payment</Text></TouchableOpacity>
                             <TouchableOpacity style={s.primaryButtonSmall} onPress={handlePaymentSubmit} activeOpacity={0.85}><Text style={s.primaryButtonText}>Pay & Continue</Text></TouchableOpacity>
                           </View>
                         </View>
@@ -749,16 +758,16 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
                           <View style={s.alertBoxWarning}><View style={s.alertIconWrapWarning}><Text style={s.alertIcon}>!</Text></View><Text style={s.alertTextWarning}>Applying for: {SCHOOL_LEVEL_LABELS[branding.schoolLevel as keyof typeof SCHOOL_LEVEL_LABELS] || branding.schoolLevel}</Text></View>
                         )}
                         {branding?.schoolLevel === 'shs' || !branding?.schoolLevel ? (
-                          <>
+                          <View>
                             <Text style={s.fieldLabel}>Programme</Text>
                             <View style={s.paymentMethodRow}>
                               {PROGRAMMES.map((p) => (
                                 <TouchableOpacity key={p} style={[s.paymentMethodCard, selectedProgramme === p && s.paymentMethodActive]} onPress={() => setSelectedProgramme(p)} activeOpacity={0.85}><Text style={s.paymentMethodLabel}>{p}</Text></TouchableOpacity>
                               ))}
                             </View>
-                          </>
+                          </View>
                         ) : (
-                          <>
+                          <View>
                             <View style={s.fieldGroup}>
                               <Text style={s.fieldLabel}>Date of Birth</Text>
                               <View style={s.inputContainer}><Text style={s.inputIcon}>🎂</Text><TextInput style={s.textInput} placeholder="DD/MM/YYYY" placeholderTextColor={colors.textLight} value={dateOfBirth} onChangeText={setDateOfBirth} /></View>
@@ -790,7 +799,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
                               <Text style={s.fieldLabel}>Previous Class (if transferring)</Text>
                               <View style={s.inputContainer}><Text style={s.inputIcon}>📚</Text><TextInput style={s.textInput} placeholder="e.g. Basic 5" placeholderTextColor={colors.textLight} value={previousClass} onChangeText={setPreviousClass} /></View>
                             </View>
-                          </>
+                          </View>
                         )}
                         <View style={s.fieldGroup}><Text style={s.fieldLabel}>Parent / Guardian Name</Text><View style={s.inputContainer}><Text style={s.inputIcon}>👤</Text><TextInput style={s.textInput} placeholder="Full name" placeholderTextColor={colors.textLight} value={parentName} onChangeText={setParentName} /></View></View>
                         <View style={s.fieldGroup}><Text style={s.fieldLabel}>Phone Number</Text><View style={s.inputContainer}><Text style={s.inputIcon}>📞</Text><TextInput style={s.textInput} placeholder="024-XXX-XXXX" placeholderTextColor={colors.textLight} value={parentPhone} onChangeText={setParentPhone} keyboardType="phone-pad" /></View></View>
