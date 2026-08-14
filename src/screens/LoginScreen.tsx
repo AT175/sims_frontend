@@ -4,6 +4,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  Pressable,
   ActivityIndicator,
   Alert,
   Image,
@@ -380,7 +381,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
 
           {/* Hero with flash animation carousel */}
           <View style={[s.hero, IS_NARROW && { minHeight: 500 }]}>
-            <View style={s.heroBg} pointerEvents="none">
+            <View style={[s.heroBg, { pointerEvents: 'none' }]}>
               {heroSlides.map((slide, i) => (
                 <Animated.Image
                   key={i}
@@ -396,7 +397,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
                 />
               ))}
             </View>
-            <View style={s.heroOverlay} pointerEvents="none" />
+            <View style={[s.heroOverlay, { pointerEvents: 'none' }]} />
             <View style={[s.heroContent, IS_NARROW && { paddingHorizontal: spacing.md, width: '100%' }]}>
               <View style={s.heroBadge}><Text style={s.heroBadgeText}>★ {schoolName.toUpperCase()}</Text></View>
               <Text style={[s.heroTitle, IS_NARROW && { fontSize: 30, lineHeight: 38 }]}>Welcome to{'\n'}<Text style={s.heroTitleAccent}>{schoolName}</Text></Text>
@@ -560,10 +561,10 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
             <View style={[s.splitContainer, IS_NARROW && { flexDirection: 'column' }]}>
         {!IS_NARROW && (
           <View style={s.brandPanel}>
-            <View style={s.brandBgImage} pointerEvents="none">
+            <View style={[s.brandBgImage, { pointerEvents: 'none' }]}>
             <Image source={{ uri: '/banner3.png' }} style={s.brandBgImage} resizeMode="cover" />
           </View>
-            <View style={s.brandOverlay} pointerEvents="none" />
+            <View style={[s.brandOverlay, { pointerEvents: 'none' }]} />
             <View style={s.brandContent}>
               <View style={s.brandLogoSection}>
                 <View style={s.logoRing}><View style={s.logoInner}><Text style={s.logoText}>{schoolShort}</Text></View></View>
@@ -598,10 +599,10 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
           </View>
         )}
         <View style={[s.formPanel, IS_NARROW && { flex: 1 }]}>
-          <View style={s.formPanelBg} pointerEvents="none">
+          <View style={[s.formPanelBg, { pointerEvents: 'none' }]}>
             <Image source={{ uri: '/bg6.jpg' }} style={s.formPanelBg} resizeMode="cover" />
           </View>
-          <View style={s.formPanelBgOverlay} pointerEvents="none" />
+          <View style={[s.formPanelBgOverlay, { pointerEvents: 'none' }]} />
           <View style={s.formPanelInner}>
             {!IS_NARROW && (
               <View style={s.formHeader}>
@@ -610,7 +611,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
               </View>
             )}
             {/* Direct form view - no tabs, each button links directly */}
-            <Animated.View style={[s.formContent, { opacity: tabAnim, transform: [{ translateY: tabAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }]} pointerEvents="auto">
+            <Animated.View style={[s.formContent, { opacity: tabAnim, transform: [{ translateY: tabAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }]}>
               <ScrollView style={s.scrollView} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
                 {activeTab === 'signin' && (
                   <View>
@@ -687,7 +688,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
                         </View>
                         <Text style={s.privacyNotice}>By continuing, you consent to the school collecting and processing the information provided for admission purposes. Parental consent is required for applicants under 18.</Text>
                         <TouchableOpacity style={s.primaryButton} onPress={handleAdmissionSearch} activeOpacity={0.85}><Text style={s.primaryButtonText}>Search Placement</Text><Text style={s.primaryButtonArrow}>→</Text></TouchableOpacity>
-                        <TouchableOpacity style={s.secondaryButton} onPress={handleDirectApplication} activeOpacity={0.85} pointerEvents="auto"><Text style={s.secondaryButtonText}>Apply Directly (No CSSPS)</Text></TouchableOpacity>
+                        <Pressable style={({ pressed }) => [s.secondaryButton, pressed && { opacity: 0.7 }]} onPress={handleDirectApplication}><Text style={s.secondaryButtonText}>Apply Directly (No CSSPS)</Text></Pressable>
                         <TouchableOpacity style={s.backBtn} onPress={() => { resetAdmission(); switchTab('status'); }}><Text style={s.backBtnText}>Check Admission Status</Text></TouchableOpacity>
                       </View>
                     )}
