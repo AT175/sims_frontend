@@ -80,10 +80,12 @@ export function SchoolDirectory({ onNavigateToSchool }: { onNavigateToSchool?: (
   }, []);
 
   const navigateToSchool = (tenantKey: string) => {
+    if (typeof window !== 'undefined') {
+      window.history.pushState({}, '', `/${tenantKey}`);
+    }
     if (onNavigateToSchool) {
       onNavigateToSchool(tenantKey);
     } else if (typeof window !== 'undefined') {
-      window.history.pushState({}, '', `/${tenantKey}`);
       window.dispatchEvent(new PopStateEvent('popstate'));
     }
   };
