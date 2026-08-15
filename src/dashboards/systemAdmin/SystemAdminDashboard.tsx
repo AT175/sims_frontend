@@ -1324,7 +1324,7 @@ export function SystemAdminDashboard() {
                 const slug = v.trim().toLowerCase()
                   .replace(/[^a-z0-9]+/g, '-')
                   .replace(/^-+|-+$/g, '');
-                const autoKey = slug ? `tenant-${slug}` : '';
+                const autoKey = slug ? slug : '';
                 setTenantForm({ ...tenantForm, schoolName: v, tenantKey: autoKey });
               }} placeholder="e.g. Tema Senior High School" />
 
