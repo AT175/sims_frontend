@@ -139,7 +139,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
   ];
 
   const heroSlidesRef = useRef(6);
-  heroSlidesRef.current = heroSlides.length;
+  heroSlidesRef.current = heroSlides.length || 1;
 
   const scrollViewRef = useRef<any>(null);
   const aboutY = useRef(0);
@@ -191,6 +191,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
   const heroScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
+    if (infoSlides.length === 0) return;
     const interval = setInterval(() => {
       Animated.parallel([
         Animated.timing(fadeAnim, { toValue: 0, duration: 400, useNativeDriver: true, easing: Easing.ease }),
@@ -205,7 +206,7 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
       });
     }, 5000);
     return () => clearInterval(interval);
-  }, [fadeAnim, slideAnim]);
+  }, [fadeAnim, slideAnim, infoSlides.length]);
 
   // Hero flash animation - crossfade + Ken Burns zoom
   useEffect(() => {
@@ -602,17 +603,23 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
               </View>
               <View style={s.carouselContainer}>
                 <Animated.View style={[s.carouselSlide, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+                  {infoSlides[slideIndex] && (
                   <Image source={{ uri: infoSlides[slideIndex].image }} style={s.carouselImage} resizeMode="cover" />
+                  )}
                   <View style={s.carouselImageOverlay} />
                   <View style={s.carouselTextWrap}>
+                    {infoSlides[slideIndex] && (
+                    <View>
                     <View style={[s.carouselAccentBar, { backgroundColor: infoSlides[slideIndex].accent }]} />
                     <Text style={s.carouselTitle}>{infoSlides[slideIndex].title}</Text>
                     <Text style={s.carouselText}>{infoSlides[slideIndex].text}</Text>
+                    </View>
+                    )}
                   </View>
                 </Animated.View>
                 <View style={s.carouselDots}>
                   {infoSlides.map((_, i) => (
-                    <View key={i} style={[s.carouselDot, i === slideIndex && s.carouselDotActive, i === slideIndex && { backgroundColor: infoSlides[slideIndex].accent }]} />
+                    <View key={i} style={[s.carouselDot, i === slideIndex && s.carouselDotActive, i === slideIndex && infoSlides[slideIndex] && { backgroundColor: infoSlides[slideIndex].accent }]} />
                   ))}
                 </View>
               </View>

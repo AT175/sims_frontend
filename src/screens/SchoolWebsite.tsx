@@ -175,7 +175,7 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
     : branding.bannerImage
       ? [{ image: branding.bannerImage, caption: motto }, ...DEFAULT_SLIDES.slice(1)]
       : DEFAULT_SLIDES;
-  heroSlidesRef.current = heroSlides.length;
+  heroSlidesRef.current = heroSlides.length || 1;
   if (heroSlide >= heroSlides.length) setHeroSlide(0);
 
   const stats = DEFAULT_STATS;
