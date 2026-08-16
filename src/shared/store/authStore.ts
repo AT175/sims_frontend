@@ -95,8 +95,18 @@ export const useAuthStore = create<AuthState>()(
   },
 
   logout: () => {
+    const currentUser = get().user;
+    const tenantId = currentUser?.tenantId;
     apiClient.setAuth(null, null);
     set({ user: null, isAuthenticated: false, error: null, isTempLogin: false });
+    // Navigate back to the school page if we know the tenant key
+    if (tenantId && typeof window !== 'undefined' && window.location) {
+      const path = window.location.pathname;
+      // If we're not already on a tenant path, navigate to one
+      if (path === '/' || path === '') {
+        window.location.href = `/${tenantId}`;
+      }
+    }
   },
 
   switchRole: async (roleId: RoleId) => {

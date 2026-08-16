@@ -133,6 +133,7 @@ class ErrorBoundary extends React.Component<
 function AppContent() {
   const { isAuthenticated, user, isTempLogin } = useAuthStore();
   const [routeTenantKey, setRouteTenantKey] = useState<string | null>(null);
+  const [schoolTenantKey, setSchoolTenantKey] = useState<string | null>(null);
 
   useEffect(() => {
     const detectRoute = () => {
@@ -144,6 +145,7 @@ function AppContent() {
           const segments = path.split('/').filter(Boolean);
           if (segments.length === 1) {
             setRouteTenantKey(segments[0]);
+            setSchoolTenantKey(segments[0]);
           } else {
             setRouteTenantKey(null);
           }
@@ -157,6 +159,40 @@ function AppContent() {
     return () => window.removeEventListener('popstate', detectRoute);
   }, []);
 
+  // When on a school page, replace history so back button doesn't leave to main directory
+  useEffect(() => {
+    if (routeTenantKey && typeof window !== 'undefined' && window.history) {
+      // Replace the current history entry so the school page is the "base"
+      window.history.replaceState({ tenantKey: routeTenantKey }, '', `/${routeTenantKey}`);
+    }
+  }, [routeTenantKey]);
+
+  // Prevent back button from leaving school page to main directory
+  useEffect(() => {
+    if (!schoolTenantKey || typeof window === 'undefined') return;
+    const handlePopState = (e: PopStateEvent) => {
+      const path = window.location.pathname;
+      // If back button led to root/main directory, push back to school page
+      if ((path === '/' || path === '') && !isAuthenticated) {
+        window.history.pushState({ tenantKey: schoolTenantKey }, '', `/${schoolTenantKey}`);
+        setRouteTenantKey(schoolTenantKey);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [schoolTenantKey, isAuthenticated]);
+
+  // On logout, navigate back to the school page if we remember it
+  useEffect(() => {
+    if (!isAuthenticated && schoolTenantKey && typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      if (path === '/' || path === '') {
+        window.history.replaceState({ tenantKey: schoolTenantKey }, '', `/${schoolTenantKey}`);
+        setRouteTenantKey(schoolTenantKey);
+      }
+    }
+  }, [isAuthenticated, schoolTenantKey]);
+
   // If URL has a tenant key and user is not authenticated, show school website
   if (routeTenantKey && !isAuthenticated) {
     return <SchoolWebsite tenantKey={routeTenantKey} />;
@@ -164,7 +200,10 @@ function AppContent() {
 
   // If no tenant key and not authenticated, show school directory
   if (!isAuthenticated || !user) {
-    return <SchoolDirectory onNavigateToSchool={(tenantKey: string) => setRouteTenantKey(tenantKey)} />;
+    return <SchoolDirectory onNavigateToSchool={(tenantKey: string) => {
+      setRouteTenantKey(tenantKey);
+      setSchoolTenantKey(tenantKey);
+    }} />;
   }
 
   // If temp login, redirect to Verification Dashboard
