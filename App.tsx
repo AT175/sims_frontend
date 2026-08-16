@@ -170,7 +170,7 @@ function AppContent() {
   // Prevent back button from leaving school page to main directory
   useEffect(() => {
     if (!schoolTenantKey || typeof window === 'undefined') return;
-    const handlePopState = (e: PopStateEvent) => {
+    const handlePopState = () => {
       const path = window.location.pathname;
       // If back button led to root/main directory, push back to school page
       if ((path === '/' || path === '') && !isAuthenticated) {
