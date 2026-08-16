@@ -127,6 +127,7 @@ export function HeadmasterDashboard() {
     schoolName: '', motto: '', primaryColor: '#0F4C75', secondaryColor: '#FFFFFF',
     bannerImage: '', logoUrl: '', aboutText: '', mission: '', vision: '',
     principalsMessage: '', admissionsInfo: '', facebookUrl: '', instagramUrl: '', twitterUrl: '',
+    phone: '', email: '', address: '', region: '', district: '',
     newsItems: [], galleryImages: [],
     programmes: [], staffProfiles: [], upcomingEvents: [], testimonials: [],
   });
@@ -160,6 +161,11 @@ export function HeadmasterDashboard() {
             facebookUrl: bt.facebookUrl || '',
             instagramUrl: bt.instagramUrl || '',
             twitterUrl: bt.twitterUrl || '',
+            phone: bt.phone || '',
+            email: bt.email || '',
+            address: bt.address || '',
+            region: bt.region || '',
+            district: bt.district || '',
             newsItems: bt.newsItems || [],
             galleryImages: bt.galleryImages || [],
           });
@@ -878,6 +884,18 @@ export function HeadmasterDashboard() {
             <Text style={styles.inputLabel}>Secondary Color</Text>
             <TextInput style={styles.textInput} value={websiteForm.secondaryColor || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, secondaryColor: v })} placeholder="#FFFFFF" autoCapitalize="none" />
 
+            <Text style={styles.sectionTitle}>Contact Information</Text>
+            <Text style={styles.inputLabel}>Phone Number</Text>
+            <TextInput style={styles.textInput} value={websiteForm.phone || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, phone: v })} placeholder="e.g. +233 24 123 4567" />
+            <Text style={styles.inputLabel}>Email Address</Text>
+            <TextInput style={styles.textInput} value={websiteForm.email || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, email: v })} placeholder="e.g. school@ges.gov.gh" autoCapitalize="none" />
+            <Text style={styles.inputLabel}>Postal Address</Text>
+            <TextInput style={styles.textInput} value={websiteForm.address || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, address: v })} placeholder="e.g. P.O. Box 1, Fomena" />
+            <Text style={styles.inputLabel}>Region</Text>
+            <TextInput style={styles.textInput} value={websiteForm.region || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, region: v })} placeholder="e.g. Ashanti" />
+            <Text style={styles.inputLabel}>District</Text>
+            <TextInput style={styles.textInput} value={websiteForm.district || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, district: v })} placeholder="e.g. Adansi North" />
+
             <Text style={styles.sectionTitle}>About the School</Text>
             <Text style={styles.inputLabel}>About Text</Text>
             <TextInput style={[styles.textInput, { height: 100 }]} multiline value={websiteForm.aboutText || ''} onChangeText={(v) => setWebsiteForm({ ...websiteForm, aboutText: v })} placeholder="Write a brief description of the school..." />
@@ -1010,6 +1028,11 @@ export function HeadmasterDashboard() {
                     facebookUrl: websiteForm.facebookUrl,
                     instagramUrl: websiteForm.instagramUrl,
                     twitterUrl: websiteForm.twitterUrl,
+                    phone: websiteForm.phone,
+                    email: websiteForm.email,
+                    address: websiteForm.address,
+                    region: websiteForm.region,
+                    district: websiteForm.district,
                     programmes: websiteForm.programmes,
                     staffProfiles: websiteForm.staffProfiles,
                     upcomingEvents: websiteForm.upcomingEvents,
