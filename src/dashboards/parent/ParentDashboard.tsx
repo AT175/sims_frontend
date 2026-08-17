@@ -3,10 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, ScrollView,
 import { DashboardLayout, NavItem, StatCard, CardGrid, DataTable } from '@components/index';
 import { colors, spacing, fontSize, fontWeight, radius } from '@theme/index';
 import { useAuthStore } from '@store/authStore';
-import { useRegistryStore } from '@store/registryStore';
-import {
-  usePTAStore, PAYMENT_METHODS, PAYMENT_CATEGORIES, PAYMENT_RECIPIENTS,
-} from '@store/ptaStore';
+import { usePTAStore, PAYMENT_METHODS, PAYMENT_CATEGORIES, PAYMENT_RECIPIENTS } from '@store/ptaStore';
 import { useExeatStore, EXEAT_REASONS, TRANSPORT_MODES } from '@store/exeatStore';
 import { useBoardingStore } from '@store/boardingStore';
 import { apiClient } from '@shared/api/apiClient';
@@ -394,95 +391,95 @@ function SubscriptionPage() {
 // ── Wards Page ──
 
 function WardsPage() {
-  const { wards } = usePTAStore();
-  const { user } = useAuthStore();
-  const registryStore = useRegistryStore();
+  const [wards, setWards] = useState<any[]>([]);
+  const [selectedWard, setSelectedWard] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const parentAccount = registryStore.parentAccounts.find(
-    (a) => a.parentName === user?.displayName || a.username === user?.username
-  );
+  const loadWards = async () => {
+    setLoading(true);
+    try {
+      const res = await apiClient.get<any[]>('/students/wards');
+      setWards(res);
+      if (res.length > 0) {
+        setSelectedWard(res[0]);
+      }
+    } catch (err: any) {
+      console.error('Failed to load wards:', err);
+      setWards([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadWards();
+  }, []);
+
+  if (loading) {
+    return (
+      <View>
+        <Text style={styles.pageTitle}>My Children</Text>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>Loading...</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View>
       <CardGrid>
-        <StatCard label="Children" value={wards.length + (parentAccount ? 1 : 0)} accentColor={colors.primary} />
-        <StatCard label="Fees Cleared" value={wards.filter((w) => w.feesStatus === 'Cleared').length} accentColor={colors.success} />
-        <StatCard label="Avg Attendance" value={wards.length > 0 ? `${(wards.reduce((s, w) => s + parseFloat(w.attendance), 0) / wards.length).toFixed(1)}%` : '0%'} accentColor={colors.info} />
+        <StatCard label="Children" value={wards.length} accentColor={colors.primary} />
+        <StatCard label="Active" value={wards.filter((w) => w.status === 'active').length} accentColor={colors.success} />
+        <StatCard label="Classes" value={new Set(wards.map((w) => w.classSectionId)).size} accentColor={colors.info} />
       </CardGrid>
 
       <Text style={styles.pageTitle}>My Children</Text>
-      <Text style={styles.pageSubtitle}>View your children's academic records</Text>
+      <Text style={styles.pageSubtitle}>View and select your children's records</Text>
 
-      {parentAccount && (
-        <View style={[styles.wardCard, { borderLeftWidth: 4, borderLeftColor: colors.success }]}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={styles.wardName}>{parentAccount.wardName}</Text>
-            <Text style={[styles.wardStatValue, { color: colors.success, fontSize: fontSize.xs }]}>Newly Admitted</Text>
-          </View>
-          <Text style={styles.wardDetail}>Adm No: {parentAccount.wardAdmNo} | {parentAccount.wardClass} | {parentAccount.wardHouse} House</Text>
-          <Text style={styles.wardDetail}>Programme: {parentAccount.wardProgramme}</Text>
-          <View style={styles.wardStats}>
-            <View style={styles.wardStat}>
-              <Text style={styles.wardStatLabel}>Admission</Text>
-              <Text style={styles.wardStatValue}>Approved</Text>
-            </View>
-            <View style={styles.wardStat}>
-              <Text style={styles.wardStatLabel}>Status</Text>
-              <Text style={[styles.wardStatValue, { color: colors.success }]}>Active</Text>
-            </View>
-          </View>
-          {(() => {
-            const prospectusList = registryStore.getProspectusForParent(parentAccount.username);
-            if (prospectusList.length > 0) {
-              return (
-                <TouchableOpacity
-                  style={styles.viewReportBtn}
-                  onPress={() => {
-                    const p = prospectusList[0];
-                    const printWindow = window.open('', '_blank');
-                    if (printWindow) {
-                      printWindow.document.write(`<html><head><meta charset='utf-8'><style>body{font-family:Arial,sans-serif;margin:40px;color:#1A1A2E;}h1{color:#0F4C75;border-bottom:2px solid #0F4C75;padding-bottom:8px;}pre{white-space:pre-wrap;font-size:14px;line-height:1.6;}</style></head><body><h1>${p.title}</h1><p style='color:#5C6370;font-size:12px;'>Academic Year: ${p.academicYear} | Published: ${p.datePublished}</p><pre>${p.content}</pre></body></html>`);
-                      printWindow.document.close();
-                      printWindow.focus();
-                      setTimeout(() => printWindow.print(), 500);
-                    }
-                  }}
-                >
-                  <Text style={styles.viewReportText}>⬇ Download Prospectus</Text>
-                </TouchableOpacity>
-              );
-            }
-            return null;
-          })()}
+      {wards.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>No children linked to your account. Please contact the school administration.</Text>
         </View>
+      ) : (
+        <>
+          <Text style={styles.inputLabel}>Select Child</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.sm }}>
+            {wards.map((ward) => (
+              <TouchableOpacity
+                key={ward.id}
+                style={[styles.selectChip, selectedWard?.id === ward.id && styles.selectChipActive]}
+                onPress={() => setSelectedWard(ward)}
+              >
+                <Text style={[styles.selectChipText, selectedWard?.id === ward.id && styles.selectChipTextActive]}>
+                  {ward.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {selectedWard && (
+            <View style={[styles.wardCard, { borderLeftWidth: 4, borderLeftColor: colors.success }]}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={styles.wardName}>{selectedWard.name}</Text>
+                <Text style={[styles.wardStatValue, { color: colors.success, fontSize: fontSize.xs }]}>{selectedWard.status.toUpperCase()}</Text>
+              </View>
+              <Text style={styles.wardDetail}>Adm No: {selectedWard.admissionNumber} | {selectedWard.classSectionId} | {selectedWard.houseId || 'N/A'} House</Text>
+              <Text style={styles.wardDetail}>Guardian: {selectedWard.guardianName} | {selectedWard.guardianPhone}</Text>
+              <View style={styles.wardStats}>
+                <View style={styles.wardStat}>
+                  <Text style={styles.wardStatLabel}>Gender</Text>
+                  <Text style={styles.wardStatValue}>{selectedWard.gender}</Text>
+                </View>
+                <View style={styles.wardStat}>
+                  <Text style={styles.wardStatLabel}>Status</Text>
+                  <Text style={[styles.wardStatValue, { color: selectedWard.status === 'active' ? colors.success : colors.warning }]}>{selectedWard.status}</Text>
+                </View>
+              </View>
+            </View>
+          )}
+        </>
       )}
-
-      {wards.map((ward) => (
-        <View key={ward.id} style={styles.wardCard}>
-          <Text style={styles.wardName}>{ward.name}</Text>
-          <Text style={styles.wardDetail}>{ward.className} | {ward.house} House</Text>
-          <View style={styles.wardStats}>
-            <View style={styles.wardStat}>
-              <Text style={styles.wardStatLabel}>Attendance</Text>
-              <Text style={styles.wardStatValue}>{ward.attendance}</Text>
-            </View>
-            <View style={styles.wardStat}>
-              <Text style={styles.wardStatLabel}>Avg Score</Text>
-              <Text style={styles.wardStatValue}>{ward.avgScore}</Text>
-            </View>
-            <View style={styles.wardStat}>
-              <Text style={styles.wardStatLabel}>Fees</Text>
-              <Text style={[styles.wardStatValue, { color: ward.feesStatus === 'Cleared' ? colors.success : colors.danger }]}>{ward.feesStatus}</Text>
-            </View>
-          </View>
-          <TouchableOpacity
-            style={styles.viewReportBtn}
-            onPress={() => Alert.alert('Report Card', `Report card for ${ward.name} would open here.`)}
-          >
-            <Text style={styles.viewReportText}>View Report Card</Text>
-          </TouchableOpacity>
-        </View>
-      ))}
     </View>
   );
 }
@@ -490,96 +487,74 @@ function WardsPage() {
 // ── Academic Reports Page ──
 
 function AcademicReportsPage() {
-  const { wards, reportCards } = usePTAStore();
-  const [selectedWard, setSelectedWard] = useState<string | null>(null);
+  const [wards, setWards] = useState<any[]>([]);
+  const [selectedWard, setSelectedWard] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const wardNames = wards.map((w) => w.name);
-  const wardReportCards = selectedWard
-    ? reportCards.filter((rc) => rc.wardName === selectedWard)
-    : reportCards.filter((rc) => wardNames.includes(rc.wardName));
+  const loadWards = async () => {
+    setLoading(true);
+    try {
+      const res = await apiClient.get<any[]>('/students/wards');
+      setWards(res);
+      if (res.length > 0) {
+        setSelectedWard(res[0]);
+      }
+    } catch (err: any) {
+      console.error('Failed to load wards:', err);
+      setWards([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadWards();
+  }, []);
+
+  if (loading) {
+    return (
+      <View>
+        <Text style={styles.pageTitle}>Academic Reports</Text>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>Loading...</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View>
-      <CardGrid>
-        <StatCard label="Report Cards" value={wardReportCards.length} accentColor={colors.primary} />
-        <StatCard label="Terms Published" value={new Set(wardReportCards.map((r) => `${r.term} ${r.academicYear}`)).size} accentColor={colors.info} />
-      </CardGrid>
-
       <Text style={styles.pageTitle}>Academic Reports</Text>
-      <Text style={styles.pageSubtitle}>View your children's report cards and grades</Text>
+      <Text style={styles.pageSubtitle}>View your children's academic performance</Text>
 
-      <View style={styles.selectRow}>
-        <TouchableOpacity style={[styles.selectChip, !selectedWard && styles.selectChipActive]} onPress={() => setSelectedWard(null)}>
-          <Text style={[styles.selectChipText, !selectedWard && styles.selectChipTextActive]}>All Children</Text>
-        </TouchableOpacity>
-        {wardNames.map((name) => (
-          <TouchableOpacity key={name} style={[styles.selectChip, selectedWard === name && styles.selectChipActive]} onPress={() => setSelectedWard(name)}>
-            <Text style={[styles.selectChipText, selectedWard === name && styles.selectChipTextActive]}>{name}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {wardReportCards.length === 0 && (
+      {wards.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>No report cards published yet.</Text>
+          <Text style={styles.emptyStateText}>No children linked to your account. Please contact the school administration.</Text>
         </View>
+      ) : (
+        <>
+          <Text style={styles.inputLabel}>Select Child</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.sm }}>
+            {wards.map((ward) => (
+              <TouchableOpacity
+                key={ward.id}
+                style={[styles.selectChip, selectedWard?.id === ward.id && styles.selectChipActive]}
+                onPress={() => setSelectedWard(ward)}
+              >
+                <Text style={[styles.selectChipText, selectedWard?.id === ward.id && styles.selectChipTextActive]}>
+                  {ward.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {selectedWard && (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No academic reports published for {selectedWard.name} yet.</Text>
+            </View>
+          )}
+        </>
       )}
-
-      {wardReportCards.map((rc) => (
-        <View key={rc.id} style={styles.reportCard}>
-          <View style={styles.reportCardHeader}>
-            <View>
-              <Text style={styles.reportCardWard}>{rc.wardName}</Text>
-              <Text style={styles.reportCardTerm}>{rc.term} — {rc.academicYear}</Text>
-            </View>
-            <View style={styles.reportCardGradeBadge}>
-              <Text style={styles.reportCardGradeText}>{rc.overallGrade ?? '-'}</Text>
-            </View>
-          </View>
-
-          <View style={styles.reportCardMeta}>
-            <View style={styles.reportCardMetaItem}>
-              <Text style={styles.reportCardMetaLabel}>Class Teacher</Text>
-              <Text style={styles.reportCardMetaValue}>{rc.classTeacher}</Text>
-            </View>
-            <View style={styles.reportCardMetaItem}>
-              <Text style={styles.reportCardMetaLabel}>Attendance</Text>
-              <Text style={styles.reportCardMetaValue}>{rc.attendancePct}</Text>
-            </View>
-            <View style={styles.reportCardMetaItem}>
-              <Text style={styles.reportCardMetaLabel}>Position</Text>
-              <Text style={styles.reportCardMetaValue}>{rc.overallPosition ?? '-'}</Text>
-            </View>
-          </View>
-
-          <DataTable
-            columns={[
-              { key: 'subject', label: 'Subject', render: (i: any) => i.subject },
-              { key: 'ca', label: 'CA (30)', render: (i: any) => String(i.caScore) },
-              { key: 'exam', label: 'Exam (70)', render: (i: any) => String(i.examScore) },
-              { key: 'total', label: 'Total', render: (i: any) => String(i.total) },
-              { key: 'grade', label: 'Grade', render: (i: any) => i.grade },
-              { key: 'position', label: 'Pos.', render: (i: any) => i.position ?? '-' },
-              { key: 'remark', label: 'Remark', render: (i: any) => i.remark ?? '-' },
-            ]}
-            data={rc.subjects}
-          />
-
-          {rc.teacherRemark && (
-            <View style={styles.remarkBox}>
-              <Text style={styles.remarkLabel}>Teacher's Remark:</Text>
-              <Text style={styles.remarkText}>{rc.teacherRemark}</Text>
-            </View>
-          )}
-          {rc.headmasterRemark && (
-            <View style={styles.remarkBox}>
-              <Text style={styles.remarkLabel}>Headmaster's Remark:</Text>
-              <Text style={styles.remarkText}>{rc.headmasterRemark}</Text>
-            </View>
-          )}
-          <Text style={styles.reportCardDate}>Published: {rc.publishedDate}</Text>
-        </View>
-      ))}
     </View>
   );
 }

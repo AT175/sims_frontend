@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Modal, FlatList, Dimensions } from 'react-native';
 import {
   View,
   Text,
@@ -49,6 +50,7 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
   const heroSlidesRef = useRef(6);
   const [, setActiveSection] = useState('home');
   const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const { isOnline } = useConnectionStatus();
 
   const heroFade = useRef(new Animated.Value(1)).current;
@@ -168,9 +170,9 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
 
   const galleryImgs = branding.galleryImages || [];
   const heroSlides = galleryImgs.length > 0
-    ? galleryImgs.slice(0, 6).map((img, i) => ({
+    ? galleryImgs.map((img, i) => ({
         image: img,
-        caption: i === 0 ? (motto || `Welcome to ${schoolName}`) : ['Quality Education & Discipline', 'A Center for Excellence', 'Building Future Leaders', 'Serving Our Community', 'Our Campus'][i - 1] || 'Our Campus',
+        caption: i === 0 ? (motto || `Welcome to ${schoolName}`) : ['Quality Education & Discipline', 'A Center for Excellence', 'Building Future Leaders', 'Serving Our Community', 'Our Campus', 'A Tradition of Excellence'][i % 6] || 'School Life',
       }))
     : branding.bannerImage
       ? [{ image: branding.bannerImage, caption: motto }, ...DEFAULT_SLIDES.slice(1)]
@@ -328,15 +330,42 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
           <View style={[s.section, s.featuresBg, IS_NARROW && { paddingHorizontal: spacing.md }]}>
             <View style={s.sectionNarrow}>
               <Text style={[s.sectionTitle, { color: primary }]}>Our <Text style={[s.sectionTitleAccent, { color: colors.accentDark }]}>Gallery</Text></Text>
-              <Text style={s.sectionSubtitle}>A glimpse of life at {schoolName}</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: spacing.lg }}>
+              <Text style={s.sectionSubtitle}>A glimpse of life at {schoolName} — click to enlarge</Text>
+              <View style={s.galleryGrid}>
                 {galleryImages.map((img, i) => (
-                  <Image key={i} source={{ uri: img }} style={s.galleryImg} resizeMode="cover" />
+                  <TouchableOpacity key={i} activeOpacity={0.85} onPress={() => setLightboxIndex(i)}>
+                    <Image source={{ uri: img }} style={s.galleryThumb} resizeMode="cover" />
+                  </TouchableOpacity>
                 ))}
-              </ScrollView>
+              </View>
             </View>
           </View>
         )}
+
+        {/* ── Gallery Lightbox Modal ── */}
+        <Modal visible={lightboxIndex !== null} transparent animationType="fade" onRequestClose={() => setLightboxIndex(null)}>
+          <View style={s.lightboxOverlay}>
+            <TouchableOpacity style={s.lightboxClose} onPress={() => setLightboxIndex(null)}>
+              <Text style={s.lightboxCloseText}>✕</Text>
+            </TouchableOpacity>
+            {lightboxIndex !== null && (
+              <FlatList
+                data={galleryImages}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                initialScrollIndex={Math.min(lightboxIndex, galleryImages.length - 1)}
+                getItemLayout={(_, idx) => ({ length: Dimensions.get('window').width, offset: Dimensions.get('window').width * idx, index: idx })}
+                keyExtractor={(_, idx) => String(idx)}
+                renderItem={({ item }) => (
+                  <View style={s.lightboxImageWrap}>
+                    <Image source={{ uri: item }} style={s.lightboxImage} resizeMode="contain" />
+                  </View>
+                )}
+              />
+            )}
+          </View>
+        </Modal>
 
         {/* ── Programmes Section ── */}
         {programmes.length > 0 && (
@@ -609,7 +638,14 @@ const s = StyleSheet.create({
   featureTitle: { fontSize: fontSize.md, fontWeight: fontWeight.bold, marginBottom: spacing.xs },
   featureText: { fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: fontSize.sm * 1.5 },
   // Gallery
-  galleryImg: { width: 280, height: 200, borderRadius: radius.lg, marginRight: spacing.md, ...shadows.md },
+  galleryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.lg, justifyContent: 'center' },
+  galleryThumb: { width: 220, height: 160, borderRadius: radius.md, ...shadows.md },
+  // Lightbox
+  lightboxOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.92)', justifyContent: 'center', alignItems: 'center' },
+  lightboxClose: { position: 'absolute', top: 40, right: 24, zIndex: 10, width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255, 255, 255, 0.15)', justifyContent: 'center', alignItems: 'center' },
+  lightboxCloseText: { fontSize: 20, color: '#fff', fontWeight: fontWeight.bold },
+  lightboxImageWrap: { width: Dimensions.get('window').width, justifyContent: 'center', alignItems: 'center' },
+  lightboxImage: { width: '90%', height: '70%', borderRadius: radius.md },
   // Stats band
   statsBand: { paddingVertical: spacing.xl + 8, paddingHorizontal: spacing.xl + 8 },
   statsBandGrid: { flexDirection: 'row', justifyContent: 'center', gap: spacing.xxl, flexWrap: 'wrap' },

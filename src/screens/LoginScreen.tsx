@@ -110,20 +110,20 @@ export function LoginScreen({ presetTenantKey, onBack, presetTab }: { presetTena
   const tenantProgrammes = branding?.programmes || [];
 
   const heroSlides = (branding?.galleryImages && branding.galleryImages.length > 0)
-    ? branding.galleryImages.slice(0, 6).map((img, i) => ({
+    ? branding.galleryImages.map((img, i) => ({
         image: img,
-        caption: i === 0 ? (motto || `Welcome to ${schoolName}`) : ['Quality Education & Discipline', 'A Center for Excellence', 'Building Future Leaders', 'Serving Our Community', 'Our Campus'][i - 1] || 'Our Campus',
+        caption: i === 0 ? (motto || `Welcome to ${schoolName}`) : ['Quality Education & Discipline', 'A Center for Excellence', 'Building Future Leaders', 'Serving Our Community', 'Our Campus', 'A Tradition of Excellence'][i % 6] || 'School Life',
       }))
     : branding?.bannerImage
       ? [{ image: branding.bannerImage, caption: motto || `Welcome to ${schoolName}` }, ...DEFAULT_HERO_SLIDES.slice(1)]
       : DEFAULT_HERO_SLIDES;
 
   const infoSlides = (branding?.galleryImages && branding.galleryImages.length > 0)
-    ? branding.galleryImages.slice(0, 5).map((img, i) => ({
+    ? branding.galleryImages.map((img, i) => ({
         image: img,
         title: i === 0 ? 'Quality Education' : i === 1 ? 'Discipline & Character' : i === 2 ? 'Our Programmes' : i === 3 ? (region ? `${region} Region` : 'Our Region') : 'Our Community',
-        text: i === 0 && mission ? mission : i === 1 && vision ? vision : i === 2 && tenantProgrammes.length > 0 ? `${tenantProgrammes.map(p => p.name).join(', ')} programmes designed to prepare students for the future.` : DEFAULT_INFO_SLIDES[i].text,
-        accent: DEFAULT_INFO_SLIDES[i].accent,
+        text: i === 0 && mission ? mission : i === 1 && vision ? vision : i === 2 && tenantProgrammes.length > 0 ? `${tenantProgrammes.map(p => p.name).join(', ')} programmes designed to prepare students for the future.` : DEFAULT_INFO_SLIDES[i % DEFAULT_INFO_SLIDES.length].text,
+        accent: DEFAULT_INFO_SLIDES[i % DEFAULT_INFO_SLIDES.length].accent,
       }))
     : DEFAULT_INFO_SLIDES.map((slide, i) => ({
         ...slide,
