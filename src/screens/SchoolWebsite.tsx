@@ -51,6 +51,7 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
   const [, setActiveSection] = useState('home');
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [galleryPage, setGalleryPage] = useState(0);
   const { isOnline } = useConnectionStatus();
 
   const heroFade = useRef(new Animated.Value(1)).current;
@@ -326,21 +327,78 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
         )}
 
         {/* ── Gallery Section ── */}
-        {galleryImages.length > 0 && (
-          <View style={[s.section, s.featuresBg, IS_NARROW && { paddingHorizontal: spacing.md }]}>
-            <View style={s.sectionNarrow}>
-              <Text style={[s.sectionTitle, { color: primary }]}>Our <Text style={[s.sectionTitleAccent, { color: colors.accentDark }]}>Gallery</Text></Text>
-              <Text style={s.sectionSubtitle}>A glimpse of life at {schoolName} — click to enlarge</Text>
-              <View style={s.galleryGrid}>
-                {galleryImages.map((img, i) => (
-                  <TouchableOpacity key={i} activeOpacity={0.85} onPress={() => setLightboxIndex(i)}>
-                    <Image source={{ uri: img }} style={s.galleryThumb} resizeMode="cover" />
-                  </TouchableOpacity>
-                ))}
+        {galleryImages.length > 0 && (() => {
+          const perPage = IS_NARROW ? 1 : 2;
+          const totalPages = Math.ceil(galleryImages.length / perPage);
+          const safePage = Math.min(galleryPage, totalPages - 1);
+          const startIdx = safePage * perPage;
+          const pageImages = galleryImages.slice(startIdx, startIdx + perPage);
+          return (
+            <View style={[s.section, s.featuresBg, IS_NARROW && { paddingHorizontal: spacing.md }]}>
+              <View style={s.sectionNarrow}>
+                <Text style={[s.sectionTitle, { color: primary }]}>Our <Text style={[s.sectionTitleAccent, { color: colors.accentDark }]}>Gallery</Text></Text>
+                <Text style={s.sectionSubtitle}>A glimpse of life at {schoolName} — click to enlarge</Text>
+
+                <View style={s.galleryCarouselWrap}>
+                  {/* Prev button */}
+                  {totalPages > 1 && (
+                    <TouchableOpacity
+                      style={[s.galleryNavBtn, { borderColor: primary }, safePage === 0 && s.galleryNavBtnDisabled]}
+                      disabled={safePage === 0}
+                      onPress={() => setGalleryPage(Math.max(0, safePage - 1))}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[s.galleryNavBtnText, { color: primary }, safePage === 0 && { color: colors.textLight }]}>‹</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {/* Image frames */}
+                  <View style={[s.galleryFramesRow, IS_NARROW && { flexDirection: 'column' }]}>
+                    {pageImages.map((img, i) => {
+                      const globalIdx = startIdx + i;
+                      return (
+                        <TouchableOpacity
+                          key={globalIdx}
+                          activeOpacity={0.9}
+                          style={s.galleryFrame}
+                          onPress={() => setLightboxIndex(globalIdx)}
+                        >
+                          <Image source={{ uri: img }} style={s.galleryFrameImg} resizeMode="cover" />
+                          <View style={[s.galleryFrameOverlay, { backgroundColor: `${primary}10` }]}>
+                            <Text style={[s.galleryFrameNum, { color: primary }]}>Photo {globalIdx + 1} of {galleryImages.length}</Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
+                  {/* Next button */}
+                  {totalPages > 1 && (
+                    <TouchableOpacity
+                      style={[s.galleryNavBtn, { borderColor: primary }, safePage >= totalPages - 1 && s.galleryNavBtnDisabled]}
+                      disabled={safePage >= totalPages - 1}
+                      onPress={() => setGalleryPage(Math.min(totalPages - 1, safePage + 1))}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[s.galleryNavBtnText, { color: primary }, safePage >= totalPages - 1 && { color: colors.textLight }]}>›</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Page dots */}
+                {totalPages > 1 && (
+                  <View style={s.galleryDots}>
+                    {Array.from({ length: totalPages }).map((_, i) => (
+                      <TouchableOpacity key={i} onPress={() => setGalleryPage(i)}>
+                        <View style={[s.galleryDot, i === safePage && { backgroundColor: primary }]} />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
               </View>
             </View>
-          </View>
-        )}
+          );
+        })()}
 
         {/* ── Gallery Lightbox Modal ── */}
         <Modal visible={lightboxIndex !== null} transparent animationType="fade" onRequestClose={() => setLightboxIndex(null)}>
@@ -638,8 +696,17 @@ const s = StyleSheet.create({
   featureTitle: { fontSize: fontSize.md, fontWeight: fontWeight.bold, marginBottom: spacing.xs },
   featureText: { fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: fontSize.sm * 1.5 },
   // Gallery
-  galleryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.lg, justifyContent: 'center' },
-  galleryThumb: { width: 220, height: 160, borderRadius: radius.md, ...shadows.md },
+  galleryCarouselWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.lg },
+  galleryFramesRow: { flexDirection: 'row', flex: 1, gap: spacing.md, justifyContent: 'center' },
+  galleryFrame: { flex: 1, maxWidth: 480, borderRadius: radius.lg, overflow: 'hidden', ...shadows.lg, backgroundColor: '#fff' },
+  galleryFrameImg: { width: '100%', height: 340, borderRadius: radius.lg },
+  galleryFrameOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md, borderBottomLeftRadius: radius.lg, borderBottomRightRadius: radius.lg },
+  galleryFrameNum: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, letterSpacing: 0.5 },
+  galleryNavBtn: { width: 48, height: 48, borderRadius: 24, borderWidth: 2, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', ...shadows.md },
+  galleryNavBtnDisabled: { opacity: 0.4 },
+  galleryNavBtnText: { fontSize: 28, fontWeight: fontWeight.bold, lineHeight: 30 },
+  galleryDots: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: spacing.lg },
+  galleryDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(15, 76, 117, 0.2)' },
   // Lightbox
   lightboxOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.92)', justifyContent: 'center', alignItems: 'center' },
   lightboxClose: { position: 'absolute', top: 40, right: 24, zIndex: 10, width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255, 255, 255, 0.15)', justifyContent: 'center', alignItems: 'center' },
