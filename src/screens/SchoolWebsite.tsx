@@ -425,11 +425,11 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
                 <Text style={[s.sectionTitle, { color: primary }]}>Our <Text style={[s.sectionTitleAccent, { color: colors.accentDark }]}>Gallery</Text></Text>
                 <Text style={s.sectionSubtitle}>A glimpse of life at {schoolName} — click to enlarge</Text>
 
-                <View style={s.galleryCarouselWrap}>
+                <View style={[s.galleryCarouselWrap, IS_NARROW && s.galleryCarouselWrapMobile]}>
                   {/* Prev button */}
                   {totalPages > 1 && (
                     <TouchableOpacity
-                      style={[s.galleryNavBtn, { borderColor: primary }, safePage === 0 && s.galleryNavBtnDisabled]}
+                      style={[s.galleryNavBtn, { borderColor: primary }, safePage === 0 && s.galleryNavBtnDisabled, IS_NARROW && s.galleryNavBtnMobile]}
                       disabled={safePage === 0}
                       onPress={() => setGalleryPage(Math.max(0, safePage - 1))}
                       activeOpacity={0.7}
@@ -439,10 +439,10 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
                   )}
 
                   {/* Image frames */}
-                  <View style={[s.galleryFramesRow, IS_NARROW && { flexDirection: 'column' }]}>
+                  <View style={[s.galleryFramesRow, IS_NARROW && { flexDirection: 'column', flex: 1 }]}>
                     {pageImages.map((img, i) => {
                       const globalIdx = startIdx + i;
-                      const frameMaxW = IS_NARROW ? windowWidth - 120 : 480;
+                      const frameMaxW = IS_NARROW ? windowWidth - 140 : 480;
                       return (
                         <GalleryFrame
                           key={globalIdx}
@@ -460,7 +460,7 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
                   {/* Next button */}
                   {totalPages > 1 && (
                     <TouchableOpacity
-                      style={[s.galleryNavBtn, { borderColor: primary }, safePage >= totalPages - 1 && s.galleryNavBtnDisabled]}
+                      style={[s.galleryNavBtn, { borderColor: primary }, safePage >= totalPages - 1 && s.galleryNavBtnDisabled, IS_NARROW && s.galleryNavBtnMobile]}
                       disabled={safePage >= totalPages - 1}
                       onPress={() => setGalleryPage(Math.min(totalPages - 1, safePage + 1))}
                       activeOpacity={0.7}
@@ -821,6 +821,7 @@ const s = StyleSheet.create({
   featureText: { fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: fontSize.sm * 1.5 },
   // Gallery
   galleryCarouselWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.lg },
+  galleryCarouselWrapMobile: { alignItems: 'stretch' },
   galleryFramesRow: { flexDirection: 'row', flex: 1, gap: spacing.md, justifyContent: 'center' },
   galleryFrame: { flex: 1, borderRadius: radius.lg, overflow: 'hidden', ...shadows.lg, backgroundColor: '#fff' },
   galleryFrameImgWrap: { width: '100%', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' },
@@ -829,6 +830,7 @@ const s = StyleSheet.create({
   galleryFrameOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md, borderBottomLeftRadius: radius.lg, borderBottomRightRadius: radius.lg },
   galleryFrameNum: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, letterSpacing: 0.5 },
   galleryNavBtn: { width: 48, height: 48, borderRadius: 24, borderWidth: 2, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', ...shadows.md },
+  galleryNavBtnMobile: { width: 56, height: 56, borderRadius: 28, flexShrink: 0 },
   galleryNavBtnDisabled: { opacity: 0.4 },
   galleryNavBtnText: { fontSize: 28, fontWeight: fontWeight.bold, lineHeight: 30 },
   galleryDots: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: spacing.lg },
