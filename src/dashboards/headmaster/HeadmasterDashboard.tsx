@@ -288,6 +288,12 @@ export function HeadmasterDashboard() {
       Alert.alert('Error', 'Dashboard not found.');
       return;
     }
+    // Prevent headmaster from assigning system-level roles
+    const RESTRICTED_ROLES: RoleId[] = ['system_admin', 'system_finance', 'subscription_payment', 'ges_national', 'ges_regional', 'ges_district', 'siso', 'ges_auditor', 'emis'];
+    if (RESTRICTED_ROLES.includes(dashDef.role)) {
+      Alert.alert('Access Denied', 'You cannot assign system-level or GES roles. Only the System Administrator can assign these roles.');
+      return;
+    }
     const roleToAdd = dashDef.role;
     const updatedRoles = targetUser.roles.includes(roleToAdd) ? targetUser.roles : [...targetUser.roles, roleToAdd];
     if (updatedRoles.length !== targetUser.roles.length) {
@@ -375,7 +381,7 @@ export function HeadmasterDashboard() {
   }, {} as Record<string, { displayName: string; username: string; grants: typeof accessStore.grants }>);
 
   const DASHBOARD_CATEGORIES: { label: string; dashboards: typeof DASHBOARD_CATALOG }[] = [
-    { label: 'Leadership & Administration', dashboards: DASHBOARD_CATALOG.filter(d => ['Headmaster', 'Academic', 'Admin', 'Domestic', 'GoverningBoard', 'SystemAdmin', 'AcademicBoard', 'InternalAuditor', 'HeadmasterSecretary'].includes(d.key)) },
+    { label: 'Leadership & Administration', dashboards: DASHBOARD_CATALOG.filter(d => ['Headmaster', 'Academic', 'Admin', 'Domestic', 'GoverningBoard', 'AcademicBoard', 'InternalAuditor', 'HeadmasterSecretary'].includes(d.key)) },
     { label: 'Finance', dashboards: DASHBOARD_CATALOG.filter(d => ['Bursary', 'Accountant', 'Stores'].includes(d.key)) },
     { label: 'Academic & Teaching', dashboards: DASHBOARD_CATALOG.filter(d => ['Teacher', 'SubjectHOD', 'PLC', 'Student', 'ExamCommittee'].includes(d.key)) },
     { label: 'Student Welfare & Services', dashboards: DASHBOARD_CATALOG.filter(d => ['Health', 'Counselling', 'Catering', 'Cleaning', 'Transport', 'Security', 'LibraryICT', 'SportsClubs', 'Chaplain', 'DiningHall', 'SafeSpace'].includes(d.key)) },
