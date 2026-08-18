@@ -263,10 +263,15 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
   heroSlidesRef.current = heroSlides.length || 1;
   if (heroSlide >= heroSlides.length) setHeroSlide(0);
 
-  const stats = DEFAULT_STATS;
+  const programmes = branding.programmes || [];
+  const stats = [
+    { label: 'Students', value: branding.maxStudents ? `${branding.maxStudents}+` : '500+' },
+    { label: 'Programmes', value: String(programmes.length || 6) },
+    { label: 'Staff', value: branding.maxStaff ? `${branding.maxStaff}+` : '40+' },
+    { label: 'Levels', value: branding.offeredLevels && branding.offeredLevels.length > 0 ? String(branding.offeredLevels.length) : '3' },
+  ];
 
   const newsItems = branding.newsItems || [];
-  const programmes = branding.programmes || [];
   const staffProfiles = branding.staffProfiles || [];
   const upcomingEvents = branding.upcomingEvents || [];
   const testimonials = branding.testimonials || [];
