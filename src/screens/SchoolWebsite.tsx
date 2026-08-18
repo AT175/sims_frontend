@@ -58,12 +58,10 @@ function GalleryFrame({ uri, index, total, maxWidth, onPress, primary }: Gallery
     Image.getSize(uri, (w, h) => setAspect(w / h), () => setAspect(1.5));
   }, [uri]);
 
-  const maxH = 420;
   const minH = 180;
-  let frameHeight = maxH;
+  let frameHeight = 340;
   if (aspect !== null) {
-    const hFromWidth = frameW / aspect;
-    frameHeight = Math.min(Math.max(hFromWidth, minH), maxH);
+    frameHeight = Math.max(frameW / aspect, minH);
   }
 
   return (
