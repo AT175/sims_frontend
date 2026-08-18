@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Modal, FlatList, Dimensions } from 'react-native';
+import { Modal, Dimensions } from 'react-native';
 import {
   View,
   Text,
@@ -52,6 +52,7 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [galleryPage, setGalleryPage] = useState(0);
+  const lightboxScrollRef = useRef<ScrollView>(null);
   const { isOnline } = useConnectionStatus();
 
   const heroFade = useRef(new Animated.Value(1)).current;
@@ -403,24 +404,58 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
         {/* ── Gallery Lightbox Modal ── */}
         <Modal visible={lightboxIndex !== null} transparent animationType="fade" onRequestClose={() => setLightboxIndex(null)}>
           <View style={s.lightboxOverlay}>
-            <TouchableOpacity style={s.lightboxClose} onPress={() => setLightboxIndex(null)}>
+            <TouchableOpacity style={s.lightboxClose} onPress={() => setLightboxIndex(null)} activeOpacity={0.7}>
               <Text style={s.lightboxCloseText}>✕</Text>
             </TouchableOpacity>
             {lightboxIndex !== null && (
-              <FlatList
-                data={galleryImages}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                initialScrollIndex={Math.min(lightboxIndex, galleryImages.length - 1)}
-                getItemLayout={(_, idx) => ({ length: Dimensions.get('window').width, offset: Dimensions.get('window').width * idx, index: idx })}
-                keyExtractor={(_, idx) => String(idx)}
-                renderItem={({ item }) => (
-                  <View style={s.lightboxImageWrap}>
-                    <Image source={{ uri: item }} style={s.lightboxImage} resizeMode="contain" />
-                  </View>
+              <>
+                <ScrollView
+                  ref={lightboxScrollRef}
+                  horizontal
+                  pagingEnabled
+                  showsHorizontalScrollIndicator={false}
+                  onLayout={() => {
+                    const w = Dimensions.get('window').width;
+                    lightboxScrollRef.current?.scrollTo({ x: w * lightboxIndex, animated: false });
+                  }}
+                  onMomentumScrollEnd={(e) => {
+                    const w = Dimensions.get('window').width;
+                    const idx = Math.round(e.nativeEvent.contentOffset.x / w);
+                    setLightboxIndex(idx);
+                  }}
+                >
+                  {galleryImages.map((img, i) => (
+                    <View key={i} style={s.lightboxImageWrap}>
+                      <Image source={{ uri: img }} style={s.lightboxImage} resizeMode="contain" />
+                    </View>
+                  ))}
+                </ScrollView>
+                {/* Prev / Next arrows inside lightbox */}
+                {lightboxIndex > 0 && (
+                  <TouchableOpacity style={s.lightboxNavLeft} onPress={() => {
+                    const w = Dimensions.get('window').width;
+                    const newIdx = lightboxIndex - 1;
+                    setLightboxIndex(newIdx);
+                    lightboxScrollRef.current?.scrollTo({ x: w * newIdx, animated: true });
+                  }} activeOpacity={0.7}>
+                    <Text style={s.lightboxNavText}>‹</Text>
+                  </TouchableOpacity>
                 )}
-              />
+                {lightboxIndex < galleryImages.length - 1 && (
+                  <TouchableOpacity style={s.lightboxNavRight} onPress={() => {
+                    const w = Dimensions.get('window').width;
+                    const newIdx = lightboxIndex + 1;
+                    setLightboxIndex(newIdx);
+                    lightboxScrollRef.current?.scrollTo({ x: w * newIdx, animated: true });
+                  }} activeOpacity={0.7}>
+                    <Text style={s.lightboxNavText}>›</Text>
+                  </TouchableOpacity>
+                )}
+                {/* Counter */}
+                <View style={s.lightboxCounter}>
+                  <Text style={s.lightboxCounterText}>{lightboxIndex + 1} / {galleryImages.length}</Text>
+                </View>
+              </>
             )}
           </View>
         </Modal>
@@ -713,6 +748,11 @@ const s = StyleSheet.create({
   lightboxCloseText: { fontSize: 20, color: '#fff', fontWeight: fontWeight.bold },
   lightboxImageWrap: { width: Dimensions.get('window').width, justifyContent: 'center', alignItems: 'center' },
   lightboxImage: { width: '90%', height: '70%', borderRadius: radius.md },
+  lightboxNavLeft: { position: 'absolute', left: 16, top: '50%', marginTop: -24, width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center', zIndex: 10 },
+  lightboxNavRight: { position: 'absolute', right: 16, top: '50%', marginTop: -24, width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center', zIndex: 10 },
+  lightboxNavText: { fontSize: 32, color: '#fff', fontWeight: fontWeight.bold, lineHeight: 34 },
+  lightboxCounter: { position: 'absolute', bottom: 30, left: 0, right: 0, alignItems: 'center', zIndex: 10 },
+  lightboxCounterText: { fontSize: fontSize.sm, color: 'rgba(255,255,255,0.7)', fontWeight: fontWeight.semibold },
   // Stats band
   statsBand: { paddingVertical: spacing.xl + 8, paddingHorizontal: spacing.xl + 8 },
   statsBandGrid: { flexDirection: 'row', justifyContent: 'center', gap: spacing.xxl, flexWrap: 'wrap' },
