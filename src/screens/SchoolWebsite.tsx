@@ -51,6 +51,7 @@ interface GalleryFrameProps {
 
 function GalleryFrame({ uri, index, total, maxWidth, onPress, primary }: GalleryFrameProps) {
   const [aspect, setAspect] = useState<number | null>(null);
+  const [frameW, setFrameW] = useState(maxWidth);
 
   useEffect(() => {
     setAspect(null);
@@ -58,10 +59,10 @@ function GalleryFrame({ uri, index, total, maxWidth, onPress, primary }: Gallery
   }, [uri]);
 
   const maxH = 420;
-  const minH = 200;
+  const minH = 180;
   let frameHeight = maxH;
   if (aspect !== null) {
-    const hFromWidth = maxWidth / aspect;
+    const hFromWidth = frameW / aspect;
     frameHeight = Math.min(Math.max(hFromWidth, minH), maxH);
   }
 
@@ -70,6 +71,7 @@ function GalleryFrame({ uri, index, total, maxWidth, onPress, primary }: Gallery
       activeOpacity={0.9}
       style={[s.galleryFrame, { maxWidth }]}
       onPress={onPress}
+      onLayout={(e) => setFrameW(e.nativeEvent.layout.width)}
     >
       <View style={[s.galleryFrameImgWrap, { height: frameHeight }]}>
         {aspect === null ? (
@@ -77,7 +79,7 @@ function GalleryFrame({ uri, index, total, maxWidth, onPress, primary }: Gallery
             <ActivityIndicator size="small" color={primary} />
           </View>
         ) : (
-          <Image source={{ uri }} style={s.galleryFrameImg} resizeMode="contain" />
+          <Image source={{ uri }} style={s.galleryFrameImg} resizeMode="cover" />
         )}
       </View>
       <View style={[s.galleryFrameOverlay, { backgroundColor: `${primary}10` }]}>
