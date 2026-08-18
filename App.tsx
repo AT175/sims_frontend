@@ -52,6 +52,7 @@ import {
 import { VerificationDashboard } from '@dashboards/verification/VerificationDashboard';
 import { ForceChangePasswordModal } from '@shared/components/ForceChangePasswordModal';
 import { SyncStatusIndicator } from '@shared/components/SyncStatusIndicator';
+import { PWAInstallPrompt } from '@shared/components/PWAInstallPrompt';
 
 
 const DASHBOARD_COMPONENTS: Record<string, React.ComponentType> = {
@@ -195,15 +196,25 @@ function AppContent() {
 
   // If URL has a tenant key and user is not authenticated, show school website
   if (routeTenantKey && !isAuthenticated) {
-    return <SchoolWebsite tenantKey={routeTenantKey} />;
+    return (
+      <>
+        <SchoolWebsite tenantKey={routeTenantKey} />
+        <PWAInstallPrompt />
+      </>
+    );
   }
 
   // If no tenant key and not authenticated, show school directory
   if (!isAuthenticated || !user) {
-    return <SchoolDirectory onNavigateToSchool={(tenantKey: string) => {
-      setRouteTenantKey(tenantKey);
-      setSchoolTenantKey(tenantKey);
-    }} />;
+    return (
+      <>
+        <SchoolDirectory onNavigateToSchool={(tenantKey: string) => {
+          setRouteTenantKey(tenantKey);
+          setSchoolTenantKey(tenantKey);
+        }} />
+        <PWAInstallPrompt />
+      </>
+    );
   }
 
   // If temp login, redirect to Verification Dashboard
@@ -219,6 +230,7 @@ function AppContent() {
       <DashboardComponent />
       <ForceChangePasswordModal />
       <SyncStatusIndicator />
+      <PWAInstallPrompt />
     </>
   );
 }
