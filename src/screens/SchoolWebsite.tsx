@@ -142,6 +142,9 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
   const IS_NARROW = windowWidth < 768;
   const IS_VERY_NARROW = windowWidth < 480;
 
+  const galleryImgs = branding?.galleryImages || [];
+  const sortedGallery = useSortedGallery(galleryImgs);
+
   useEffect(() => {
     loadBranding();
   }, [tenantKey]);
@@ -248,8 +251,7 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
   const accent = '#FFC93C';
   const primaryDark = primary === colors.primary ? colors.primaryDark : primary;
 
-  const galleryImgs = branding.galleryImages || [];
-  const sortedGallery = useSortedGallery(galleryImgs);
+  const galleryImages = sortedGallery;
   const heroSlides = galleryImgs.length > 0
     ? galleryImgs.map((img, i) => ({
         image: img,
