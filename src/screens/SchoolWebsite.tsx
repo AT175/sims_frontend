@@ -266,7 +266,6 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
   const stats = DEFAULT_STATS;
 
   const newsItems = branding.newsItems || [];
-  const galleryImages = sortedGallery;
   const programmes = branding.programmes || [];
   const staffProfiles = branding.staffProfiles || [];
   const upcomingEvents = branding.upcomingEvents || [];
