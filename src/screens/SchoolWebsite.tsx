@@ -460,9 +460,14 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
                   horizontal
                   pagingEnabled
                   showsHorizontalScrollIndicator={false}
+                  style={{ flex: 1, width: '100%' }}
+                  contentContainerStyle={{ flexGrow: 1 }}
                   onLayout={() => {
                     const w = Dimensions.get('window').width;
                     lightboxScrollRef.current?.scrollTo({ x: w * lightboxIndex, animated: false });
+                    setTimeout(() => {
+                      lightboxScrollRef.current?.scrollTo({ x: w * lightboxIndex, animated: false });
+                    }, 100);
                   }}
                   onMomentumScrollEnd={(e) => {
                     const w = Dimensions.get('window').width;
@@ -794,8 +799,8 @@ const s = StyleSheet.create({
   lightboxOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.92)', justifyContent: 'center', alignItems: 'center' },
   lightboxClose: { position: 'absolute', top: 40, right: 24, zIndex: 10, width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255, 255, 255, 0.15)', justifyContent: 'center', alignItems: 'center' },
   lightboxCloseText: { fontSize: 20, color: '#fff', fontWeight: fontWeight.bold },
-  lightboxImageWrap: { width: Dimensions.get('window').width, justifyContent: 'center', alignItems: 'center' },
-  lightboxImage: { width: '90%', height: '70%', borderRadius: radius.md },
+  lightboxImageWrap: { width: Dimensions.get('window').width, height: Dimensions.get('window').height, justifyContent: 'center', alignItems: 'center' },
+  lightboxImage: { width: '92%', height: '80%' },
   lightboxNavLeft: { position: 'absolute', left: 16, top: '50%', marginTop: -24, width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center', zIndex: 10 },
   lightboxNavRight: { position: 'absolute', right: 16, top: '50%', marginTop: -24, width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center', zIndex: 10 },
   lightboxNavText: { fontSize: 32, color: '#fff', fontWeight: fontWeight.bold, lineHeight: 34 },
