@@ -19,6 +19,8 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'website', label: 'Website Settings' },
   { key: 'modules', label: 'Modules' },
   { key: 'subscriptions', label: 'Subscriptions & Payments' },
+  { key: 'payments', label: 'Payment Records' },
+  { key: 'expired', label: 'Expired & Inactive' },
   { key: 'database', label: 'Database & Sync' },
   { key: 'backups', label: 'Backups' },
   { key: 'logs', label: 'System Logs' },
@@ -115,6 +117,9 @@ export function SystemAdminDashboard() {
   const [subscriptionStats, setSubscriptionStats] = useState<any>(null);
   const [paymentReceipts, setPaymentReceipts] = useState<any[]>([]);
   const [feeSummary, setFeeSummary] = useState<any>(null);
+  const [subTenantFilter, setSubTenantFilter] = useState<string>('all');
+  const [extendModal, setExtendModal] = useState<{ visible: boolean; userId: string; displayName: string }>({ visible: false, userId: '', displayName: '' });
+  const [extendDays, setExtendDays] = useState('7');
 
   const fetchTenants = async () => {
     try {
@@ -133,13 +138,53 @@ export function SystemAdminDashboard() {
         apiClient.getPaymentReceipts(),
         apiClient.getFeeSummary(),
       ]);
-      setSubscriptions(subs);
+      setSubscriptions(subs || []);
       setSubscriptionStats(stats);
-      setPaymentReceipts(receipts);
+      setPaymentReceipts(receipts || []);
       setFeeSummary(summary);
     } catch (err: any) {
       console.error('[SystemAdmin] Failed to fetch subscription data:', err.message);
     }
+  };
+
+  const handleExtendSubscription = async () => {
+    const days = parseInt(extendDays, 10);
+    if (!days || days <= 0) {
+      Alert.alert('Error', 'Please enter a valid number of days');
+      return;
+    }
+    try {
+      await apiClient.post(`/subscriptions/extend?userId=${extendModal.userId}`, { days });
+      Alert.alert('Success', `Subscription extended by ${days} days`);
+      setExtendModal({ visible: false, userId: '', displayName: '' });
+      setExtendDays('7');
+      fetchSubscriptionData();
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Failed to extend subscription');
+    }
+  };
+
+  const handleCancelSubscription = (userId: string, name: string) => {
+    Alert.alert(
+      'Cancel Subscription',
+      `Are you sure you want to cancel the subscription for ${name}?`,
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await apiClient.post(`/subscriptions/cancel?userId=${userId}`, {});
+              Alert.alert('Success', 'Subscription cancelled');
+              fetchSubscriptionData();
+            } catch (err: any) {
+              Alert.alert('Error', err?.message || 'Failed to cancel subscription');
+            }
+          },
+        },
+      ],
+    );
   };
 
   const loadTenantConfig = async (tenantKey: string) => {
@@ -166,7 +211,7 @@ export function SystemAdminDashboard() {
   }, []);
 
   useEffect(() => {
-    if (activePage === 'subscriptions') {
+    if (activePage === 'subscriptions' || activePage === 'payments' || activePage === 'expired') {
       fetchSubscriptionData();
     }
   }, [activePage]);
@@ -972,10 +1017,12 @@ export function SystemAdminDashboard() {
         );
 
       case 'subscriptions':
+        const filteredSubs = subTenantFilter === 'all' ? subscriptions : subscriptions.filter((s) => s.tenantId === subTenantFilter);
+        const activeSubs = filteredSubs.filter((s) => s.status === 'active');
         return (
           <ScrollView>
             <Text style={styles.pageTitle}>Subscriptions & Payments</Text>
-            <Text style={styles.pageSubtitle}>Monitor subscription revenue and payment records</Text>
+            <Text style={styles.pageSubtitle}>Manage subscription revenue and payment records</Text>
 
             <CardGrid>
               <StatCard label="Total Subscriptions" value={subscriptionStats?.total || 0} accentColor={colors.primary} icon="📋" />
@@ -991,16 +1038,6 @@ export function SystemAdminDashboard() {
               <StatCard label="Collected" value={`GHS ${feeSummary?.totalCollected || 0}`} accentColor={colors.success} icon="✅" />
             </CardGrid>
 
-            <Text style={styles.sectionTitle}>Subscription Statistics</Text>
-            <View style={styles.infoCard}>
-              <Text style={styles.infoText}>• Total Subscriptions: {subscriptionStats?.total || 0}</Text>
-              <Text style={styles.infoText}>• Active Subscriptions: {subscriptionStats?.active || 0}</Text>
-              <Text style={styles.infoText}>• Trial Users: {subscriptionStats?.trial || 0}</Text>
-              <Text style={styles.infoText}>• Annual Plans: {subscriptionStats?.annual || 0}</Text>
-              <Text style={styles.infoText}>• Expired: {subscriptionStats?.expired || 0}</Text>
-              <Text style={styles.infoText}>• Total Revenue: GHS {subscriptionStats?.revenue || 0}</Text>
-            </View>
-
             <Text style={styles.sectionTitle}>Fee Summary</Text>
             <View style={styles.infoCard}>
               <Text style={styles.infoText}>• Total Billed: GHS {feeSummary?.totalBilled || 0}</Text>
@@ -1009,30 +1046,143 @@ export function SystemAdminDashboard() {
               <Text style={styles.infoText}>• Fee Records: {feeSummary?.recordCount || 0}</Text>
             </View>
 
-            <Text style={styles.sectionTitle}>Recent Subscriptions</Text>
-            {subscriptions.length === 0 ? (
+            <Text style={styles.sectionTitle}>Filter by Tenant</Text>
+            <View style={styles.rolePickerRow}>
+              <TouchableOpacity
+                style={[styles.roleChip, subTenantFilter === 'all' && styles.roleChipActive]}
+                onPress={() => setSubTenantFilter('all')}
+              >
+                <Text style={[styles.roleChipText, subTenantFilter === 'all' && styles.roleChipTextActive]}>All ({subscriptions.length})</Text>
+              </TouchableOpacity>
+              {tenants.map((t) => {
+                const count = subscriptions.filter((s) => s.tenantId === t.tenantKey).length;
+                return (
+                  <TouchableOpacity
+                    key={t.id}
+                    style={[styles.roleChip, subTenantFilter === t.tenantKey && styles.roleChipActive]}
+                    onPress={() => setSubTenantFilter(t.tenantKey)}
+                  >
+                    <Text style={[styles.roleChipText, subTenantFilter === t.tenantKey && styles.roleChipTextActive]}>{t.schoolName} ({count})</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <Text style={styles.sectionTitle}>All Subscriptions ({filteredSubs.length})</Text>
+            {filteredSubs.length === 0 ? (
               <Text style={styles.emptyText}>No subscriptions found.</Text>
             ) : (
-              subscriptions.slice(0, 10).map((sub) => (
-                <View key={sub.id} style={styles.logRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.logMessage}>{sub.plan?.toUpperCase()} - {sub.status?.toUpperCase()}</Text>
-                    <Text style={styles.logMeta}>User: {sub.userId} · {sub.startDate} to {sub.endDate} · GHS {sub.amount}</Text>
-                  </View>
-                </View>
-              ))
+              <DataTable
+                columns={[
+                  { key: 'studentName', label: 'Parent/Ward', render: (i: any) => i.studentName || i.userId },
+                  { key: 'tenantId', label: 'School', render: (i: any) => tenants.find((t) => t.tenantKey === i.tenantId)?.schoolName || i.tenantId || '-' },
+                  { key: 'plan', label: 'Plan', render: (i: any) => i.plan?.toUpperCase() },
+                  { key: 'status', label: 'Status', render: (i: any) => i.status },
+                  { key: 'endDate', label: 'Expires', render: (i: any) => i.endDate },
+                  { key: 'amount', label: 'Amount', render: (i: any) => `GHS ${i.amount}` },
+                  { key: 'actions', label: 'Actions', render: (i: any) => (
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                      <TouchableOpacity
+                        style={{ backgroundColor: colors.primary + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}
+                        onPress={() => setExtendModal({ visible: true, userId: i.userId, displayName: i.studentName || i.userId })}
+                      >
+                        <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '600' }}>Extend</Text>
+                      </TouchableOpacity>
+                      {i.status === 'active' && (
+                        <TouchableOpacity
+                          style={{ backgroundColor: colors.danger + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}
+                          onPress={() => handleCancelSubscription(i.userId, i.studentName || i.userId)}
+                        >
+                          <Text style={{ fontSize: 11, color: colors.danger, fontWeight: '600' }}>Cancel</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )},
+                ]}
+                data={filteredSubs as any}
+              />
             )}
+          </ScrollView>
+        );
 
-            <Text style={styles.sectionTitle}>Recent Payment Receipts</Text>
+      case 'payments':
+        const paidSubs = subscriptions.filter((s) => s.paymentStatus === 'paid' || s.plan === 'annual');
+        return (
+          <ScrollView>
+            <Text style={styles.pageTitle}>Payment Records</Text>
+            <Text style={styles.pageSubtitle}>Track all subscription payments across tenants</Text>
+
+            <CardGrid>
+              <StatCard label="Paid Subscriptions" value={paidSubs.length} accentColor={colors.success} icon="💳" />
+              <StatCard label="Total Revenue" value={`GHS ${subscriptionStats?.revenue || 0}`} accentColor={colors.primary} icon="💰" />
+              <StatCard label="Total Billed" value={`GHS ${feeSummary?.totalBilled || 0}`} accentColor={colors.info} icon="📊" />
+              <StatCard label="Collected" value={`GHS ${feeSummary?.totalCollected || 0}`} accentColor={colors.success} icon="✅" />
+            </CardGrid>
+
+            <Text style={styles.sectionTitle}>Payment Receipts</Text>
             {paymentReceipts.length === 0 ? (
               <Text style={styles.emptyText}>No payment receipts found.</Text>
             ) : (
-              paymentReceipts.slice(0, 10).map((receipt) => (
-                <View key={receipt.id} style={styles.logRow}>
+              <DataTable
+                columns={[
+                  { key: 'receiptNo', label: 'Receipt No', render: (i: any) => i.receiptNo || '-' },
+                  { key: 'studentName', label: 'Student', render: (i: any) => i.studentName || '-' },
+                  { key: 'amount', label: 'Amount', render: (i: any) => `GHS ${i.amount}` },
+                  { key: 'method', label: 'Method', render: (i: any) => i.method || '-' },
+                  { key: 'date', label: 'Date', render: (i: any) => i.date || '-' },
+                ]}
+                data={paymentReceipts as any}
+              />
+            )}
+
+            <Text style={styles.sectionTitle}>Paid Subscriptions</Text>
+            {paidSubs.length === 0 ? (
+              <Text style={styles.emptyText}>No paid subscriptions found.</Text>
+            ) : (
+              <DataTable
+                columns={[
+                  { key: 'studentName', label: 'Parent/Ward', render: (i: any) => i.studentName || i.userId },
+                  { key: 'plan', label: 'Plan', render: (i: any) => i.plan?.toUpperCase() },
+                  { key: 'amount', label: 'Amount', render: (i: any) => `GHS ${i.amount}` },
+                  { key: 'paymentMethod', label: 'Method', render: (i: any) => i.paymentMethod || '-' },
+                  { key: 'paymentReference', label: 'Reference', render: (i: any) => i.paymentReference || '-' },
+                  { key: 'endDate', label: 'Valid Until', render: (i: any) => i.endDate },
+                ]}
+                data={paidSubs as any}
+              />
+            )}
+          </ScrollView>
+        );
+
+      case 'expired':
+        const expiredSubs = subscriptions.filter((s) => s.status === 'expired' || s.status === 'cancelled');
+        return (
+          <ScrollView>
+            <Text style={styles.pageTitle}>Expired & Inactive Subscriptions</Text>
+            <Text style={styles.pageSubtitle}>Manage expired and cancelled subscriptions</Text>
+
+            <CardGrid>
+              <StatCard label="Expired" value={expiredSubs.filter((s) => s.status === 'expired').length} accentColor={colors.danger} icon="⏰" />
+              <StatCard label="Cancelled" value={expiredSubs.filter((s) => s.status === 'cancelled').length} accentColor={colors.warning} icon="🚫" />
+              <StatCard label="Total Expired" value={expiredSubs.length} accentColor={colors.danger} icon="📋" />
+            </CardGrid>
+
+            {expiredSubs.length === 0 ? (
+              <Text style={styles.emptyText}>No expired or cancelled subscriptions.</Text>
+            ) : (
+              expiredSubs.map((sub) => (
+                <View key={sub.id} style={styles.logRow}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.logMessage}>{receipt.receiptNo} - {receipt.studentName}</Text>
-                    <Text style={styles.logMeta}>GHS {receipt.amount} · {receipt.method} · {receipt.date}</Text>
+                    <Text style={styles.logMessage}>{sub.studentName || sub.userId} — {sub.plan?.toUpperCase()}</Text>
+                    <Text style={styles.logMeta}>Status: {sub.status} · Expired: {sub.endDate} · Tenant: {tenants.find((t) => t.tenantKey === sub.tenantId)?.schoolName || sub.tenantId || '-'}</Text>
+                    {sub.studentAdmissionNumber && <Text style={styles.logMeta}>Adm No: {sub.studentAdmissionNumber}</Text>}
                   </View>
+                  <TouchableOpacity
+                    style={{ backgroundColor: colors.primary + '20', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, alignSelf: 'center' }}
+                    onPress={() => setExtendModal({ visible: true, userId: sub.userId, displayName: sub.studentName || sub.userId })}
+                  >
+                    <Text style={{ fontSize: 12, color: colors.primary, fontWeight: '600' }}>Reactivate</Text>
+                  </TouchableOpacity>
                 </View>
               ))
             )}
@@ -1497,6 +1647,37 @@ export function SystemAdminDashboard() {
         title={generatedPassword?.title}
         onClose={() => setGeneratedPassword(null)}
       />
+
+      {/* ── Extend Subscription Modal ── */}
+      <Modal visible={extendModal.visible} transparent animationType="fade" onRequestClose={() => setExtendModal({ visible: false, userId: '', displayName: '' })}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Extend Subscription</Text>
+            <Text style={styles.modalSubtitle}>{extendModal.displayName}</Text>
+
+            <Text style={styles.inputLabel}>Days to extend</Text>
+            <TextInput
+              style={styles.textInput}
+              value={extendDays}
+              onChangeText={setExtendDays}
+              placeholder="e.g. 7"
+              keyboardType="numeric"
+            />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalBtnCancel]}
+                onPress={() => { setExtendModal({ visible: false, userId: '', displayName: '' }); setExtendDays('7'); }}
+              >
+                <Text style={styles.modalBtnTextDark}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={handleExtendSubscription}>
+                <Text style={styles.modalBtnTextLight}>Extend</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
     </DashboardLayout>
   );

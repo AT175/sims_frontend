@@ -69,6 +69,7 @@ export type RoleId =
   | 'internal_auditor'
   | 'headmaster_secretary'
   | 'system_admin'
+  | 'system_finance'
   | 'subscription_payment'
   | 'ges_national'
   | 'ges_regional'

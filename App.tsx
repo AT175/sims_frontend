@@ -94,6 +94,7 @@ const DASHBOARD_COMPONENTS: Record<string, React.ComponentType> = {
   InternalAuditor: InternalAuditorDashboard,
   HeadmasterSecretary: HeadmasterSecretaryDashboard,
   Subscription: SubscriptionDashboard,
+  SystemFinance: SubscriptionDashboard,
   GES: GesDashboard,
 };
 
