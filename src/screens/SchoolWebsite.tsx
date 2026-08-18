@@ -40,6 +40,53 @@ const DEFAULT_STATS = [
   { label: 'Founded', value: '2010' },
 ];
 
+interface GalleryFrameProps {
+  uri: string;
+  index: number;
+  total: number;
+  maxWidth: number;
+  onPress: () => void;
+  primary: string;
+}
+
+function GalleryFrame({ uri, index, total, maxWidth, onPress, primary }: GalleryFrameProps) {
+  const [aspect, setAspect] = useState<number | null>(null);
+
+  useEffect(() => {
+    setAspect(null);
+    Image.getSize(uri, (w, h) => setAspect(w / h), () => setAspect(1.5));
+  }, [uri]);
+
+  const maxH = 420;
+  const minH = 200;
+  let frameHeight = maxH;
+  if (aspect !== null) {
+    const hFromWidth = maxWidth / aspect;
+    frameHeight = Math.min(Math.max(hFromWidth, minH), maxH);
+  }
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.9}
+      style={[s.galleryFrame, { maxWidth }]}
+      onPress={onPress}
+    >
+      <View style={[s.galleryFrameImgWrap, { height: frameHeight }]}>
+        {aspect === null ? (
+          <View style={s.galleryFrameLoading}>
+            <ActivityIndicator size="small" color={primary} />
+          </View>
+        ) : (
+          <Image source={{ uri }} style={s.galleryFrameImg} resizeMode="contain" />
+        )}
+      </View>
+      <View style={[s.galleryFrameOverlay, { backgroundColor: `${primary}10` }]}>
+        <Text style={[s.galleryFrameNum, { color: primary }]}>Photo {index + 1} of {total}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
   const [branding, setBranding] = useState<SchoolBranding | null>(null);
   const [loading, setLoading] = useState(true);
@@ -357,18 +404,17 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
                   <View style={[s.galleryFramesRow, IS_NARROW && { flexDirection: 'column' }]}>
                     {pageImages.map((img, i) => {
                       const globalIdx = startIdx + i;
+                      const frameMaxW = IS_NARROW ? windowWidth - 120 : 480;
                       return (
-                        <TouchableOpacity
+                        <GalleryFrame
                           key={globalIdx}
-                          activeOpacity={0.9}
-                          style={s.galleryFrame}
+                          uri={img}
+                          index={globalIdx}
+                          total={galleryImages.length}
+                          maxWidth={frameMaxW}
                           onPress={() => setLightboxIndex(globalIdx)}
-                        >
-                          <Image source={{ uri: img }} style={s.galleryFrameImg} resizeMode="cover" />
-                          <View style={[s.galleryFrameOverlay, { backgroundColor: `${primary}10` }]}>
-                            <Text style={[s.galleryFrameNum, { color: primary }]}>Photo {globalIdx + 1} of {galleryImages.length}</Text>
-                          </View>
-                        </TouchableOpacity>
+                          primary={primary}
+                        />
                       );
                     })}
                   </View>
@@ -733,8 +779,10 @@ const s = StyleSheet.create({
   // Gallery
   galleryCarouselWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.lg },
   galleryFramesRow: { flexDirection: 'row', flex: 1, gap: spacing.md, justifyContent: 'center' },
-  galleryFrame: { flex: 1, maxWidth: 480, borderRadius: radius.lg, overflow: 'hidden', ...shadows.lg, backgroundColor: '#fff' },
-  galleryFrameImg: { width: '100%', height: 340, borderRadius: radius.lg },
+  galleryFrame: { flex: 1, borderRadius: radius.lg, overflow: 'hidden', ...shadows.lg, backgroundColor: '#fff' },
+  galleryFrameImgWrap: { width: '100%', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' },
+  galleryFrameImg: { width: '100%', height: '100%' },
+  galleryFrameLoading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   galleryFrameOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md, borderBottomLeftRadius: radius.lg, borderBottomRightRadius: radius.lg },
   galleryFrameNum: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, letterSpacing: 0.5 },
   galleryNavBtn: { width: 48, height: 48, borderRadius: 24, borderWidth: 2, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', ...shadows.md },
