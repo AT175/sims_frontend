@@ -87,6 +87,37 @@ function GalleryFrame({ uri, index, total, maxWidth, onPress, primary }: Gallery
   );
 }
 
+function useSortedGallery(images: string[]): string[] {
+  const [sorted, setSorted] = useState<string[]>(images);
+  useEffect(() => {
+    if (images.length <= 1) { setSorted(images); return; }
+    let cancelled = false;
+    const results: { uri: string; aspect: number }[] = [];
+    let done = 0;
+    images.forEach((uri) => {
+      Image.getSize(uri, (w, h) => {
+        results.push({ uri, aspect: w / h });
+        done++;
+        if (done === images.length && !cancelled) {
+          const landscape = results.filter(r => r.aspect >= 1).sort((a, b) => b.aspect - a.aspect);
+          const portrait = results.filter(r => r.aspect < 1).sort((a, b) => a.aspect - b.aspect);
+          setSorted([...landscape.map(r => r.uri), ...portrait.map(r => r.uri)]);
+        }
+      }, () => {
+        results.push({ uri, aspect: 1.5 });
+        done++;
+        if (done === images.length && !cancelled) {
+          const landscape = results.filter(r => r.aspect >= 1).sort((a, b) => b.aspect - a.aspect);
+          const portrait = results.filter(r => r.aspect < 1).sort((a, b) => a.aspect - b.aspect);
+          setSorted([...landscape.map(r => r.uri), ...portrait.map(r => r.uri)]);
+        }
+      });
+    });
+    return () => { cancelled = true; };
+  }, [images.join(',')]);
+  return sorted;
+}
+
 export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
   const [branding, setBranding] = useState<SchoolBranding | null>(null);
   const [loading, setLoading] = useState(true);
@@ -218,6 +249,7 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
   const primaryDark = primary === colors.primary ? colors.primaryDark : primary;
 
   const galleryImgs = branding.galleryImages || [];
+  const sortedGallery = useSortedGallery(galleryImgs);
   const heroSlides = galleryImgs.length > 0
     ? galleryImgs.map((img, i) => ({
         image: img,
@@ -232,7 +264,7 @@ export function SchoolWebsite({ tenantKey }: SchoolWebsiteProps) {
   const stats = DEFAULT_STATS;
 
   const newsItems = branding.newsItems || [];
-  const galleryImages = branding.galleryImages || [];
+  const galleryImages = sortedGallery;
   const programmes = branding.programmes || [];
   const staffProfiles = branding.staffProfiles || [];
   const upcomingEvents = branding.upcomingEvents || [];
