@@ -68,8 +68,13 @@ export function SystemAdminDashboard() {
   }, [user?.tenantId]);
 
   useEffect(() => {
-    store.loadUsers(user?.tenantId);
-  }, [user?.tenantId]);
+    // System admin should load all users; other roles load their own tenant
+    if (user?.roles?.includes('system_admin')) {
+      store.loadUsers();
+    } else {
+      store.loadUsers(user?.tenantId);
+    }
+  }, [user?.tenantId, user?.roles]);
 
   // User modal state
   const [showUserModal, setShowUserModal] = useState(false);
@@ -335,7 +340,7 @@ export function SystemAdminDashboard() {
             <View style={styles.rolePickerRow}>
               <TouchableOpacity
                 style={[styles.roleChip, tenantFilter === 'all' && styles.roleChipActive]}
-                onPress={() => setTenantFilter('all')}
+                onPress={() => { setTenantFilter('all'); store.loadUsers(); }}
               >
                 <Text style={[styles.roleChipText, tenantFilter === 'all' && styles.roleChipTextActive]}>All ({store.users.length})</Text>
               </TouchableOpacity>
@@ -345,7 +350,7 @@ export function SystemAdminDashboard() {
                   <TouchableOpacity
                     key={t.id}
                     style={[styles.roleChip, tenantFilter === t.tenantKey && styles.roleChipActive]}
-                    onPress={() => setTenantFilter(t.tenantKey)}
+                    onPress={() => { setTenantFilter(t.tenantKey); store.loadUsers(t.tenantKey); }}
                   >
                     <Text style={[styles.roleChipText, tenantFilter === t.tenantKey && styles.roleChipTextActive]}>{t.schoolName} ({count})</Text>
                   </TouchableOpacity>
