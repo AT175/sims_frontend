@@ -12,6 +12,7 @@ import type {
   MeetingStatus, AttendanceStatus, ActionItemStatus,
   DutyDay, ObservationRating,
 } from '@store/plcStore';
+import { preloadLetterhead, getLetterheadHTML, getDocumentFooterHTML } from '@shared/utils/letterhead';
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'Overview' },
@@ -33,6 +34,7 @@ export function PLCDashboard() {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
   const { user, logout } = useAuthStore();
+  useEffect(() => { if (user?.tenantId) preloadLetterhead(user.tenantId); }, [user?.tenantId]);
   const coordinatorName = user?.displayName ?? 'PLC Coordinator';
 
   const {
@@ -296,9 +298,11 @@ export function PLCDashboard() {
       h2{color:#0F4C75;margin-top:25px}table{font-size:13px}
       .confidential{background:#FEF6E7;border-left:4px solid #F59E0B;padding:10px;margin:15px 0;font-size:12px;color:#92400E}
       @media print{body{padding:15px}}</style></head><body>
+      ${getLetterheadHTML()}
       <h1>${title}</h1>
       <div class="confidential">Generated: ${new Date().toLocaleString()} | PLC Coordinator: ${coordinatorName}</div>
       ${body}
+      ${getDocumentFooterHTML()}
       <script>window.onload=function(){window.print()}</script></body></html>`;
     const printWin = window.open('', '_blank');
     if (printWin) { printWin.document.write(html); printWin.document.close(); }

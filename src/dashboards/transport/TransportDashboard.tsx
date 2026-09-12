@@ -13,6 +13,7 @@ import type {
   VehicleStatus, VehicleType, MaintenanceType,
   DriverStatus, LicenseClass,
 } from '@store/transportStore';
+import { preloadLetterhead, getLetterheadHTML, getDocumentFooterHTML } from '@shared/utils/letterhead';
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'Overview' },
@@ -36,6 +37,8 @@ export function TransportDashboard() {
   const [modalType, setModalType] = useState('');
   const [showReqModal, setShowReqModal] = useState(false);
   const { user, logout } = useAuthStore();
+
+  useEffect(() => { if (user?.tenantId) preloadLetterhead(user.tenantId); }, [user?.tenantId]);
 
   const {
     vehicles, trips, maintenance, fuelLogs, drivers,
@@ -173,7 +176,6 @@ export function TransportDashboard() {
   // ── PDF Generation ──
   const generatePDF = (reportType: string) => {
     const now = new Date().toLocaleString();
-    const dateStr = todayStr();
     let body = '';
     let title = '';
 
@@ -284,11 +286,12 @@ export function TransportDashboard() {
         .footer { margin-top: 40px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 11px; color: #aaa; text-align: center; }
         @media print { body { padding: 20px; } }
       </style></head><body>
+      ${getLetterheadHTML()}
       <div class="header"><span>SIMS — Transport Unit</span><span>Generated: ${now}</span></div>
       <h1>${title}</h1>
       <div class="confidential">INTERNAL USE — This report contains transport operational data for school administration purposes.</div>
       ${body}
-      <div class="footer">School Information Management System (SIMS) — Transport Unit Report — ${dateStr}</div>
+      ${getDocumentFooterHTML()}
       <script>window.onload = function() { window.print(); }</script>
       </body></html>`;
 

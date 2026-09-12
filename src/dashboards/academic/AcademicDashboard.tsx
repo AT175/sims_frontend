@@ -13,6 +13,7 @@ import {
   CURRICULUM_STATUSES, CALENDAR_EVENT_TYPES, TERM_NAMES,
 } from '@store/academicStore';
 import type { ReportSupervisionTask } from '@store/academicStore';
+import { preloadLetterhead, getLetterheadHTML, getDocumentFooterHTML } from '@shared/utils/letterhead';
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'Academic Overview' },
@@ -39,6 +40,7 @@ export function AcademicDashboard() {
   const [activePage, setActivePage] = useState('overview');
   const [showReqModal, setShowReqModal] = useState(false);
   const { logout, user } = useAuthStore();
+  useEffect(() => { if (user?.tenantId) preloadLetterhead(user.tenantId); }, [user?.tenantId]);
   const { getByDepartment } = useRequisitionStore();
   const myRequisitions = getByDepartment('Academic');
   const reqStatusColor = (s: string) => s === 'Issued' ? colors.success : s === 'Approved' ? colors.info : s === 'Rejected' ? colors.danger : colors.warning;
@@ -199,7 +201,6 @@ export function AcademicDashboard() {
 
   const generatePDF = (reportType: string) => {
     const now = new Date().toLocaleString();
-    const dateStr = new Date().toISOString().slice(0, 10);
     let body = '';
     let title = '';
 
@@ -403,11 +404,12 @@ export function AcademicDashboard() {
         .footer { margin-top: 40px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 11px; color: #aaa; text-align: center; }
         @media print { body { padding: 20px; } }
       </style></head><body>
+      ${getLetterheadHTML()}
       <div class="header"><span>SIMS — Academic Office</span><span>Generated: ${now}</span></div>
       <h1>${title}</h1>
       <div class="confidential">INTERNAL USE — This report contains academic operational data for school administration purposes.</div>
       ${body}
-      <div class="footer">School Information Management System (SIMS) — Academic Report — ${dateStr}</div>
+      ${getDocumentFooterHTML()}
       <script>window.onload = function() { window.print(); }</script>
       </body></html>`;
 

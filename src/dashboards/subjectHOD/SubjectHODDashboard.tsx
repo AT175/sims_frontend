@@ -6,6 +6,7 @@ import { useAuthStore } from '@store/authStore';
 import { useAcademicStore } from '@store/academicStore';
 import { CURRICULUM_STATUSES, TERM_NAMES } from '@store/academicStore';
 import type { CurriculumStatus, TermName } from '@store/academicStore';
+import { preloadLetterhead, getLetterheadHTML, getDocumentFooterHTML } from '@shared/utils/letterhead';
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'Department Overview' },
@@ -72,6 +73,7 @@ const INITIAL_RESULT_ENTRIES: ResultEntry[] = [];
 export function SubjectHODDashboard() {
   const [activePage, setActivePage] = useState('overview');
   const { user, logout } = useAuthStore();
+  useEffect(() => { if (user?.tenantId) preloadLetterhead(user.tenantId); }, [user?.tenantId]);
   const hodName = user?.displayName ?? 'Subject HOD';
 
   const academicStore = useAcademicStore();
@@ -220,7 +222,6 @@ export function SubjectHODDashboard() {
 
   const generatePDF = () => {
     const now = new Date().toLocaleString();
-    const dateStr = todayISO();
     let body = '';
 
     body += `<h2>Department Summary</h2><table style="border-collapse:collapse;width:100%;margin-bottom:20px">
@@ -282,9 +283,10 @@ export function SubjectHODDashboard() {
 
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Subject HOD Report</title>
       <style>*{font-family:'Segoe UI',Arial,sans-serif}body{padding:40px;color:#1A1A2E;max-width:900px;margin:0 auto}h1{color:#0F4C75;border-bottom:3px solid #0F4C75;padding-bottom:10px}h2{color:#2D3142;margin-top:30px}table{font-size:13px}th{font-weight:600}.footer{margin-top:40px;padding-top:15px;border-top:1px solid #ddd;font-size:11px;color:#aaa;text-align:center}@media print{body{padding:20px}}</style></head><body>
+      ${getLetterheadHTML()}
       <div style="display:flex;justify-content:space-between;margin-bottom:20px;font-size:12px;color:#888"><span>SIMS — Subject HOD Portal</span><span>Generated: ${now}</span></div>
       <h1>Subject HOD Department Report</h1>${body}
-      <div class="footer">SIMS — Subject HOD Report — ${dateStr}</div>
+      ${getDocumentFooterHTML()}
       <script>window.onload=function(){window.print()}</script></body></html>`;
 
     const printWin = window.open('', '_blank');

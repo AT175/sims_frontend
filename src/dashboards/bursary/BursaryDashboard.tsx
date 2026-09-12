@@ -8,6 +8,7 @@ import {
   CASH_TXN_CATEGORIES,
   RETURN_PERIODS, MEAL_TYPES, HOUSES, SUPPLY_UNITS,
 } from '@store/index';
+import { preloadLetterhead, getLetterheadHTML, getDocumentFooterHTML } from '@shared/utils/letterhead';
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'Bursary Overview' },
@@ -28,6 +29,7 @@ const formatGH = (n: number) => `GH₵${n.toLocaleString()}`;
 export function BursaryDashboard() {
   const [activePage, setActivePage] = useState('overview');
   const { user, logout } = useAuthStore();
+  useEffect(() => { if (user?.tenantId) preloadLetterhead(user.tenantId); }, [user?.tenantId]);
   const userName = user?.displayName ?? 'Bursar';
 
   const store = useBursarStore();
@@ -72,7 +74,6 @@ export function BursaryDashboard() {
 
   const generatePDF = (reportType: string) => {
     const now = new Date().toLocaleString();
-    const dateStr = new Date().toISOString().slice(0, 10);
     let body = '';
     let title = '';
 
@@ -180,9 +181,10 @@ export function BursaryDashboard() {
 
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title>
       <style>*{font-family:'Segoe UI',Arial,sans-serif}body{padding:40px;color:#1A1A2E;max-width:900px;margin:0 auto}h1{color:#0F4C75;border-bottom:3px solid #0F4C75;padding-bottom:10px}h2{color:#2D3142;margin-top:30px}.header{display:flex;justify-content:space-between;margin-bottom:20px;font-size:12px;color:#888}.confidential{background:#FEF6E7;border-left:4px solid #F59E0B;padding:10px 15px;margin:15px 0;font-size:13px;color:#92400E}table{font-size:13px}th{font-weight:600}.footer{margin-top:40px;padding-top:15px;border-top:1px solid #ddd;font-size:11px;color:#aaa;text-align:center}@media print{body{padding:20px}}</style></head><body>
+      ${getLetterheadHTML()}
       <div class="header"><span>SIMS — Bursary</span><span>Generated: ${now}</span></div>
       <h1>${title}</h1><div class="confidential">CONFIDENTIAL — This report contains bursary records for school administration purposes only.</div>${body}
-      <div class="footer">SIMS — Bursary Report — ${dateStr}</div>
+      ${getDocumentFooterHTML()}
       <script>window.onload=function(){window.print()}</script></body></html>`;
 
     const printWin = window.open('', '_blank');

@@ -16,6 +16,7 @@ import { RequisitionModal } from '@components/RequisitionModal';
 import { useExeatStore, EXEAT_REASONS, TRANSPORT_MODES } from '@store/exeatStore';
 import type { ExeatReason } from '@store/exeatStore';
 import { useCleaningStore } from '@store/cleaningStore';
+import { preloadLetterhead, getLetterheadHTML, getDocumentFooterHTML } from '@shared/utils/letterhead';
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'Overview' },
@@ -42,6 +43,7 @@ export function HouseDashboard() {
   const [modalType, setModalType] = useState('');
   const [showReqModal, setShowReqModal] = useState(false);
   const { user, logout } = useAuthStore();
+  useEffect(() => { if (user?.tenantId) preloadLetterhead(user.tenantId); }, [user?.tenantId]);
   const recordedBy = user?.displayName ?? 'Housemaster';
 
   const {
@@ -187,6 +189,7 @@ export function HouseDashboard() {
       .status-stamp{display:inline-block;padding:8px 20px;border:2px solid #0BA37A;color:#0BA37A;font-weight:bold;font-size:16px;border-radius:4px;transform:rotate(-3deg);margin:10px 0}
       .footer{margin-top:30px;padding-top:15px;border-top:1px solid #ddd;font-size:11px;color:#aaa;text-align:center}
       @media print{body{padding:15px}}</style></head><body>
+      ${getLetterheadHTML()}
       <div class="header"><div class="school-name">SIMS — Senior High School</div><div style="font-size:12px;color:#888">Boarding Exeat Permission Pass</div></div>
       <div class="pass-no">Exeat No: ${exeat.exeatNo}</div>
       <div style="text-align:center"><div class="pass-title">STUDENT EXEAT PASS</div><div class="status-stamp">${exeat.status === 'Checked Out' ? 'CHECKED OUT' : 'APPROVED'}</div></div>
@@ -207,7 +210,7 @@ export function HouseDashboard() {
         <div class="sig-block"><div class="sig-line">Housemaster: ${exeat.issuedBy}</div></div>
         <div class="sig-block"><div class="sig-line">Senior Housemaster: ${exeat.approvedBy || 'Pending'}</div></div>
       </div>
-      <div class="footer">SIMS — Exeat Pass — Issued: ${exeat.date} | Approved: ${exeat.approvedDate || 'N/A'} | This pass must be presented at the gate for verification.</div>
+      ${getDocumentFooterHTML()}
       <script>window.onload=function(){window.print()}</script></body></html>`;
     const printWin = window.open('', '_blank');
     if (printWin) { printWin.document.write(html); printWin.document.close(); }
@@ -322,9 +325,10 @@ export function HouseDashboard() {
 
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title>
       <style>*{font-family:'Segoe UI',Arial,sans-serif}body{padding:40px;color:#1A1A2E;max-width:900px;margin:0 auto}h1{color:#0F4C75;border-bottom:3px solid #0F4C75;padding-bottom:10px}h2{color:#2D3142;margin-top:30px}.header{display:flex;justify-content:space-between;margin-bottom:20px;font-size:12px;color:#888}.confidential{background:#FDECEC;border-left:4px solid #E5484D;padding:10px 15px;margin:15px 0;font-size:13px;color:#991111}table{font-size:13px}th{font-weight:600}.footer{margin-top:40px;padding-top:15px;border-top:1px solid #ddd;font-size:11px;color:#aaa;text-align:center}@media print{body{padding:20px}}</style></head><body>
+      ${getLetterheadHTML()}
       <div class="header"><span>SIMS — ${HOUSE_NAME} House</span><span>Generated: ${now}</span></div>
       <h1>${title}</h1><div class="confidential">BOARDING CONFIDENTIAL — Contains student welfare and discipline data. Restricted to authorised house staff and administration.</div>${body}
-      <div class="footer">SIMS — ${HOUSE_NAME} House Report — ${todayStr()}</div>
+      ${getDocumentFooterHTML()}
       <script>window.onload=function(){window.print()}</script></body></html>`;
 
     const printWin = window.open('', '_blank');

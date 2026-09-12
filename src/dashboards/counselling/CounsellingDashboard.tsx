@@ -9,6 +9,7 @@ import {
   REFERRAL_STATUSES, APPOINTMENT_STATUSES, CASE_STATUSES, CASE_PRIORITIES,
 } from '@store/counsellingStore';
 import type { CounsellorType, CasePriority } from '@store/counsellingStore';
+import { preloadLetterhead, getLetterheadHTML, getDocumentFooterHTML } from '@shared/utils/letterhead';
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'Overview' },
@@ -31,7 +32,8 @@ export function CounsellingDashboard() {
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [caseFilter, setCaseFilter] = useState<'All' | CounsellorType>('All');
   const [apptFilter, setApptFilter] = useState<'All' | CounsellorType>('All');
-  const { logout } = useAuthStore();
+  const { user, logout } = useAuthStore();
+  useEffect(() => { if (user?.tenantId) preloadLetterhead(user.tenantId); }, [user?.tenantId]);
 
   const {
     counsellors, cases, sessions, appointments, referrals, resources,
@@ -174,7 +176,6 @@ export function CounsellingDashboard() {
   // ── PDF Generation (via browser print) ──
   const generatePDF = (reportType: string) => {
     const now = new Date().toLocaleString();
-    const dateStr = new Date().toISOString().slice(0, 10);
 
     const buildBarRow = (label: string, count: number, total: number) => {
       const pct = total > 0 ? Math.round((count / total) * 100) : 0;
@@ -293,11 +294,12 @@ export function CounsellingDashboard() {
         .footer { margin-top: 40px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 11px; color: #aaa; text-align: center; }
         @media print { body { padding: 20px; } .no-print { display: none; } }
       </style></head><body>
+      ${getLetterheadHTML()}
       <div class="header"><span>SIMS — Counselling Unit</span><span>Generated: ${now}</span></div>
       <h1>${title}</h1>
       <div class="confidential">CONFIDENTIAL — This report contains sensitive counselling data. Access is restricted to authorised counselling staff and school administration only.</div>
       ${body}
-      <div class="footer">School Information Management System (SIMS) — Counselling Unit Report — ${dateStr}</div>
+      ${getDocumentFooterHTML()}
       <script>window.onload = function() { window.print(); }</script>
       </body></html>`;
 

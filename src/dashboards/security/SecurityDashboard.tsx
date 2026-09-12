@@ -13,6 +13,7 @@ import type {
   ShiftName,
 } from '@store/securityStore';
 import { useExeatStore } from '@store/exeatStore';
+import { preloadLetterhead, getLetterheadHTML, getDocumentFooterHTML } from '@shared/utils/letterhead';
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'Overview' },
@@ -34,6 +35,7 @@ export function SecurityDashboard() {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
   const { user, logout } = useAuthStore();
+  useEffect(() => { if (user?.tenantId) preloadLetterhead(user.tenantId); }, [user?.tenantId]);
   const guardName = user?.displayName ?? 'Security Officer';
 
   const {
@@ -179,7 +181,6 @@ export function SecurityDashboard() {
   // ── PDF Generation ──
   const generatePDF = (reportType: string) => {
     const now = new Date().toLocaleString();
-    const dateStr = todayStr();
     let body = '';
     let title = '';
 
@@ -313,11 +314,12 @@ export function SecurityDashboard() {
         .footer { margin-top: 40px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 11px; color: #aaa; text-align: center; }
         @media print { body { padding: 20px; } }
       </style></head><body>
+      ${getLetterheadHTML()}
       <div class="header"><span>SIMS — Security Unit</span><span>Generated: ${now}</span></div>
       <h1>${title}</h1>
       <div class="confidential">SECURITY CONFIDENTIAL — This report contains security operational data. Access is restricted to authorised security staff and school administration only.</div>
       ${body}
-      <div class="footer">School Information Management System (SIMS) — Security Unit Report — ${dateStr}</div>
+      ${getDocumentFooterHTML()}
       <script>window.onload = function() { window.print(); }</script>
       </body></html>`;
 

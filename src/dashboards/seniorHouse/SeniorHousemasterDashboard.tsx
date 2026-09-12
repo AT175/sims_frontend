@@ -10,6 +10,7 @@ import {
 import type { DisciplineSeverity } from '@store/boardingStore';
 import { useRequisitionStore } from '@store/requisitionStore';
 import { useExeatStore } from '@store/exeatStore';
+import { preloadLetterhead, getLetterheadHTML, getDocumentFooterHTML } from '@shared/utils/letterhead';
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'Overview' },
@@ -30,6 +31,7 @@ export function SeniorHousemasterDashboard() {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
   const { user, logout } = useAuthStore();
+  useEffect(() => { if (user?.tenantId) preloadLetterhead(user.tenantId); }, [user?.tenantId]);
   const recordedBy = user?.displayName ?? 'Senior Housemaster';
 
   const {
@@ -205,9 +207,10 @@ export function SeniorHousemasterDashboard() {
 
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title>
       <style>*{font-family:'Segoe UI',Arial,sans-serif}body{padding:40px;color:#1A1A2E;max-width:900px;margin:0 auto}h1{color:#0F4C75;border-bottom:3px solid #0F4C75;padding-bottom:10px}h2{color:#2D3142;margin-top:30px}h3{color:#3282B8;margin-top:20px}.header{display:flex;justify-content:space-between;margin-bottom:20px;font-size:12px;color:#888}.confidential{background:#FDECEC;border-left:4px solid #E5484D;padding:10px 15px;margin:15px 0;font-size:13px;color:#991111}table{font-size:13px}th{font-weight:600}.footer{margin-top:40px;padding-top:15px;border-top:1px solid #ddd;font-size:11px;color:#aaa;text-align:center}@media print{body{padding:20px}}</style></head><body>
+      ${getLetterheadHTML()}
       <div class="header"><span>SIMS — Senior Housemaster</span><span>Generated: ${now}</span></div>
       <h1>${title}</h1><div class="confidential">BOARDING CONFIDENTIAL — Contains student welfare and discipline data across all houses. Restricted to authorised senior house staff and administration.</div>${body}
-      <div class="footer">SIMS — Boarding Report — ${todayStr()}</div>
+      ${getDocumentFooterHTML()}
       <script>window.onload=function(){window.print()}</script></body></html>`;
 
     const printWin = window.open('', '_blank');

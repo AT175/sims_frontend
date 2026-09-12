@@ -18,6 +18,7 @@ import { DASHBOARD_CATALOG, DASHBOARD_MAP } from '@shared/navigation/dashboardCa
 import { ROLE_LABELS } from '@shared/navigation/roleMap';
 import type { RoleId } from '@shared/types';
 import { GeneratedPasswordModal } from '@shared/components/GeneratedPasswordModal';
+import { preloadLetterhead, getLetterheadHTML, getDocumentFooterHTML } from '@shared/utils/letterhead';
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'Executive Overview' },
@@ -72,6 +73,7 @@ const ALL_ROLES: { id: RoleId; label: string }[] = [
 export function HeadmasterDashboard() {
   const [activePage, setActivePage] = useState('overview');
   const { logout, user } = useAuthStore();
+  useEffect(() => { if (user?.tenantId) preloadLetterhead(user.tenantId); }, [user?.tenantId]);
   const hmStore = useHeadmasterStore();
   const staffStore = useStaffStore();
   const registryStore = useRegistryStore();
@@ -412,6 +414,7 @@ export function HeadmasterDashboard() {
       .stat { display: inline-block; width: 22%; background: #F0F2F5; border-radius: 8px; padding: 12px; margin: 5px; text-align: center; }
       .stat b { display: block; font-size: 18px; color: #0F4C75; }
     </style></head><body>
+      ${getLetterheadHTML()}
       <h1>${reportType}</h1>
       <p>Generated: ${now}</p>
       <div>
@@ -424,6 +427,7 @@ export function HeadmasterDashboard() {
       <table><tr><th>Name</th><th>Position</th><th>Department</th><th>Status</th></tr>
       ${staffStore.directory.map((s) => `<tr><td>${s.name}</td><td>${s.position}</td><td>${s.department}</td><td>${s.status}</td></tr>`).join('')}
       </table>
+      ${getDocumentFooterHTML()}
     </body></html>`;
     const printWindow = window.open('', '_blank');
     if (printWindow) {

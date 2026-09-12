@@ -9,6 +9,7 @@ import { useKitchenStore } from '@store/kitchenStore';
 import { useTransportStore } from '@store/transportStore';
 import { useCleaningStore } from '@store/cleaningStore';
 import { useExeatStore } from '@store/exeatStore';
+import { preloadLetterhead, getLetterheadHTML, getDocumentFooterHTML } from '@shared/utils/letterhead';
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'Overview' },
@@ -26,6 +27,7 @@ const NAV_ITEMS: NavItem[] = [
 export function DomesticDashboard() {
   const [activePage, setActivePage] = useState('overview');
   const { user, logout } = useAuthStore();
+  useEffect(() => { if (user?.tenantId) preloadLetterhead(user.tenantId); }, [user?.tenantId]);
   const recordedBy = user?.displayName ?? 'Asst. Headmaster (Domestic)';
 
   const {
@@ -69,7 +71,6 @@ export function DomesticDashboard() {
 
   const generatePDF = (reportType: string) => {
     const now = new Date().toLocaleString();
-    const dateStr = todayStr();
     const {
       houses, students, rooms, discipline, welfare,
     } = boardingStore;
@@ -249,9 +250,10 @@ export function DomesticDashboard() {
 
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title>
       <style>*{font-family:'Segoe UI',Arial,sans-serif}body{padding:40px;color:#1A1A2E;max-width:900px;margin:0 auto}h1{color:#0F4C75;border-bottom:3px solid #0F4C75;padding-bottom:10px}h2{color:#2D3142;margin-top:30px}.header{display:flex;justify-content:space-between;margin-bottom:20px;font-size:12px;color:#888}.confidential{background:#FEF6E7;border-left:4px solid #F59E0B;padding:10px 15px;margin:15px 0;font-size:13px;color:#92400E}table{font-size:13px}th{font-weight:600}.footer{margin-top:40px;padding-top:15px;border-top:1px solid #ddd;font-size:11px;color:#aaa;text-align:center}@media print{body{padding:20px}}</style></head><body>
+      ${getLetterheadHTML()}
       <div class="header"><span>SIMS — Asst. Headmaster (Domestic)</span><span>Generated: ${now}</span></div>
       <h1>${title}</h1><div class="confidential">INTERNAL USE — This report contains domestic operations data for school administration purposes.</div>${body}
-      <div class="footer">SIMS — Domestic Operations Report — ${dateStr}</div>
+      ${getDocumentFooterHTML()}
       <script>window.onload=function(){window.print()}</script></body></html>`;
 
     const printWin = window.open('', '_blank');
@@ -662,7 +664,7 @@ function AllocationSubTab({ boardingStore }: any) {
       });
       body += `</tbody></table>`;
     });
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>House List</title><style>*{font-family:'Segoe UI',Arial,sans-serif}body{padding:40px;color:#1A1A2E;max-width:900px;margin:0 auto}h1{color:#0F4C75;border-bottom:3px solid #0F4C75;padding-bottom:10px}h2{color:#2D3142;margin-top:30px}table{font-size:13px}th{font-weight:600}@media print{body{padding:20px}}</style></head><body><h1>House List</h1><p>Generated: ${now}</p>${body}<script>window.onload=function(){window.print()}</script></body></html>`;
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>House List</title><style>*{font-family:'Segoe UI',Arial,sans-serif}body{padding:40px;color:#1A1A2E;max-width:900px;margin:0 auto}h1{color:#0F4C75;border-bottom:3px solid #0F4C75;padding-bottom:10px}h2{color:#2D3142;margin-top:30px}table{font-size:13px}th{font-weight:600}@media print{body{padding:20px}}</style></head><body>${getLetterheadHTML()}<h1>House List</h1><p>Generated: ${now}</p>${body}${getDocumentFooterHTML()}<script>window.onload=function(){window.print()}</script></body></html>`;
     const printWin = window.open('', '_blank');
     if (printWin) { printWin.document.write(html); printWin.document.close(); }
     else { Alert.alert('Popup Blocked', 'Please allow popups to generate the house list.'); }
@@ -1371,7 +1373,7 @@ function HouseMeetingsPage({ boardingStore, recordedBy }: any) {
   };
 
   const generateMeetingPDF = (m: any) => {
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>House Meeting Minutes</title><style>*{font-family:'Segoe UI',Arial,sans-serif}body{padding:40px;color:#1A1A2E;max-width:800px;margin:0 auto}h1{color:#0F4C75;border-bottom:3px solid #0F4C75;padding-bottom:10px}h2{color:#2D3142;margin-top:20px}.meta{font-size:13px;color:#888;margin-bottom:15px}.section{margin-bottom:20px}.attendees{background:#f5f5f5;padding:10px 15px;border-radius:8px;font-size:13px}@media print{body{padding:20px}}</style></head><body><h1>Housemistresses/Housemasters Meeting</h1><div class="meta">Date: ${m.date} | Chaired by: ${m.chairedBy}</div><div class="section"><h2>Attendees</h2><div class="attendees">${m.attendees.join(', ') || 'N/A'}</div></div><div class="section"><h2>Agenda</h2><p>${m.agenda}</p></div><div class="section"><h2>Minutes</h2><p>${(m.minutes || 'N/A').replace(/\n/g, '<br>')}</p></div><div class="section"><h2>Decisions</h2><p>${(m.decisions || 'N/A').replace(/\n/g, '<br>')}</p></div><script>window.onload=function(){window.print()}</script></body></html>`;
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>House Meeting Minutes</title><style>*{font-family:'Segoe UI',Arial,sans-serif}body{padding:40px;color:#1A1A2E;max-width:800px;margin:0 auto}h1{color:#0F4C75;border-bottom:3px solid #0F4C75;padding-bottom:10px}h2{color:#2D3142;margin-top:20px}.meta{font-size:13px;color:#888;margin-bottom:15px}.section{margin-bottom:20px}.attendees{background:#f5f5f5;padding:10px 15px;border-radius:8px;font-size:13px}@media print{body{padding:20px}}</style></head><body>${getLetterheadHTML()}<h1>Housemistresses/Housemasters Meeting</h1><div class="meta">Date: ${m.date} | Chaired by: ${m.chairedBy}</div><div class="section"><h2>Attendees</h2><div class="attendees">${m.attendees.join(', ') || 'N/A'}</div></div><div class="section"><h2>Agenda</h2><p>${m.agenda}</p></div><div class="section"><h2>Minutes</h2><p>${(m.minutes || 'N/A').replace(/\n/g, '<br>')}</p></div><div class="section"><h2>Decisions</h2><p>${(m.decisions || 'N/A').replace(/\n/g, '<br>')}</p></div>${getDocumentFooterHTML()}<script>window.onload=function(){window.print()}</script></body></html>`;
     const printWin = window.open('', '_blank');
     if (printWin) { printWin.document.write(html); printWin.document.close(); }
     else { Alert.alert('Popup Blocked', 'Please allow popups to print meeting minutes.'); }
