@@ -62,6 +62,7 @@ interface ResultEntry {
   status: typeof RESULT_ENTRY_STATUSES[number];
   enteredBy: string;
   lastUpdated: string;
+  examDate?: string;
 }
 
 const INITIAL_LESSON_PLANS: LessonPlanReview[] = [];
@@ -93,7 +94,7 @@ export function SubjectHODDashboard() {
 
   const [syllabusForm, setSyllabusForm] = useState({ subject: '', department: 'Mathematics', hod: hodName, classForm: CLASS_FORMS[0], syllabusTopics: 0, topicsCovered: 0, status: 'Not Started' as CurriculumStatus, notes: '' });
   const [examPaperForm, setExamPaperForm] = useState({ title: '', subject: '', classForm: CLASS_FORMS[0], term: 'Term 3' as TermName, maxScore: 50, setter: '', moderator: '', notes: '' });
-  const [resultForm, setResultForm] = useState({ classForm: CLASS_FORMS[0], subject: '', term: 'Term 3' as TermName, entered: '', total: '', enteredBy: '' });
+  const [resultForm, setResultForm] = useState({ classForm: CLASS_FORMS[0], subject: '', term: 'Term 3' as TermName, entered: '', total: '', enteredBy: '', examDate: new Date().toISOString().slice(0, 10) });
   const [lessonComment, setLessonComment] = useState<{ id: string; action: 'approve' | 'return' } | null>(null);
   const [commentText, setCommentText] = useState('');
 
@@ -115,7 +116,7 @@ export function SubjectHODDashboard() {
       if (ep) setExamPaperForm({ title: ep.title, subject: ep.subject, classForm: ep.classForm, term: ep.term, maxScore: ep.maxScore, setter: ep.setter, moderator: ep.moderator, notes: ep.notes || '' });
     } else if (type === 'result' && id) {
       const re = resultEntries.find((re) => re.id === id);
-      if (re) setResultForm({ classForm: re.classForm, subject: re.subject, term: re.term, entered: String(re.entered), total: String(re.total), enteredBy: re.enteredBy });
+      if (re) setResultForm({ classForm: re.classForm, subject: re.subject, term: re.term, entered: String(re.entered), total: String(re.total), enteredBy: re.enteredBy, examDate: (re as any).examDate || new Date().toISOString().slice(0, 10) });
     }
     setShowModal(true);
   };
@@ -156,7 +157,7 @@ export function SubjectHODDashboard() {
     } else {
       setResultEntries((prev) => [{ ...resultForm, id: nextId(), entered, total, status, lastUpdated: todayISO() }, ...prev]);
     }
-    setResultForm({ classForm: CLASS_FORMS[0], subject: '', term: 'Term 3', entered: '', total: '', enteredBy: '' });
+    setResultForm({ classForm: CLASS_FORMS[0], subject: '', term: 'Term 3', entered: '', total: '', enteredBy: '', examDate: new Date().toISOString().slice(0, 10) });
     closeModal();
     Alert.alert('Success', editingId ? 'Result entry updated' : 'Result entry added');
   };
@@ -620,6 +621,7 @@ export function SubjectHODDashboard() {
               {renderInput('Scores Entered', resultForm.entered, (v) => setResultForm({ ...resultForm, entered: v }), 'e.g. 38')}
               {renderInput('Total Students', resultForm.total, (v) => setResultForm({ ...resultForm, total: v }), 'e.g. 42')}
               {renderInput('Entered By', resultForm.enteredBy, (v) => setResultForm({ ...resultForm, enteredBy: v }), 'Teacher name')}
+              {renderInput('Exam Date (YYYY-MM-DD)', resultForm.examDate, (v) => setResultForm({ ...resultForm, examDate: v }), 'YYYY-MM-DD')}
 
               <View style={styles.modalActions}>
                 <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={closeModal}><Text style={styles.modalBtnTextDark}>Cancel</Text></TouchableOpacity>

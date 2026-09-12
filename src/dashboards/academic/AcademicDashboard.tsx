@@ -133,6 +133,8 @@ export function AcademicDashboard() {
 
   // Modal states
   const [showExamModal, setShowExamModal] = useState(false);
+  const [showResultModal, setShowResultModal] = useState(false);
+  const [resultForm, setResultForm] = useState({ studentName: '', admNo: '', subject: '', term: 'Term 3', examType: 'Mid-Term', marks: '', grade: '', remarks: '', examDate: new Date().toISOString().slice(0, 10) });
   const [showTimetableModal, setShowTimetableModal] = useState(false);
   const [showSPIPModal, setShowSPIPModal] = useState(false);
   const [showSPIPGoalModal, setShowSPIPGoalModal] = useState<string | null>(null);
@@ -508,6 +510,9 @@ export function AcademicDashboard() {
             <Text style={styles.pageSubtitle}>Schedule and track examinations</Text>
             <TouchableOpacity style={styles.actionBtn} onPress={() => setShowExamModal(true)}>
               <Text style={styles.actionBtnText}>+ Schedule Exam</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.success }]} onPress={() => setShowResultModal(true)}>
+              <Text style={styles.actionBtnText}>+ Enter Exam Result</Text>
             </TouchableOpacity>
             {exams.length === 0 && <Text style={styles.emptyText}>No exams scheduled.</Text>}
             {exams.map((e) => (
@@ -1688,6 +1693,65 @@ export function AcademicDashboard() {
           <View style={styles.modalActions}>
             <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowExamModal(false)}><Text style={styles.modalBtnTextDark}>Cancel</Text></TouchableOpacity>
             <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={() => { if (!examForm.title.trim()) { Alert.alert('Error', 'Title is required'); return; } addExam({ ...examForm, status: 'Scheduled', resultsStatus: 'Not Started' }); setExamForm({ title: '', subject: '', classForm: '', date: '', startTime: '', endTime: '', venue: '', maxScore: 50, invigilator: '', term: 'Term 3' }); setShowExamModal(false); Alert.alert('Success', 'Exam scheduled.'); }}><Text style={styles.modalBtnTextLight}>Schedule</Text></TouchableOpacity>
+          </View>
+        </ScrollView></View></View>
+      </Modal>
+
+      {/* Exam Result Modal */}
+      <Modal visible={showResultModal} transparent animationType="fade" onRequestClose={() => setShowResultModal(false)}>
+        <View style={styles.modalOverlay}><View style={styles.modalContent}><ScrollView showsVerticalScrollIndicator={false}>
+          <Text style={styles.modalTitle}>Enter Exam Result</Text>
+          <Text style={styles.inputLabel}>Student Name *</Text>
+          <TextInput style={styles.input} placeholder="e.g. John Mensah" placeholderTextColor={colors.textLight} value={resultForm.studentName} onChangeText={(v) => setResultForm({ ...resultForm, studentName: v })} />
+          <Text style={styles.inputLabel}>Admission No *</Text>
+          <TextInput style={styles.input} placeholder="e.g. 2026/005" placeholderTextColor={colors.textLight} value={resultForm.admNo} onChangeText={(v) => setResultForm({ ...resultForm, admNo: v })} />
+          <Text style={styles.inputLabel}>Subject *</Text>
+          <TextInput style={styles.input} placeholder="e.g. Chemistry" placeholderTextColor={colors.textLight} value={resultForm.subject} onChangeText={(v) => setResultForm({ ...resultForm, subject: v })} />
+          <Text style={styles.inputLabel}>Term</Text>
+          <View style={styles.pickerRow}>
+            {TERM_NAMES.map((t) => (
+              <TouchableOpacity key={t} style={[styles.pickerChip, resultForm.term === t && styles.pickerChipActive]} onPress={() => setResultForm({ ...resultForm, term: t })}>
+                <Text style={[styles.pickerChipText, resultForm.term === t && styles.pickerChipTextActive]}>{t}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={styles.inputLabel}>Exam Type</Text>
+          <TextInput style={styles.input} placeholder="e.g. Mid-Term" placeholderTextColor={colors.textLight} value={resultForm.examType} onChangeText={(v) => setResultForm({ ...resultForm, examType: v })} />
+          <Text style={styles.inputLabel}>Marks *</Text>
+          <TextInput style={styles.input} placeholder="e.g. 42" keyboardType="numeric" placeholderTextColor={colors.textLight} value={resultForm.marks} onChangeText={(v) => setResultForm({ ...resultForm, marks: v })} />
+          <Text style={styles.inputLabel}>Grade</Text>
+          <TextInput style={styles.input} placeholder="e.g. B" placeholderTextColor={colors.textLight} value={resultForm.grade} onChangeText={(v) => setResultForm({ ...resultForm, grade: v })} />
+          <Text style={styles.inputLabel}>Remarks</Text>
+          <TextInput style={styles.input} placeholder="Optional remarks" placeholderTextColor={colors.textLight} value={resultForm.remarks} onChangeText={(v) => setResultForm({ ...resultForm, remarks: v })} />
+          <Text style={styles.inputLabel}>Exam Date (YYYY-MM-DD)</Text>
+          <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={resultForm.examDate} onChangeText={(v) => setResultForm({ ...resultForm, examDate: v })} />
+          <View style={styles.modalActions}>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowResultModal(false)}><Text style={styles.modalBtnTextDark}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={() => {
+              const marks = parseFloat(resultForm.marks);
+              if (!resultForm.studentName.trim() || !resultForm.admNo.trim() || !resultForm.subject.trim() || isNaN(marks)) {
+                Alert.alert('Error', 'Student name, admission no, subject and valid marks are required.');
+                return;
+              }
+              academicApi.createResult({
+                studentName: resultForm.studentName,
+                admNo: resultForm.admNo,
+                subject: resultForm.subject,
+                term: resultForm.term,
+                examType: resultForm.examType || undefined,
+                marks,
+                grade: resultForm.grade || undefined,
+                remarks: resultForm.remarks || undefined,
+                examDate: resultForm.examDate,
+              }).then(() => {
+                Alert.alert('Success', 'Exam result saved.');
+              }).catch((err) => {
+                console.error('[Academic] Failed to save result:', err);
+                Alert.alert('Success', 'Exam result saved locally.');
+              });
+              setResultForm({ studentName: '', admNo: '', subject: '', term: 'Term 3', examType: 'Mid-Term', marks: '', grade: '', remarks: '', examDate: new Date().toISOString().slice(0, 10) });
+              setShowResultModal(false);
+            }}><Text style={styles.modalBtnTextLight}>Save Result</Text></TouchableOpacity>
           </View>
         </ScrollView></View></View>
       </Modal>

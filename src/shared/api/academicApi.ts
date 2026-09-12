@@ -21,6 +21,7 @@ export interface ExamResultDto {
   marks: number;
   grade: string | null;
   remarks: string | null;
+  examDate: string | null;
 }
 
 export interface AttendanceRecordDto {
@@ -68,6 +69,7 @@ export const academicApi = {
     marks: number;
     grade?: string;
     remarks?: string;
+    examDate?: string;
   }): Promise<ExamResultDto> {
     return apiClient.post<ExamResultDto>('/academic/results', data as any);
   },

@@ -27,6 +27,7 @@ export interface FeeRecord {
   guardianPhone: string;
   lastPaymentDate?: string;
   lastPaymentMethod?: PaymentMethod;
+  billingDate?: string;
 }
 
 export interface PaymentReceipt {
@@ -178,7 +179,7 @@ interface BursaryState {
   invoices: Invoice[];
 
   // Fees
-  recordPayment: (feeRecordId: string, amount: number, method: PaymentMethod, receivedBy: string, notes: string) => void;
+  recordPayment: (feeRecordId: string, amount: number, method: PaymentMethod, receivedBy: string, notes: string, paymentDate?: string) => void;
   addFeeRecord: (fee: Omit<FeeRecord, 'id' | 'balance' | 'status'>) => void;
   updateFeeRecord: (id: string, fee: Partial<FeeRecord>) => void;
   deleteFeeRecord: (id: string) => void;
@@ -243,22 +244,23 @@ export const useBursaryStore = create<BursaryState>((set, get) => ({
   budgetSubmissions: INITIAL_BUDGET_SUBMISSIONS,
   invoices: INITIAL_INVOICES,
 
-  recordPayment: async (feeRecordId, amount, method, receivedBy, notes) => {
+  recordPayment: async (feeRecordId, amount, method, receivedBy, notes, paymentDate) => {
     const fee = get().fees.find((f) => f.id === feeRecordId);
     if (!fee) return;
     const newPaid = fee.amountPaid + amount;
     const newBalance = fee.amountDue - newPaid;
     const newStatus = calcFeeStatus(newPaid, fee.amountDue);
+    const date = paymentDate || todayISO();
     const receipt: PaymentReceipt = {
       id: nextId(), feeRecordId, studentName: fee.studentName, admNo: fee.admNo,
-      amount, method, date: todayISO(), receivedBy, receiptNo: nextReceiptNo(),
+      amount, method, date, receivedBy, receiptNo: nextReceiptNo(),
       term: fee.term, notes,
     };
     try {
-      await apiClient.post<any>('/bursary/receipts', { feeRecordId, amount, method, receivedBy, notes, term: fee.term });
+      await apiClient.post<any>('/bursary/receipts', { feeRecordId, amount, method, receivedBy, notes, term: fee.term, paymentDate: date });
     } catch {}
     set((s) => ({
-      fees: s.fees.map((f) => f.id === feeRecordId ? { ...f, amountPaid: newPaid, balance: newBalance, status: newStatus, lastPaymentDate: todayISO(), lastPaymentMethod: method } : f),
+      fees: s.fees.map((f) => f.id === feeRecordId ? { ...f, amountPaid: newPaid, balance: newBalance, status: newStatus, lastPaymentDate: date, lastPaymentMethod: method } : f),
       receipts: [receipt, ...s.receipts],
     }));
   },

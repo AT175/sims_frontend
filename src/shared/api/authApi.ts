@@ -60,6 +60,13 @@ export const authApi = {
     parentPhone: string;
     parentEmail?: string;
     csspsPlacementRef?: string;
+    programme?: string;
+    appliedClassLevel?: string;
+    previousSchool?: string;
+    previousClass?: string;
+    dateOfBirth?: string;
+    gender?: string;
+    applicationDate?: string;
   }): Promise<{ id: string; status: string }> {
     return apiClient.post('/admissions/apply', data);
   },

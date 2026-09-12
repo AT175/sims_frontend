@@ -293,6 +293,7 @@ function StudentsPage({ students, store, renderBadge, onRefresh }: any) {
     programme: 'Science' as 'Science' | 'Arts' | 'Business',
     class: CLASS_SECTIONS[0], house: HOUSES[0], guardianName: '', guardianPhone: '', guardianAddress: '',
     photoUrl: null as string | null, csspsRef: '',
+    applicationDate: new Date().toISOString().slice(0, 10),
   });
 
   const statusColor = (s: string) => s === 'Active' ? colors.success : s === 'Graduated' ? colors.info : s === 'Withdrawn' ? colors.warning : colors.textLight;
@@ -325,7 +326,7 @@ function StudentsPage({ students, store, renderBadge, onRefresh }: any) {
       guardianName: form.guardianName,
       guardianPhone: form.guardianPhone,
       guardianAddress: form.guardianAddress,
-      admissionDate: new Date().toISOString().slice(0, 10),
+      admissionDate: form.applicationDate || new Date().toISOString().slice(0, 10),
       status: 'Active' as any,
       photoUrl: form.photoUrl,
       csspsRef: form.csspsRef,
@@ -334,7 +335,7 @@ function StudentsPage({ students, store, renderBadge, onRefresh }: any) {
     store.addStudent(localStudent);
 
     setSaving(false);
-    setForm({ admNo: '', firstName: '', lastName: '', dateOfBirth: '', gender: 'Male', programme: 'Science', class: CLASS_SECTIONS[0], house: HOUSES[0], guardianName: '', guardianPhone: '', guardianAddress: '', photoUrl: null, csspsRef: '' });
+    setForm({ admNo: '', firstName: '', lastName: '', dateOfBirth: '', gender: 'Male', programme: 'Science', class: CLASS_SECTIONS[0], house: HOUSES[0], guardianName: '', guardianPhone: '', guardianAddress: '', photoUrl: null, csspsRef: '', applicationDate: new Date().toISOString().slice(0, 10) });
     setShowAdd(false);
     Alert.alert('Success', 'Student record added.');
 
@@ -349,7 +350,7 @@ function StudentsPage({ students, store, renderBadge, onRefresh }: any) {
       guardianName: form.guardianName,
       guardianPhone: form.guardianPhone,
       guardianAddress: form.guardianAddress,
-      admissionDate: new Date().toISOString().slice(0, 10),
+      admissionDate: form.applicationDate || new Date().toISOString().slice(0, 10),
       status: 'Active',
     } as any).then((res: any) => {
       if (onRefresh) onRefresh();
@@ -428,6 +429,8 @@ function StudentsPage({ students, store, renderBadge, onRefresh }: any) {
               <TextInput style={styles.textInput} value={form.guardianPhone} onChangeText={(v) => setForm({ ...form, guardianPhone: v })} placeholder="024-XXX-XXXX" />
               <Text style={styles.inputLabel}>Guardian Address</Text>
               <TextInput style={styles.textInput} value={form.guardianAddress} onChangeText={(v) => setForm({ ...form, guardianAddress: v })} />
+              <Text style={styles.inputLabel}>Application Date (YYYY-MM-DD)</Text>
+              <TextInput style={styles.textInput} value={form.applicationDate} onChangeText={(v) => setForm({ ...form, applicationDate: v })} placeholder="YYYY-MM-DD" />
               <View style={styles.modalBtnRow}>
                 <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowAdd(false)}>
                   <Text style={styles.modalBtnTextCancel}>Cancel</Text>

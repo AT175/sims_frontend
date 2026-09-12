@@ -404,7 +404,9 @@ export function AccountantDashboard() {
 
 function FeesPage({ fees, receipts, store, renderBadge, userName }: any) {
   const [showPay, setShowPay] = useState<string | null>(null);
-  const [payForm, setPayForm] = useState({ amount: '', method: PAYMENT_METHODS[0], notes: '' });
+  const [payForm, setPayForm] = useState({ amount: '', method: PAYMENT_METHODS[0], notes: '', paymentDate: new Date().toISOString().slice(0, 10) });
+  const [showFeeForm, setShowFeeForm] = useState(false);
+  const [feeForm, setFeeForm] = useState({ studentName: '', admNo: '', class: '', term: 'Term 3', feeType: 'Tuition', amountDue: '', guardianName: '', guardianPhone: '', billingDate: new Date().toISOString().slice(0, 10) });
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
 
@@ -424,10 +426,33 @@ function FeesPage({ fees, receipts, store, renderBadge, userName }: any) {
       Alert.alert('Error', 'Invalid amount.');
       return;
     }
-    store.recordPayment(showPay, amount, payForm.method, userName, payForm.notes);
-    setPayForm({ amount: '', method: PAYMENT_METHODS[0], notes: '' });
+    store.recordPayment(showPay, amount, payForm.method, userName, payForm.notes, payForm.paymentDate);
+    setPayForm({ amount: '', method: PAYMENT_METHODS[0], notes: '', paymentDate: new Date().toISOString().slice(0, 10) });
     setShowPay(null);
     Alert.alert('Success', 'Payment recorded. Receipt generated.');
+  };
+
+  const handleAddFee = () => {
+    const amountDue = parseFloat(feeForm.amountDue);
+    if (!feeForm.studentName.trim() || !feeForm.admNo.trim() || isNaN(amountDue) || amountDue <= 0) {
+      Alert.alert('Error', 'Student name, admission number and a valid amount due are required.');
+      return;
+    }
+    store.addFeeRecord({
+      studentName: feeForm.studentName,
+      admNo: feeForm.admNo,
+      class: feeForm.class,
+      term: feeForm.term,
+      feeType: feeForm.feeType,
+      amountDue,
+      amountPaid: 0,
+      guardianName: feeForm.guardianName,
+      guardianPhone: feeForm.guardianPhone,
+      billingDate: feeForm.billingDate,
+    } as any);
+    setFeeForm({ studentName: '', admNo: '', class: '', term: 'Term 3', feeType: 'Tuition', amountDue: '', guardianName: '', guardianPhone: '', billingDate: new Date().toISOString().slice(0, 10) });
+    setShowFeeForm(false);
+    Alert.alert('Success', 'Fee record created.');
   };
 
   const payingFee = fees.find((f: any) => f.id === showPay);
@@ -436,6 +461,46 @@ function FeesPage({ fees, receipts, store, renderBadge, userName }: any) {
     <ScrollView>
       <Text style={styles.pageTitle}>Fee / Capitation Ledger</Text>
       <Text style={styles.pageSubtitle}>{fees.length} fee records — {formatGH(store.getTotalCollected())} collected, {formatGH(store.getTotalOutstanding())} outstanding</Text>
+
+      <TouchableOpacity style={styles.actionBtn} onPress={() => setShowFeeForm(true)}>
+        <Text style={styles.actionBtnText}>+ Create Fee Record</Text>
+      </TouchableOpacity>
+
+      <Modal visible={showFeeForm} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <ScrollView>
+              <Text style={styles.modalTitle}>Create Fee Record</Text>
+              <Text style={styles.inputLabel}>Student Name</Text>
+              <TextInput style={styles.textInput} value={feeForm.studentName} onChangeText={(v) => setFeeForm({ ...feeForm, studentName: v })} placeholder="Full name" />
+              <Text style={styles.inputLabel}>Admission Number</Text>
+              <TextInput style={styles.textInput} value={feeForm.admNo} onChangeText={(v) => setFeeForm({ ...feeForm, admNo: v })} placeholder="2026/005" />
+              <Text style={styles.inputLabel}>Class</Text>
+              <TextInput style={styles.textInput} value={feeForm.class} onChangeText={(v) => setFeeForm({ ...feeForm, class: v })} placeholder="SHS1 Sci A" />
+              <Text style={styles.inputLabel}>Term</Text>
+              <TextInput style={styles.textInput} value={feeForm.term} onChangeText={(v) => setFeeForm({ ...feeForm, term: v })} placeholder="Term 3" />
+              <Text style={styles.inputLabel}>Fee Type</Text>
+              <TextInput style={styles.textInput} value={feeForm.feeType} onChangeText={(v) => setFeeForm({ ...feeForm, feeType: v })} placeholder="Tuition" />
+              <Text style={styles.inputLabel}>Amount Due (GH₵)</Text>
+              <TextInput style={styles.textInput} value={feeForm.amountDue} onChangeText={(v) => setFeeForm({ ...feeForm, amountDue: v })} placeholder="500" keyboardType="numeric" />
+              <Text style={styles.inputLabel}>Guardian Name</Text>
+              <TextInput style={styles.textInput} value={feeForm.guardianName} onChangeText={(v) => setFeeForm({ ...feeForm, guardianName: v })} placeholder="Optional" />
+              <Text style={styles.inputLabel}>Guardian Phone</Text>
+              <TextInput style={styles.textInput} value={feeForm.guardianPhone} onChangeText={(v) => setFeeForm({ ...feeForm, guardianPhone: v })} placeholder="Optional" />
+              <Text style={styles.inputLabel}>Billing Date (YYYY-MM-DD)</Text>
+              <TextInput style={styles.textInput} value={feeForm.billingDate} onChangeText={(v) => setFeeForm({ ...feeForm, billingDate: v })} placeholder="YYYY-MM-DD" />
+              <View style={styles.modalBtnRow}>
+                <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowFeeForm(false)}>
+                  <Text style={styles.modalBtnTextCancel}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={handleAddFee}>
+                  <Text style={styles.modalBtnTextSubmit}>Create</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       <View style={styles.searchRow}>
         <TextInput style={styles.searchInput} placeholder="Search by name, adm no, class..." placeholderTextColor={colors.textLight} value={search} onChangeText={setSearch} />
@@ -471,6 +536,8 @@ function FeesPage({ fees, receipts, store, renderBadge, userName }: any) {
             </View>
             <Text style={styles.inputLabel}>Notes</Text>
             <TextInput style={[styles.textInput, { minHeight: 50 }]} value={payForm.notes} onChangeText={(v) => setPayForm({ ...payForm, notes: v })} placeholder="Optional notes..." multiline />
+            <Text style={styles.inputLabel}>Payment Date (YYYY-MM-DD)</Text>
+            <TextInput style={styles.textInput} value={payForm.paymentDate} onChangeText={(v) => setPayForm({ ...payForm, paymentDate: v })} placeholder="YYYY-MM-DD" />
             <View style={styles.modalBtnRow}>
               <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowPay(null)}>
                 <Text style={styles.modalBtnTextCancel}>Cancel</Text>

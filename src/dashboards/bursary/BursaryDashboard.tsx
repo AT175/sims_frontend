@@ -12,6 +12,7 @@ import { preloadLetterhead, getLetterheadHTML, getDocumentFooterHTML } from '@sh
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'overview', label: 'Bursary Overview' },
+  { key: 'feeRecords', label: 'Fee Records' },
   { key: 'cashbook', label: 'Cash Book' },
   { key: 'studentAccounts', label: 'Student Accounts' },
   { key: 'pettyCash', label: 'Petty Cash' },
@@ -313,6 +314,9 @@ export function BursaryDashboard() {
           </ScrollView>
         );
 
+      case 'feeRecords':
+        return <FeeRecordsPage bursaryStore={bursaryStore} renderBadge={renderBadge} userName={userName} />;
+
       case 'cashbook':
         return <CashBookPage store={store} renderBadge={renderBadge} userName={userName} />;
 
@@ -365,6 +369,177 @@ export function BursaryDashboard() {
       headerRight={<TouchableOpacity onPress={logout} style={styles.logoutBtn}><Text style={styles.logoutText}>Logout</Text></TouchableOpacity>}>
       {renderPage()}
     </DashboardLayout>
+  );
+}
+
+// ── Fee Records Page ──
+
+function FeeRecordsPage({ bursaryStore, renderBadge, userName }: any) {
+  const [showFeeForm, setShowFeeForm] = useState(false);
+  const [showPay, setShowPay] = useState<string | null>(null);
+  const [feeForm, setFeeForm] = useState({ studentName: '', admNo: '', class: '', term: 'Term 3', feeType: 'Tuition', amountDue: '', guardianName: '', guardianPhone: '', billingDate: new Date().toISOString().slice(0, 10) });
+  const [payForm, setPayForm] = useState({ amount: '', method: 'Cash', notes: '', paymentDate: new Date().toISOString().slice(0, 10) });
+
+  const fees = bursaryStore.fees;
+  const receipts = bursaryStore.receipts;
+
+  const feeStatusColor = (s: string) => s === 'Cleared' ? colors.success : s === 'Partial' ? colors.warning : colors.danger;
+
+  const handleAddFee = () => {
+    const amountDue = parseFloat(feeForm.amountDue);
+    if (!feeForm.studentName.trim() || !feeForm.admNo.trim() || isNaN(amountDue) || amountDue <= 0) {
+      Alert.alert('Error', 'Student name, admission number and a valid amount due are required.');
+      return;
+    }
+    bursaryStore.addFeeRecord({
+      studentName: feeForm.studentName,
+      admNo: feeForm.admNo,
+      class: feeForm.class,
+      term: feeForm.term,
+      feeType: feeForm.feeType,
+      amountDue,
+      amountPaid: 0,
+      guardianName: feeForm.guardianName,
+      guardianPhone: feeForm.guardianPhone,
+      billingDate: feeForm.billingDate,
+    } as any);
+    setFeeForm({ studentName: '', admNo: '', class: '', term: 'Term 3', feeType: 'Tuition', amountDue: '', guardianName: '', guardianPhone: '', billingDate: new Date().toISOString().slice(0, 10) });
+    setShowFeeForm(false);
+    Alert.alert('Success', 'Fee record created.');
+  };
+
+  const handlePay = () => {
+    if (!showPay) return;
+    const amount = parseFloat(payForm.amount);
+    if (isNaN(amount) || amount <= 0) {
+      Alert.alert('Error', 'Invalid amount.');
+      return;
+    }
+    bursaryStore.recordPayment(showPay, amount, payForm.method as any, userName, payForm.notes, payForm.paymentDate);
+    setPayForm({ amount: '', method: 'Cash', notes: '', paymentDate: new Date().toISOString().slice(0, 10) });
+    setShowPay(null);
+    Alert.alert('Success', 'Payment recorded. Receipt generated.');
+  };
+
+  const payingFee = fees.find((f: any) => f.id === showPay);
+
+  return (
+    <ScrollView>
+      <Text style={styles.pageTitle}>Fee Records</Text>
+      <Text style={styles.pageSubtitle}>{fees.length} records — {formatGH(bursaryStore.getTotalCollected())} collected, {formatGH(bursaryStore.getTotalOutstanding())} outstanding</Text>
+
+      <TouchableOpacity style={styles.actionBtn} onPress={() => setShowFeeForm(true)}>
+        <Text style={styles.actionBtnText}>+ Create Fee Record</Text>
+      </TouchableOpacity>
+
+      <Modal visible={showFeeForm} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <ScrollView>
+              <Text style={styles.modalTitle}>Create Fee Record</Text>
+              <Text style={styles.inputLabel}>Student Name</Text>
+              <TextInput style={styles.textInput} value={feeForm.studentName} onChangeText={(v) => setFeeForm({ ...feeForm, studentName: v })} placeholder="Full name" />
+              <Text style={styles.inputLabel}>Admission Number</Text>
+              <TextInput style={styles.textInput} value={feeForm.admNo} onChangeText={(v) => setFeeForm({ ...feeForm, admNo: v })} placeholder="2026/005" />
+              <Text style={styles.inputLabel}>Class</Text>
+              <TextInput style={styles.textInput} value={feeForm.class} onChangeText={(v) => setFeeForm({ ...feeForm, class: v })} placeholder="SHS1 Sci A" />
+              <Text style={styles.inputLabel}>Term</Text>
+              <TextInput style={styles.textInput} value={feeForm.term} onChangeText={(v) => setFeeForm({ ...feeForm, term: v })} placeholder="Term 3" />
+              <Text style={styles.inputLabel}>Fee Type</Text>
+              <TextInput style={styles.textInput} value={feeForm.feeType} onChangeText={(v) => setFeeForm({ ...feeForm, feeType: v })} placeholder="Tuition" />
+              <Text style={styles.inputLabel}>Amount Due (GH₵)</Text>
+              <TextInput style={styles.textInput} value={feeForm.amountDue} onChangeText={(v) => setFeeForm({ ...feeForm, amountDue: v })} placeholder="500" keyboardType="numeric" />
+              <Text style={styles.inputLabel}>Guardian Name</Text>
+              <TextInput style={styles.textInput} value={feeForm.guardianName} onChangeText={(v) => setFeeForm({ ...feeForm, guardianName: v })} placeholder="Optional" />
+              <Text style={styles.inputLabel}>Guardian Phone</Text>
+              <TextInput style={styles.textInput} value={feeForm.guardianPhone} onChangeText={(v) => setFeeForm({ ...feeForm, guardianPhone: v })} placeholder="Optional" />
+              <Text style={styles.inputLabel}>Billing Date (YYYY-MM-DD)</Text>
+              <TextInput style={styles.textInput} value={feeForm.billingDate} onChangeText={(v) => setFeeForm({ ...feeForm, billingDate: v })} placeholder="YYYY-MM-DD" />
+              <View style={styles.modalBtnRow}>
+                <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowFeeForm(false)}>
+                  <Text style={styles.modalBtnTextCancel}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={handleAddFee}>
+                  <Text style={styles.modalBtnTextSubmit}>Create</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={!!showPay} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Record Payment</Text>
+            {payingFee && (
+              <>
+                <Text style={styles.payStudent}>{payingFee.studentName} — {payingFee.admNo}</Text>
+                <Text style={styles.payMeta}>{payingFee.feeType} — {payingFee.term}</Text>
+                <Text style={styles.payMeta}>Due: {formatGH(payingFee.amountDue)} | Paid: {formatGH(payingFee.amountPaid)} | Balance: {formatGH(payingFee.balance)}</Text>
+              </>
+            )}
+            <Text style={styles.inputLabel}>Amount (GH₵)</Text>
+            <TextInput style={styles.textInput} value={payForm.amount} onChangeText={(v) => setPayForm({ ...payForm, amount: v })} placeholder="500" keyboardType="numeric" />
+            <Text style={styles.inputLabel}>Payment Method</Text>
+            <TextInput style={styles.textInput} value={payForm.method} onChangeText={(v) => setPayForm({ ...payForm, method: v })} placeholder="Cash" />
+            <Text style={styles.inputLabel}>Notes</Text>
+            <TextInput style={[styles.textInput, { minHeight: 50 }]} value={payForm.notes} onChangeText={(v) => setPayForm({ ...payForm, notes: v })} placeholder="Optional notes..." multiline />
+            <Text style={styles.inputLabel}>Payment Date (YYYY-MM-DD)</Text>
+            <TextInput style={styles.textInput} value={payForm.paymentDate} onChangeText={(v) => setPayForm({ ...payForm, paymentDate: v })} placeholder="YYYY-MM-DD" />
+            <View style={styles.modalBtnRow}>
+              <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowPay(null)}>
+                <Text style={styles.modalBtnTextCancel}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSubmit]} onPress={handlePay}>
+                <Text style={styles.modalBtnTextSubmit}>Record Payment</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <DataTable
+        columns={[
+          { key: 'admNo', label: 'Adm No', render: (i: any) => i.admNo },
+          { key: 'student', label: 'Student', render: (i: any) => i.studentName },
+          { key: 'feeType', label: 'Fee Type', render: (i: any) => i.feeType },
+          { key: 'due', label: 'Due', render: (i: any) => formatGH(i.amountDue) },
+          { key: 'paid', label: 'Paid', render: (i: any) => formatGH(i.amountPaid) },
+          { key: 'balance', label: 'Balance', render: (i: any) => formatGH(i.balance) },
+          { key: 'status', label: 'Status', render: (i: any) => renderBadge(i.status, feeStatusColor(i.status)) },
+        ]}
+        data={fees}
+      />
+
+      {fees.filter((f: any) => f.balance > 0).length > 0 && (
+        <View style={{ marginTop: spacing.lg }}>
+          <Text style={styles.sectionTitle}>Quick Payment</Text>
+          {fees.filter((f: any) => f.balance > 0).map((f: any) => (
+            <TouchableOpacity key={f.id} style={styles.payRow} onPress={() => setShowPay(f.id)}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.payRowName}>{f.studentName} — {f.admNo}</Text>
+                <Text style={styles.payRowBalance}>Balance: {formatGH(f.balance)}</Text>
+              </View>
+              <Text style={styles.payRowAction}>Record Payment →</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      <Text style={styles.sectionTitle}>Payment Receipts</Text>
+      {receipts.map((r: any) => (
+        <View key={r.id} style={styles.receiptCard}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.receiptNo}>{r.receiptNo}</Text>
+            <Text style={styles.receiptMeta}>{r.studentName} — {r.date}</Text>
+            <Text style={styles.receiptAmount}>{formatGH(r.amount)} via {r.method}</Text>
+            <Text style={styles.receiptNotes}>{r.notes}</Text>
+          </View>
+          <Text style={styles.receiptBy}>Received by {r.receivedBy}</Text>
+        </View>
+      ))}
+    </ScrollView>
   );
 }
 
@@ -1356,6 +1531,17 @@ const styles = StyleSheet.create({
   modalBtnTextSubmit: { color: colors.white, fontSize: fontSize.md, fontWeight: fontWeight.semibold },
 
   payMeta: { fontSize: fontSize.sm, color: colors.textSecondary, marginBottom: 2 },
+  payStudent: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: colors.text, marginBottom: 2 },
+  payRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.xs },
+  payRowName: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.text },
+  payRowBalance: { fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 2 },
+  payRowAction: { fontSize: fontSize.sm, color: colors.primary, fontWeight: fontWeight.semibold },
+  receiptCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.xs },
+  receiptNo: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, color: colors.text },
+  receiptMeta: { fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 2 },
+  receiptAmount: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.success, marginTop: 2 },
+  receiptNotes: { fontSize: fontSize.xs, color: colors.textLight, marginTop: 2 },
+  receiptBy: { fontSize: fontSize.xs, color: colors.textLight },
 
   // Alert cards (overview)
   alertCard: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderLeftWidth: 4, borderLeftColor: colors.warning },

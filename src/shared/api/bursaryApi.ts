@@ -15,6 +15,7 @@ export interface FeeRecordDto {
   guardianPhone: string | null;
   lastPaymentDate: string | null;
   lastPaymentMethod: string | null;
+  billingDate: string | null;
 }
 
 export interface PaymentReceiptDto {
@@ -52,6 +53,7 @@ export const bursaryApi = {
     amountDue: number;
     guardianName?: string;
     guardianPhone?: string;
+    billingDate?: string;
   }): Promise<FeeRecordDto> {
     return apiClient.post<FeeRecordDto>('/bursary/fees', data as any);
   },
@@ -63,6 +65,7 @@ export const bursaryApi = {
     receivedBy: string;
     term: string;
     notes?: string;
+    paymentDate?: string;
   }): Promise<PaymentReceiptDto> {
     return apiClient.post<PaymentReceiptDto>('/bursary/payments', data as any);
   },
