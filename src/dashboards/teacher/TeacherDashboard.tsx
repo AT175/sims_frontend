@@ -6,6 +6,8 @@ import { useAuthStore } from '@store/authStore';
 import { usePLCStore, OBSERVATION_RATINGS } from '@store/plcStore';
 import type { ObservationRating } from '@store/plcStore';
 import { useTeacherStore } from '@store/teacherStore';
+import { preloadLetterhead, getLetterheadHTML, getDocumentFooterHTML, getCachedBranding } from '@shared/utils/letterhead';
+import { GES_CLASS_LEVELS, GES_WEEKS, GES_TERMS, getSubjectsForClass } from '@shared/utils/ges-curriculum';
 import {
   MATERIAL_TYPES,
   ANNOUNCEMENT_PRIORITIES, DAYS_OF_WEEK,
@@ -99,7 +101,7 @@ export function TeacherDashboard() {
     markNotificationRead, markAllNotificationsRead,
     addSharedResource, deleteSharedResource,
     getClassAnalytics, getStudentProfile,
-    generateAILessonPlan, loadAll,
+    generateAILessonPlan, generateGESLessonPlan, refineLessonPlan, loadAll,
   } = tStore;
 
   // WebRTC media stream refs for real camera/mic
@@ -304,6 +306,7 @@ export function TeacherDashboard() {
 
   useEffect(() => {
     loadAll();    usePLCStore.getState().loadAll();
+    if (user?.tenantId) preloadLetterhead(user.tenantId);
   }, []);
 
   const [showObsModal, setShowObsModal] = useState(false);
@@ -337,6 +340,16 @@ export function TeacherDashboard() {
   const [showAIModal, setShowAIModal] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<any>(null);
+  const [gesResult, setGesResult] = useState<any>(null);
+  const [refineInput, setRefineInput] = useState('');
+  const [refineHistory, setRefineHistory] = useState<{ role: 'user' | 'ai'; message: string }[]>([]);
+  const [gesClassKey, setGesClassKey] = useState('basic1');
+  const [gesSubject, setGesSubject] = useState('English Language');
+  const [gesWeek, setGesWeek] = useState('Week 1');
+  const [gesTerm, setGesTerm] = useState('Term 1');
+  const [gesTopic, setGesTopic] = useState('');
+  const [gesDuration, setGesDuration] = useState('45 minutes');
+  const [gesTeachingStyle, setGesTeachingStyle] = useState('');
   const [chatMessage, setChatMessage] = useState('');
   const [profileSearchAdm, setProfileSearchAdm] = useState('');
   const [calendarMonth, setCalendarMonth] = useState(new Date());
@@ -440,6 +453,159 @@ export function TeacherDashboard() {
   const syllabusProgress = getSyllabusProgress(selectedSubject, selectedClass);
   const publishedAssignments = assignments.filter((a) => a.status === 'Published');
   const pendingGrading = assignments.flatMap((a) => a.submissions.filter((s) => s.status === 'Submitted' || s.status === 'Late').map((s) => ({ ...s, assignmentTitle: a.title, maxScore: a.maxScore })));
+
+  // ── GES Lesson Plan Export Functions ──
+  const exportGESLessonPDF = (plan: any) => {
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>GES Lesson Note - ${plan.subject} - ${plan.classForm} - ${plan.week}</title>
+    <style>
+      body { font-family: 'Times New Roman', serif; margin: 40px; color: #1a1a1a; line-height: 1.6; }
+      h1 { text-align: center; font-size: 18px; margin-bottom: 5px; }
+      h2 { font-size: 14px; border-bottom: 2px solid #333; padding-bottom: 3px; margin-top: 20px; }
+      .header-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+      .header-table td { padding: 4px 8px; font-size: 12px; border: 1px solid #ccc; }
+      .header-table td:first-child { font-weight: bold; width: 25%; background: #f5f5f5; }
+      .info-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+      .info-table td { padding: 4px 8px; font-size: 12px; border: 1px solid #ccc; }
+      .info-table td:first-child { font-weight: bold; background: #f5f5f5; }
+      .section { margin-bottom: 15px; }
+      .section-title { font-weight: bold; font-size: 13px; text-decoration: underline; margin-bottom: 5px; }
+      .content { font-size: 12px; white-space: pre-wrap; }
+      .competencies { font-size: 12px; }
+      .resources { font-size: 12px; }
+      .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #666; border-top: 1px solid #ccc; padding-top: 10px; }
+      @media print { body { margin: 15px; } }
+    </style></head><body>
+    ${getLetterheadHTML()}
+    <h1>GES LESSON NOTE</h1>
+    <table class="header-table">
+      <tr><td>Name of School</td><td>${plan.schoolName}</td><td>District</td><td>${plan.district}</td></tr>
+      <tr><td>Region</td><td>${plan.region}</td><td>Class Teacher</td><td>${plan.teacherName}</td></tr>
+      <tr><td>Class</td><td>${plan.classForm}</td><td>Subject</td><td>${plan.subject}</td></tr>
+      <tr><td>Week</td><td>${plan.week}</td><td>Term</td><td>${plan.term}</td></tr>
+      <tr><td>Date</td><td>${plan.date}</td><td>Duration</td><td>${plan.duration}</td></tr>
+      <tr><td>Boys</td><td>${plan.boys}</td><td>Girls</td><td>${plan.girls}</td></tr>
+      <tr><td colspan="2">Average Age of Pupils</td><td colspan="2">${plan.averageAge}</td></tr>
+    </table>
+    <table class="info-table">
+      <tr><td>Strand</td><td>${plan.strand}</td></tr>
+      <tr><td>Sub-Strand</td><td>${plan.subStrand}</td></tr>
+      <tr><td>Indicator</td><td>${plan.indicator}</td></tr>
+      <tr><td>Content Standard</td><td>${plan.contentStandard}</td></tr>
+    </table>
+    <div class="section">
+      <div class="section-title">Core Competencies</div>
+      <div class="competencies">${plan.coreCompetencies.map((c: string, i: number) => `${i + 1}. ${c}`).join('<br>')}</div>
+    </div>
+    <div class="section">
+      <div class="section-title">Learning Objectives</div>
+      <div class="content">${plan.learningObjectives}</div>
+    </div>
+    <div class="section">
+      <div class="section-title">Teaching and Learning Resources (TLMs)</div>
+      <div class="resources">${plan.teachingLearningResources.map((r: string, i: number) => `${i + 1}. ${r}`).join('<br>')}</div>
+    </div>
+    <div class="section">
+      <div class="section-title">${plan.starter.split('\n')[0]}</div>
+      <div class="content">${plan.starter}</div>
+    </div>
+    <div class="section">
+      <div class="section-title">${plan.mainActivity.split('\n')[0]}</div>
+      <div class="content">${plan.mainActivity}</div>
+    </div>
+    <div class="section">
+      <div class="section-title">${plan.plenary.split('\n')[0]}</div>
+      <div class="content">${plan.plenary}</div>
+    </div>
+    <div class="section">
+      <div class="section-title">Assessment</div>
+      <div class="content">${plan.assessment}</div>
+    </div>
+    <div class="section">
+      <div class="section-title">Homework / Assignment</div>
+      <div class="content">${plan.homework}</div>
+    </div>
+    <div class="section">
+      <div class="section-title">Differentiation / Inclusion</div>
+      <div class="content">${plan.differentiation}</div>
+    </div>
+    <div class="section">
+      <div class="section-title">Reflection (To be completed after lesson)</div>
+      <div class="content">${plan.reflection || '............................................................................................................................'}</div>
+    </div>
+    <table class="info-table" style="margin-top: 20px;">
+      <tr><td>Vetted by</td><td>....................................</td><td>Signature</td><td>....................</td><td>Date</td><td>............</td></tr>
+    </table>
+    ${getDocumentFooterHTML()}
+    <script>window.onload = function() { window.print(); }</script>
+    </body></html>`;
+    const printWin = window.open('', '_blank');
+    if (printWin) { printWin.document.write(html); printWin.document.close(); }
+  };
+
+  const exportGESLessonWord = (plan: any) => {
+    // Generate an MS Word-compatible HTML document (.doc)
+    const wordHtml = `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>GES Lesson Note - ${plan.subject} - ${plan.classForm} - ${plan.week}</title>
+    <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->
+    <style>
+      @page { size: A4; margin: 1in; }
+      body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.5; }
+      h1 { text-align: center; font-size: 14pt; margin-bottom: 10px; }
+      table { border-collapse: collapse; width: 100%; margin-bottom: 10px; }
+      td { border: 1px solid #000; padding: 4px 8px; font-size: 11pt; }
+      td:first-child { font-weight: bold; background: #f0f0f0; }
+      .section-title { font-weight: bold; text-decoration: underline; margin-top: 12px; margin-bottom: 4px; }
+      .content { white-space: pre-wrap; }
+    </style></head><body>
+    <h1>GES LESSON NOTE</h1>
+    <table>
+      <tr><td>Name of School</td><td>${plan.schoolName}</td><td>District</td><td>${plan.district}</td></tr>
+      <tr><td>Region</td><td>${plan.region}</td><td>Class Teacher</td><td>${plan.teacherName}</td></tr>
+      <tr><td>Class</td><td>${plan.classForm}</td><td>Subject</td><td>${plan.subject}</td></tr>
+      <tr><td>Week</td><td>${plan.week}</td><td>Term</td><td>${plan.term}</td></tr>
+      <tr><td>Date</td><td>${plan.date}</td><td>Duration</td><td>${plan.duration}</td></tr>
+      <tr><td>Boys</td><td>${plan.boys}</td><td>Girls</td><td>${plan.girls}</td></tr>
+      <tr><td colspan="2">Average Age of Pupils</td><td colspan="2">${plan.averageAge}</td></tr>
+    </table>
+    <table>
+      <tr><td>Strand</td><td>${plan.strand}</td></tr>
+      <tr><td>Sub-Strand</td><td>${plan.subStrand}</td></tr>
+      <tr><td>Indicator</td><td>${plan.indicator}</td></tr>
+      <tr><td>Content Standard</td><td>${plan.contentStandard}</td></tr>
+    </table>
+    <div class="section-title">Core Competencies</div>
+    <div class="content">${plan.coreCompetencies.map((c: string, i: number) => `${i + 1}. ${c}`).join('\n')}</div>
+    <div class="section-title">Learning Objectives</div>
+    <div class="content">${plan.learningObjectives}</div>
+    <div class="section-title">Teaching and Learning Resources (TLMs)</div>
+    <div class="content">${plan.teachingLearningResources.map((r: string, i: number) => `${i + 1}. ${r}`).join('\n')}</div>
+    <div class="section-title">Phase 1: Starter (Introduction)</div>
+    <div class="content">${plan.starter}</div>
+    <div class="section-title">Phase 2: Main Body (Presentation & Practice)</div>
+    <div class="content">${plan.mainActivity}</div>
+    <div class="section-title">Phase 3: Plenary (Closure)</div>
+    <div class="content">${plan.plenary}</div>
+    <div class="section-title">Assessment</div>
+    <div class="content">${plan.assessment}</div>
+    <div class="section-title">Homework / Assignment</div>
+    <div class="content">${plan.homework}</div>
+    <div class="section-title">Differentiation / Inclusion</div>
+    <div class="content">${plan.differentiation}</div>
+    <div class="section-title">Reflection (To be completed after lesson)</div>
+    <div class="content">${plan.reflection || '............................................................................................................................'}</div>
+    <table style="margin-top: 15px;">
+      <tr><td>Vetted by</td><td>....................................</td><td>Signature</td><td>....................</td><td>Date</td><td>............</td></tr>
+    </table>
+    </body></html>`;
+    const blob = new Blob([wordHtml], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `GES_Lesson_Note_${plan.subject.replace(/\s+/g, '_')}_${plan.classForm.replace(/\s+/g, '_')}_${plan.week}.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   const renderPage = () => {
     switch (activePage) {
@@ -1110,49 +1276,237 @@ export function TeacherDashboard() {
         );
 
       case 'aiAssistant':
+        const branding = getCachedBranding();
+        const subjectsForSelectedClass = getSubjectsForClass(gesClassKey);
         return (
           <ScrollView>
             <Text style={styles.pageTitle}>AI Lesson Plan Assistant</Text>
-            <Text style={styles.pageSubtitle}>Generate structured lesson plans with AI — integrates with GES AI or built-in generator</Text>
-            <TouchableOpacity style={styles.actionBtn} onPress={() => { setShowAIModal(true); setAiResult(null); }}>
-              <Text style={styles.actionBtnText}>+ Generate Lesson Plan</Text>
+            <Text style={styles.pageSubtitle}>Generate GES-approved lesson notes with AI — auto-fills school details, exports to PDF & MS Word</Text>
+
+            {/* School info auto-filled */}
+            <View style={[styles.subjectCard, { borderLeftWidth: 4, borderLeftColor: colors.primary }]}>
+              <Text style={styles.subjectName}>School Information (Auto-filled)</Text>
+              <Text style={styles.subjectMeta}>School: {branding?.schoolName || user?.schoolName || '—'}</Text>
+              <Text style={styles.subjectMeta}>District: {branding?.district || '—'}</Text>
+              <Text style={styles.subjectMeta}>Region: {branding?.region || '—'}</Text>
+              <Text style={styles.subjectMeta}>Teacher: {user?.displayName || '—'}</Text>
+            </View>
+
+            {/* GES Lesson Plan Generator Form */}
+            <View style={styles.subjectCard}>
+              <Text style={styles.subjectName}>Generate GES Lesson Note</Text>
+
+              <Text style={styles.inputLabel}>Class Level</Text>
+              <View style={styles.pickerWrap}>
+                <select
+                  value={gesClassKey}
+                  onChange={(e: any) => { setGesClassKey(e.target.value); setGesSubject(getSubjectsForClass(e.target.value)[0] || ''); }}
+                  style={styles.webSelect}
+                >
+                  {GES_CLASS_LEVELS.map((c: any) => <option key={c.key} value={c.key}>{c.label}</option>)}
+                </select>
+              </View>
+
+              <Text style={styles.inputLabel}>Subject</Text>
+              <View style={styles.pickerWrap}>
+                <select value={gesSubject} onChange={(e: any) => setGesSubject(e.target.value)} style={styles.webSelect}>
+                  {subjectsForSelectedClass.map((s: string) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </View>
+
+              <Text style={styles.inputLabel}>Week</Text>
+              <View style={styles.pickerWrap}>
+                <select value={gesWeek} onChange={(e: any) => setGesWeek(e.target.value)} style={styles.webSelect}>
+                  {GES_WEEKS.map((w: string) => <option key={w} value={w}>{w}</option>)}
+                </select>
+              </View>
+
+              <Text style={styles.inputLabel}>Term</Text>
+              <View style={styles.pickerWrap}>
+                <select value={gesTerm} onChange={(e: any) => setGesTerm(e.target.value)} style={styles.webSelect}>
+                  {GES_TERMS.map((t: string) => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </View>
+
+              <Text style={styles.inputLabel}>Topic (optional — auto-filled from curriculum if empty)</Text>
+              <TextInput style={styles.textInput} value={gesTopic} onChangeText={setGesTopic} placeholder="e.g. Phonics, Addition, Photosynthesis" />
+
+              <Text style={styles.inputLabel}>Duration (optional)</Text>
+              <TextInput style={styles.textInput} value={gesDuration} onChangeText={setGesDuration} placeholder="e.g. 30 minutes, 45 minutes" />
+
+              <Text style={styles.inputLabel}>Teaching Style (optional)</Text>
+              <TextInput style={styles.textInput} value={gesTeachingStyle} onChangeText={setGesTeachingStyle} placeholder="e.g. Play-based, Inquiry-based, Direct instruction" />
+
+              <TouchableOpacity
+                style={[styles.actionBtn, { marginTop: spacing.md }]}
+                onPress={async () => {
+                  setAiLoading(true);
+                  try {
+                    const result = await generateGESLessonPlan({
+                      classForm: gesClassKey,
+                      subject: gesSubject,
+                      week: gesWeek.replace('Week ', ''),
+                      term: gesTerm,
+                      topic: gesTopic || undefined,
+                      duration: gesDuration || undefined,
+                      schoolName: branding?.schoolName || user?.schoolName || undefined,
+                      district: branding?.district || undefined,
+                      region: branding?.region || undefined,
+                      teacherName: user?.displayName || undefined,
+                      teachingStyle: gesTeachingStyle || undefined,
+                    });
+                    setGesResult(result);
+                    setRefineHistory([]);
+                  } catch { Alert.alert('Error', 'Failed to generate lesson plan.'); }
+                  setAiLoading(false);
+                }}
+              >
+                <Text style={styles.actionBtnText}>{aiLoading ? 'Generating...' : 'Generate GES Lesson Note'}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Generated Lesson Plan Display */}
+            {gesResult && (
+              <View style={styles.subjectCard}>
+                <Text style={styles.subjectName}>Generated GES Lesson Note</Text>
+                <Text style={styles.subjectClass}>{gesResult.classForm} • {gesResult.subject} • {gesResult.week} • {gesResult.term}</Text>
+                <Text style={styles.subjectMeta}>Strand: {gesResult.strand}</Text>
+                <Text style={styles.subjectMeta}>Sub-Strand: {gesResult.subStrand}</Text>
+                <Text style={styles.subjectMeta}>Indicator: {gesResult.indicator}</Text>
+
+                <Text style={styles.sectionTitle}>Core Competencies</Text>
+                {gesResult.coreCompetencies.map((c: string, i: number) => (
+                  <Text key={i} style={styles.subjectMeta}>• {c}</Text>
+                ))}
+
+                <Text style={styles.sectionTitle}>Learning Objectives</Text>
+                <Text style={styles.subjectMeta}>{gesResult.learningObjectives}</Text>
+
+                <Text style={styles.sectionTitle}>Teaching & Learning Resources</Text>
+                {gesResult.teachingLearningResources.map((r: string, i: number) => (
+                  <Text key={i} style={styles.subjectMeta}>• {r}</Text>
+                ))}
+
+                <Text style={styles.sectionTitle}>Phase 1: Starter</Text>
+                <Text style={styles.subjectMeta}>{gesResult.starter}</Text>
+
+                <Text style={styles.sectionTitle}>Phase 2: Main Activity</Text>
+                <Text style={styles.subjectMeta}>{gesResult.mainActivity}</Text>
+
+                <Text style={styles.sectionTitle}>Phase 3: Plenary</Text>
+                <Text style={styles.subjectMeta}>{gesResult.plenary}</Text>
+
+                <Text style={styles.sectionTitle}>Assessment</Text>
+                <Text style={styles.subjectMeta}>{gesResult.assessment}</Text>
+
+                <Text style={styles.sectionTitle}>Homework</Text>
+                <Text style={styles.subjectMeta}>{gesResult.homework}</Text>
+
+                <Text style={styles.sectionTitle}>Differentiation</Text>
+                <Text style={styles.subjectMeta}>{gesResult.differentiation}</Text>
+
+                {/* Export buttons */}
+                <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md, flexWrap: 'wrap' }}>
+                  <TouchableOpacity
+                    style={[styles.actionBtn, { backgroundColor: '#d32f2f' }]}
+                    onPress={() => exportGESLessonPDF(gesResult)}
+                  >
+                    <Text style={styles.actionBtnText}>Export PDF</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.actionBtn, { backgroundColor: '#1565c0' }]}
+                    onPress={() => exportGESLessonWord(gesResult)}
+                  >
+                    <Text style={styles.actionBtnText}>Export MS Word</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.actionBtn, { backgroundColor: '#2e7d32' }]}
+                    onPress={() => {
+                      addLessonPlan({
+                        subject: gesResult.subject, classForm: gesResult.classForm,
+                        date: gesResult.date, topic: gesResult.subStrand,
+                        objectives: gesResult.learningObjectives, teachingMethods: gesResult.starter,
+                        resources: gesResult.teachingLearningResources.join(', '),
+                        activities: gesResult.mainActivity,
+                        assessment: gesResult.assessment, homework: gesResult.homework,
+                      });
+                      Alert.alert('Saved', 'Lesson plan saved to your lesson plans.');
+                    }}
+                  >
+                    <Text style={styles.actionBtnText}>Save as Lesson Plan</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Refinement Chat */}
+                <Text style={[styles.sectionTitle, { marginTop: spacing.lg }]}>Refine Lesson Note</Text>
+                <Text style={styles.subjectMeta}>Ask the AI to improve, add, or change the lesson note. Try: "add more activities", "add assessment questions", "make it simpler", "add group work".</Text>
+
+                {refineHistory.map((msg, i) => (
+                  <View key={i} style={[styles.subjectCard, { marginTop: spacing.sm, borderLeftWidth: 3, borderLeftColor: msg.role === 'user' ? colors.primary : '#4caf50' }]}>
+                    <Text style={styles.subjectClass}>{msg.role === 'user' ? 'Teacher' : 'AI'}</Text>
+                    <Text style={styles.subjectMeta}>{msg.message}</Text>
+                  </View>
+                ))}
+
+                <TextInput
+                  style={[styles.textInput, { marginTop: spacing.sm }]}
+                  value={refineInput}
+                  onChangeText={setRefineInput}
+                  placeholder="Type your refinement request..."
+                  multiline
+                />
+                <TouchableOpacity
+                  style={[styles.actionBtn, { marginTop: spacing.sm }]}
+                  onPress={async () => {
+                    if (!refineInput.trim()) return;
+                    const userMsg = refineInput;
+                    setRefineHistory((h) => [...h, { role: 'user', message: userMsg }]);
+                    setRefineInput('');
+                    setAiLoading(true);
+                    try {
+                      const result = await refineLessonPlan({
+                        lessonPlan: gesResult.rawContent,
+                        instruction: userMsg,
+                        subject: gesResult.subject,
+                        classForm: gesResult.classForm,
+                        topic: gesResult.subStrand,
+                      });
+                      setGesResult({ ...gesResult, rawContent: result.refinedContent });
+                      setRefineHistory((h) => [...h, { role: 'ai', message: result.changes + '\n\nThe lesson note has been updated. View the raw content in the export.' }]);
+                    } catch {
+                      setRefineHistory((h) => [...h, { role: 'ai', message: 'Sorry, I could not process that request. Please try again.' }]);
+                    }
+                    setAiLoading(false);
+                  }}
+                >
+                  <Text style={styles.actionBtnText}>{aiLoading ? 'Processing...' : 'Send Refinement Request'}</Text>
+                </TouchableOpacity>
+
+                {/* Raw content preview */}
+                <Text style={[styles.sectionTitle, { marginTop: spacing.lg }]}>Raw Lesson Note (GES Format)</Text>
+                <View style={[styles.subjectCard, { backgroundColor: '#f5f5f5', maxHeight: 400 }]}>
+                  <ScrollView nestedScrollEnabled>
+                    <Text style={[styles.subjectMeta, { fontFamily: 'monospace', fontSize: fontSize.sm }]}>{gesResult.rawContent}</Text>
+                  </ScrollView>
+                </View>
+              </View>
+            )}
+
+            {/* Legacy AI generator (kept for backward compatibility) */}
+            <TouchableOpacity style={[styles.actionBtn, { marginTop: spacing.lg, opacity: 0.6 }]} onPress={() => { setShowAIModal(true); setAiResult(null); }}>
+              <Text style={styles.actionBtnText}>+ Legacy AI Generator (Simple)</Text>
             </TouchableOpacity>
             {aiResult && (
               <View style={styles.subjectCard}>
-                <Text style={styles.subjectName}>AI-Generated Lesson Plan</Text>
+                <Text style={styles.subjectName}>AI-Generated Lesson Plan (Legacy)</Text>
                 <Text style={styles.sectionTitle}>Objectives</Text>
                 <Text style={styles.subjectMeta}>{aiResult.objectives}</Text>
-                <Text style={styles.sectionTitle}>Introduction</Text>
-                <Text style={styles.subjectMeta}>{aiResult.introduction}</Text>
-                <Text style={styles.sectionTitle}>Teaching Methods</Text>
-                <Text style={styles.subjectMeta}>{aiResult.teachingMethods}</Text>
-                <Text style={styles.sectionTitle}>Resources</Text>
-                <Text style={styles.subjectMeta}>{aiResult.resources}</Text>
                 <Text style={styles.sectionTitle}>Main Activity</Text>
                 <Text style={styles.subjectMeta}>{aiResult.mainActivity}</Text>
-                <Text style={styles.sectionTitle}>Activities</Text>
-                <Text style={styles.subjectMeta}>{aiResult.activities}</Text>
-                <Text style={styles.sectionTitle}>Differentiation</Text>
-                <Text style={styles.subjectMeta}>{aiResult.differentiation}</Text>
                 <Text style={styles.sectionTitle}>Assessment</Text>
                 <Text style={styles.subjectMeta}>{aiResult.assessment}</Text>
                 <Text style={styles.sectionTitle}>Homework</Text>
                 <Text style={styles.subjectMeta}>{aiResult.homework}</Text>
-                <Text style={styles.sectionTitle}>Conclusion</Text>
-                <Text style={styles.subjectMeta}>{aiResult.conclusion}</Text>
-                <TouchableOpacity style={[styles.actionBtn, { marginTop: spacing.md }]} onPress={() => {
-                  addLessonPlan({
-                    subject: aiForm.subject, classForm: aiForm.classForm,
-                    date: new Date().toISOString().slice(0, 10), topic: aiForm.topic,
-                    objectives: aiResult.objectives, teachingMethods: aiResult.teachingMethods,
-                    resources: aiResult.resources, activities: aiResult.activities,
-                    assessment: aiResult.assessment, homework: aiResult.homework,
-                  });
-                  Alert.alert('Saved', 'AI lesson plan saved to your lesson plans.');
-                  setAiResult(null);
-                }}>
-                  <Text style={styles.actionBtnText}>Save as Lesson Plan</Text>
-                </TouchableOpacity>
               </View>
             )}
           </ScrollView>
@@ -2396,6 +2750,9 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.text, marginBottom: spacing.xs },
   modalSubtitle: { fontSize: fontSize.sm, color: colors.textSecondary, marginBottom: spacing.lg },
   inputLabel: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, color: colors.textSecondary, marginBottom: spacing.xs, marginTop: spacing.sm },
+  textInput: { borderWidth: 1.5, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, fontSize: fontSize.md, color: colors.text, marginBottom: spacing.sm, backgroundColor: colors.surfaceAlt },
+  pickerWrap: { borderWidth: 1.5, borderColor: colors.border, borderRadius: radius.md, marginBottom: spacing.sm, backgroundColor: colors.surfaceAlt, overflow: 'hidden' },
+  webSelect: { padding: 10, fontSize: fontSize.md, width: '100%', borderWidth: 0, backgroundColor: 'transparent', color: colors.text },
   input: { borderWidth: 1.5, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, fontSize: fontSize.md, color: colors.text, marginBottom: spacing.sm, backgroundColor: colors.surfaceAlt },
   textArea: { minHeight: 60 },
   selectRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },

@@ -324,6 +324,12 @@ export interface AILessonPlanRequest {
   duration: string;
   objectives?: string;
   teachingStyle?: string;
+  week?: string;
+  term?: string;
+  schoolName?: string;
+  district?: string;
+  region?: string;
+  teacherName?: string;
 }
 
 export interface AILessonPlanResponse {
@@ -337,6 +343,76 @@ export interface AILessonPlanResponse {
   mainActivity: string;
   conclusion: string;
   differentiation: string;
+  gesFormat?: string;
+  strand?: string;
+  subStrand?: string;
+  indicator?: string;
+  coreCompetencies?: string[];
+  week?: string;
+  term?: string;
+  date?: string;
+  duration?: string;
+  schoolName?: string;
+  classForm?: string;
+}
+
+export interface GESLessonPlanRequest {
+  classForm: string;
+  subject: string;
+  week: string;
+  term?: string;
+  topic?: string;
+  duration?: string;
+  schoolName?: string;
+  district?: string;
+  region?: string;
+  teacherName?: string;
+  objectives?: string;
+  teachingStyle?: string;
+}
+
+export interface GESLessonPlanResult {
+  schoolName: string;
+  district: string;
+  region: string;
+  teacherName: string;
+  classForm: string;
+  subject: string;
+  week: string;
+  term: string;
+  date: string;
+  duration: string;
+  boys: string;
+  girls: string;
+  averageAge: string;
+  strand: string;
+  subStrand: string;
+  indicator: string;
+  contentStandard: string;
+  coreCompetencies: string[];
+  learningObjectives: string;
+  teachingLearningResources: string[];
+  starter: string;
+  mainActivity: string;
+  plenary: string;
+  assessment: string;
+  homework: string;
+  differentiation: string;
+  reflection: string;
+  rawContent: string;
+}
+
+export interface RefineLessonPlanRequest {
+  lessonPlan: string;
+  instruction: string;
+  subject?: string;
+  classForm?: string;
+  topic?: string;
+}
+
+export interface RefineLessonPlanResult {
+  refinedContent: string;
+  changes: string;
 }
 
 // ── Constants ──
@@ -500,6 +576,8 @@ interface TeacherState {
 
   // AI Lesson Plan
   generateAILessonPlan: (req: AILessonPlanRequest) => Promise<AILessonPlanResponse>;
+  generateGESLessonPlan: (req: GESLessonPlanRequest) => Promise<GESLessonPlanResult>;
+  refineLessonPlan: (req: RefineLessonPlanRequest) => Promise<RefineLessonPlanResult>;
 
   // Timetable
   addTimetableEntry: (t: Omit<TimetableEntry, 'id'>) => void;
@@ -966,6 +1044,47 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
       conclusion: 'Summarize key points. Ask students to share one thing they learned. Preview the next lesson topic.',
       differentiation: 'Provide additional support for struggling students through simplified examples. Challenge advanced students with extension problems.',
     };
+  },
+
+  generateGESLessonPlan: async (req) => {
+    try {
+      const data = await apiClient.post<any>('/teacher/ai-lesson-plan/ges', { ...req });
+      if (data) return data as GESLessonPlanResult;
+    } catch {}
+    // Fallback: return a basic structure
+    return {
+      schoolName: req.schoolName || 'School',
+      district: req.district || '',
+      region: req.region || '',
+      teacherName: req.teacherName || '',
+      classForm: req.classForm,
+      subject: req.subject,
+      week: req.week,
+      term: req.term || 'Term 1',
+      date: new Date().toISOString().slice(0, 10),
+      duration: req.duration || '45 minutes',
+      boys: '', girls: '', averageAge: '',
+      strand: 'General', subStrand: 'General Topic', indicator: 'N/A', contentStandard: 'Content as per curriculum',
+      coreCompetencies: ['Critical Thinking and Problem Solving (CP)', 'Communication and Collaboration (CC)'],
+      learningObjectives: `By the end of the lesson, learners should be able to understand and apply concepts related to ${req.topic || req.subject}.`,
+      teachingLearningResources: ['Textbook', 'Whiteboard and markers', 'Charts'],
+      starter: 'Review previous lesson and introduce the topic.',
+      mainActivity: 'Explain concepts with examples. Guided practice. Independent practice.',
+      plenary: 'Summarize key points. Exit question.',
+      assessment: 'Oral questioning and exit ticket.',
+      homework: 'Exercise from textbook.',
+      differentiation: 'Support struggling learners. Challenge advanced learners.',
+      reflection: '',
+      rawContent: 'Lesson plan content could not be generated. Please try again.',
+    };
+  },
+
+  refineLessonPlan: async (req) => {
+    try {
+      const data = await apiClient.post<any>('/teacher/ai-lesson-plan/refine', { ...req });
+      if (data) return data as RefineLessonPlanResult;
+    } catch {}
+    return { refinedContent: req.lessonPlan, changes: 'Could not connect to server. Please try again.' };
   },
 
   loadLessonPlans: async () => {
