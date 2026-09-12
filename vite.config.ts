@@ -9,6 +9,7 @@ export default defineConfig({
     alias: {
       'react-native-safe-area-context': path.resolve(__dirname, 'web/stubs/safe-area-context.js'),
       'react-native-screens': path.resolve(__dirname, 'web/stubs/screens.js'),
+      '@react-native-async-storage/async-storage': path.resolve(__dirname, 'web/stubs/async-storage.js'),
       'react-native/Libraries/Utilities/codegenNativeComponent': path.resolve(__dirname, 'web/stubs/codegenNativeComponent.js'),
       'react-native': 'react-native-web',
       '@shared': path.resolve(__dirname, 'src/shared'),
@@ -33,7 +34,7 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: 'https://sims-backends-3.onrender.com',
+        target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false,
       },
