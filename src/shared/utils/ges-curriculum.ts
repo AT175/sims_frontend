@@ -6,7 +6,7 @@
 export interface GESClassLevelOption {
   key: string;
   label: string;
-  level: 'kg' | 'primary' | 'jhs';
+  level: 'kg' | 'primary' | 'jhs' | 'shs';
 }
 
 export const GES_CLASS_LEVELS: GESClassLevelOption[] = [
@@ -21,6 +21,9 @@ export const GES_CLASS_LEVELS: GESClassLevelOption[] = [
   { key: 'basic7', label: 'Basic 7 (JHS 1)', level: 'jhs' },
   { key: 'basic8', label: 'Basic 8 (JHS 2)', level: 'jhs' },
   { key: 'basic9', label: 'Basic 9 (JHS 3)', level: 'jhs' },
+  { key: 'shs1', label: 'SHS 1', level: 'shs' },
+  { key: 'shs2', label: 'SHS 2', level: 'shs' },
+  { key: 'shs3', label: 'SHS 3', level: 'shs' },
 ];
 
 export const GES_SUBJECTS_BY_CLASS: Record<string, string[]> = {
@@ -35,6 +38,9 @@ export const GES_SUBJECTS_BY_CLASS: Record<string, string[]> = {
   basic7: ['English Language', 'Mathematics', 'Integrated Science', 'Social Studies', 'Ghanaian Language', 'Religious and Moral Education', 'Career Technology', 'Computing', 'Creative Arts and Design', 'Physical Education'],
   basic8: ['English Language', 'Mathematics', 'Integrated Science', 'Social Studies', 'Ghanaian Language', 'Religious and Moral Education', 'Career Technology', 'Computing', 'Creative Arts and Design', 'Physical Education'],
   basic9: ['English Language', 'Mathematics', 'Integrated Science', 'Social Studies', 'Ghanaian Language', 'Religious and Moral Education', 'Career Technology', 'Computing', 'Creative Arts and Design', 'Physical Education'],
+  shs1: ['English Language', 'Mathematics (Core)', 'Integrated Science (Core)', 'Social Studies (Core)', 'Information and Communication Technology (Core)', 'Physical Education (Core)', 'Physics (Elective)', 'Chemistry (Elective)', 'Biology (Elective)', 'Economics (Elective)', 'Government (Elective)', 'Literature in English (Elective)', 'Geography (Elective)', 'Accounting (Elective)', 'Business Management (Elective)', 'History (Elective)', 'French (Elective)'],
+  shs2: ['English Language', 'Mathematics (Core)', 'Integrated Science (Core)', 'Social Studies (Core)', 'Information and Communication Technology (Core)', 'Physical Education (Core)', 'Physics (Elective)', 'Chemistry (Elective)', 'Biology (Elective)', 'Economics (Elective)', 'Government (Elective)', 'Literature in English (Elective)', 'Geography (Elective)', 'Accounting (Elective)', 'Business Management (Elective)', 'History (Elective)', 'French (Elective)'],
+  shs3: ['English Language', 'Mathematics (Core)', 'Integrated Science (Core)', 'Social Studies (Core)', 'Information and Communication Technology (Core)', 'Physical Education (Core)', 'Physics (Elective)', 'Chemistry (Elective)', 'Biology (Elective)', 'Economics (Elective)', 'Government (Elective)', 'Literature in English (Elective)', 'Geography (Elective)', 'Accounting (Elective)', 'Business Management (Elective)', 'History (Elective)', 'French (Elective)', 'Elective Mathematics'],
 };
 
 export const GES_WEEKS = Array.from({ length: 12 }, (_, i) => `Week ${i + 1}`);
