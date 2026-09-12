@@ -415,6 +415,81 @@ export interface RefineLessonPlanResult {
   changes: string;
 }
 
+// ── AI Assessment Generator Types ──
+export type QuestionFormat = 'MCQ' | 'True/False' | 'Short Answer' | 'Essay' | 'Fill in the Blank';
+export type CognitiveLevel = 'Recall' | 'Comprehension' | 'Application' | 'Analysis' | 'Evaluation' | 'Synthesis';
+export type AssessmentType = 'Assignment' | 'Quiz' | 'Exam' | 'Class Exercise' | 'Homework';
+
+export interface GenerateAssessmentRequest {
+  classForm: string;
+  subject: string;
+  topic?: string;
+  week?: string;
+  term?: string;
+  lessonPlanTopic?: string;
+  strand?: string;
+  subStrand?: string;
+  indicator?: string;
+  assessmentType: AssessmentType;
+  questionCount: number;
+  formats: QuestionFormat[];
+  cognitiveLevels: CognitiveLevel[];
+  schoolName?: string;
+  teacherName?: string;
+  duration?: number;
+  maxScore?: number;
+}
+
+export interface GeneratedQuestion {
+  number: number;
+  format: QuestionFormat;
+  cognitiveLevel: CognitiveLevel;
+  question: string;
+  options?: string[];
+  correctAnswer: string;
+  marks: number;
+  explanation?: string;
+}
+
+export interface GeneratedAssessment {
+  title: string;
+  assessmentType: AssessmentType;
+  classForm: string;
+  subject: string;
+  topic: string;
+  strand: string;
+  subStrand: string;
+  indicator: string;
+  week: string;
+  term: string;
+  duration: number;
+  maxScore: number;
+  schoolName: string;
+  teacherName: string;
+  date: string;
+  instructions: string;
+  questions: GeneratedQuestion[];
+  rawContent: string;
+}
+
+// ── Lesson Recap Types ──
+export interface LessonRecap {
+  id?: string;
+  classForm: string;
+  subject: string;
+  topic: string;
+  date: string;
+  week?: string;
+  term?: string;
+  keyPoints?: string;
+  activitiesDone?: string;
+  homework?: string;
+  nextLessonPreview?: string;
+  teacherNotes?: string;
+  teacherName?: string;
+  createdAt?: string;
+}
+
 // ── Constants ──
 
 export const MATERIAL_TYPES: MaterialType[] = ['Note', 'Slide', 'Past Q', 'Worksheet', 'Video', 'Audio', 'Document'];
@@ -578,6 +653,10 @@ interface TeacherState {
   generateAILessonPlan: (req: AILessonPlanRequest) => Promise<AILessonPlanResponse>;
   generateGESLessonPlan: (req: GESLessonPlanRequest) => Promise<GESLessonPlanResult>;
   refineLessonPlan: (req: RefineLessonPlanRequest) => Promise<RefineLessonPlanResult>;
+  generateAssessment: (req: GenerateAssessmentRequest) => Promise<GeneratedAssessment>;
+  createLessonRecap: (recap: Omit<LessonRecap, 'id' | 'createdAt'>) => Promise<void>;
+  loadLessonRecaps: (classForm?: string) => Promise<void>;
+  lessonRecaps: LessonRecap[];
 
   // Timetable
   addTimetableEntry: (t: Omit<TimetableEntry, 'id'>) => void;
@@ -1086,6 +1165,56 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
     } catch {}
     return { refinedContent: req.lessonPlan, changes: 'Could not connect to server. Please try again.' };
   },
+
+  generateAssessment: async (req) => {
+    try {
+      const data = await apiClient.post<any>('/teacher/ai-assessment', { ...req });
+      if (data) return data as GeneratedAssessment;
+    } catch (e) {
+      console.error('generateAssessment error', e);
+    }
+    // Fallback: generate a basic assessment locally
+    return {
+      title: `${req.assessmentType}: ${req.subject} (${req.classForm})`,
+      assessmentType: req.assessmentType,
+      classForm: req.classForm,
+      subject: req.subject,
+      topic: req.topic || req.lessonPlanTopic || 'General',
+      strand: req.strand || 'General',
+      subStrand: req.subStrand || 'General',
+      indicator: req.indicator || 'N/A',
+      week: req.week || '1',
+      term: req.term || 'Term 1',
+      duration: req.duration || 30,
+      maxScore: req.maxScore || req.questionCount * 2,
+      schoolName: req.schoolName || '',
+      teacherName: req.teacherName || '',
+      date: new Date().toISOString().slice(0, 10),
+      instructions: 'Answer all questions.',
+      questions: [],
+      rawContent: 'Could not generate assessment. Please check your connection.',
+    };
+  },
+
+  createLessonRecap: async (recap) => {
+    try {
+      await apiClient.post('/teacher/lesson-recaps', recap);
+    } catch (e) {
+      console.error('createLessonRecap error', e);
+    }
+  },
+
+  loadLessonRecaps: async (classForm) => {
+    try {
+      const params = classForm ? `?classForm=${encodeURIComponent(classForm)}` : '';
+      const data = await apiClient.get<any[]>(`/teacher/lesson-recaps${params}`);
+      set({ lessonRecaps: (data || []) as LessonRecap[] });
+    } catch (e) {
+      console.error('loadLessonRecaps error', e);
+    }
+  },
+
+  lessonRecaps: [],
 
   loadLessonPlans: async () => {
     try {

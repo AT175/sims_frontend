@@ -183,6 +183,35 @@ export interface StudentQuiz {
   status: string;
 }
 
+export interface PublishedAssignment {
+  id: string;
+  title: string;
+  description: string;
+  classForm: string;
+  subject: string;
+  dueDate: string;
+  expiryDate: string;
+  maxScore: number;
+  status: string;
+  createdBy: string;
+}
+
+export interface LessonRecap {
+  id: string;
+  classForm: string;
+  subject: string;
+  topic: string;
+  date: string;
+  week: string;
+  term: string;
+  keyPoints: string;
+  activitiesDone: string;
+  homework: string;
+  nextLessonPreview: string;
+  teacherName: string;
+  createdAt: string;
+}
+
 export interface RollCallRecord {
   id: string;
   date: string;
@@ -240,6 +269,8 @@ interface StudentState {
   avRecordings: AVRecording[];
   sharedResources: SharedResource[];
   quizzes: StudentQuiz[];
+  publishedAssignments: PublishedAssignment[];
+  lessonRecaps: LessonRecap[];
   rollCalls: RollCallRecord[];
   disciplineRecords: DisciplineRecord[];
   messages: StudentMessage[];
@@ -260,6 +291,8 @@ interface StudentState {
   loadAVRecordings: () => Promise<void>;
   loadSharedResources: () => Promise<void>;
   loadQuizzes: () => Promise<void>;
+  loadPublishedAssignments: () => Promise<void>;
+  loadLessonRecaps: () => Promise<void>;
   loadRollCalls: () => Promise<void>;
   loadDiscipline: () => Promise<void>;
   loadMessages: () => Promise<void>;
@@ -287,6 +320,8 @@ export const useStudentStore = create<StudentState>((set, get) => ({
   avRecordings: [],
   sharedResources: [],
   quizzes: [],
+  publishedAssignments: [],
+  lessonRecaps: [],
   rollCalls: [],
   disciplineRecords: [],
   messages: [],
@@ -337,6 +372,12 @@ export const useStudentStore = create<StudentState>((set, get) => ({
   loadQuizzes: async () => {
     try { const data = await apiClient.get<any[]>('/student/quizzes'); set({ quizzes: data || [] }); } catch {}
   },
+  loadPublishedAssignments: async () => {
+    try { const data = await apiClient.get<any[]>('/student/published-assignments'); set({ publishedAssignments: data || [] }); } catch {}
+  },
+  loadLessonRecaps: async () => {
+    try { const data = await apiClient.get<any[]>('/student/lesson-recaps'); set({ lessonRecaps: data || [] }); } catch {}
+  },
   loadRollCalls: async () => {
     try { const data = await apiClient.get<any[]>('/student/house/roll-calls'); set({ rollCalls: data || [] }); } catch {}
   },
@@ -365,6 +406,8 @@ export const useStudentStore = create<StudentState>((set, get) => ({
       s.loadAVRecordings(),
       s.loadSharedResources(),
       s.loadQuizzes(),
+      s.loadPublishedAssignments(),
+      s.loadLessonRecaps(),
       s.loadRollCalls(),
       s.loadDiscipline(),
       s.loadMessages(),

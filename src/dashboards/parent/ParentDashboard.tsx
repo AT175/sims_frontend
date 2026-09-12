@@ -490,6 +490,8 @@ function AcademicReportsPage() {
   const [wards, setWards] = useState<any[]>([]);
   const [selectedWard, setSelectedWard] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [academicData, setAcademicData] = useState<any>(null);
+  const [dataLoading, setDataLoading] = useState(false);
 
   const loadWards = async () => {
     setLoading(true);
@@ -507,9 +509,28 @@ function AcademicReportsPage() {
     }
   };
 
+  const loadAcademicData = async (wardId: string) => {
+    setDataLoading(true);
+    try {
+      const data = await apiClient.get<any>(`/student/ward-academic/${wardId}`);
+      setAcademicData(data);
+    } catch (err: any) {
+      console.error('Failed to load academic data:', err);
+      setAcademicData(null);
+    } finally {
+      setDataLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadWards();
   }, []);
+
+  useEffect(() => {
+    if (selectedWard) {
+      loadAcademicData(selectedWard.id);
+    }
+  }, [selectedWard]);
 
   if (loading) {
     return (
@@ -525,7 +546,7 @@ function AcademicReportsPage() {
   return (
     <View>
       <Text style={styles.pageTitle}>Academic Reports</Text>
-      <Text style={styles.pageSubtitle}>View your children's academic performance</Text>
+      <Text style={styles.pageSubtitle}>View your children's assignments, quizzes, lesson recaps, and results</Text>
 
       {wards.length === 0 ? (
         <View style={styles.emptyState}>
@@ -549,9 +570,89 @@ function AcademicReportsPage() {
           </View>
 
           {selectedWard && (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No academic reports published for {selectedWard.name} yet.</Text>
-            </View>
+            <>
+              {dataLoading ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyStateText}>Loading academic data for {selectedWard.name}...</Text>
+                </View>
+              ) : academicData ? (
+                <View>
+                  {/* Assignments */}
+                  <Text style={[styles.sectionTitle, { marginTop: spacing.md }]}>Assignments</Text>
+                  {academicData.assignments && academicData.assignments.length > 0 ? (
+                    academicData.assignments.map((a: any) => (
+                      <View key={a.id} style={styles.card}>
+                        <Text style={styles.cardTitle}>{a.title}</Text>
+                        <Text style={styles.cardMeta}>{a.subject} | Due: {a.dueDate} | Max Score: {a.maxScore}</Text>
+                        {a.description && <Text style={styles.cardMeta}>{a.description}</Text>}
+                      </View>
+                    ))
+                  ) : (
+                    <Text style={styles.emptyStateText}>No assignments published.</Text>
+                  )}
+
+                  {/* Quizzes */}
+                  <Text style={[styles.sectionTitle, { marginTop: spacing.md }]}>Quizzes & Exams</Text>
+                  {academicData.quizzes && academicData.quizzes.length > 0 ? (
+                    academicData.quizzes.map((q: any) => (
+                      <View key={q.id} style={styles.card}>
+                        <Text style={styles.cardTitle}>{q.title}</Text>
+                        <Text style={styles.cardMeta}>{q.subject} | Marks: {q.totalMarks} | Duration: {q.duration} min | Due: {q.dueDate}</Text>
+                      </View>
+                    ))
+                  ) : (
+                    <Text style={styles.emptyStateText}>No quizzes or exams published.</Text>
+                  )}
+
+                  {/* Daily Lesson Recaps */}
+                  <Text style={[styles.sectionTitle, { marginTop: spacing.md }]}>Daily Lesson Recaps</Text>
+                  {academicData.lessonRecaps && academicData.lessonRecaps.length > 0 ? (
+                    academicData.lessonRecaps.map((r: any) => (
+                      <View key={r.id} style={styles.card}>
+                        <Text style={styles.cardTitle}>{r.subject}: {r.topic}</Text>
+                        <Text style={styles.cardMeta}>Date: {r.date} | Week: {r.week} | Term: {r.term}</Text>
+                        {r.keyPoints && <Text style={styles.cardMeta}>Key Points: {r.keyPoints}</Text>}
+                        {r.activitiesDone && <Text style={styles.cardMeta}>Activities: {r.activitiesDone}</Text>}
+                        {r.homework && <Text style={[styles.cardMeta, { color: '#e65100' }]}>Homework: {r.homework}</Text>}
+                        {r.nextLessonPreview && <Text style={styles.cardMeta}>Next Lesson: {r.nextLessonPreview}</Text>}
+                      </View>
+                    ))
+                  ) : (
+                    <Text style={styles.emptyStateText}>No lesson recaps yet.</Text>
+                  )}
+
+                  {/* Results */}
+                  <Text style={[styles.sectionTitle, { marginTop: spacing.md }]}>Results & Grades</Text>
+                  {academicData.results && academicData.results.length > 0 ? (
+                    academicData.results.map((r: any, i: number) => (
+                      <View key={i} style={styles.card}>
+                        <Text style={styles.cardTitle}>{r.subject}</Text>
+                        <Text style={styles.cardMeta}>Term: {r.term} | Score: {r.score}/{r.maxScore} | Grade: {r.grade}</Text>
+                        {r.classPosition && <Text style={styles.cardMeta}>Class Position: {r.classPosition} of {r.classSize}</Text>}
+                      </View>
+                    ))
+                  ) : (
+                    <Text style={styles.emptyStateText}>No results published yet.</Text>
+                  )}
+
+                  {/* Attendance */}
+                  <Text style={[styles.sectionTitle, { marginTop: spacing.md }]}>Recent Attendance</Text>
+                  {academicData.attendance && academicData.attendance.length > 0 ? (
+                    academicData.attendance.slice(0, 10).map((a: any, i: number) => (
+                      <View key={i} style={styles.card}>
+                        <Text style={styles.cardMeta}>{a.date} | {a.subject || 'General'} | {a.status}</Text>
+                      </View>
+                    ))
+                  ) : (
+                    <Text style={styles.emptyStateText}>No attendance records.</Text>
+                  )}
+                </View>
+              ) : (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyStateText}>No academic data available for {selectedWard.name}.</Text>
+                </View>
+              )}
+            </>
           )}
         </>
       )}
@@ -1376,6 +1477,10 @@ function DirectoryPage() {
 const styles = StyleSheet.create({
   pageTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.text, marginBottom: spacing.xs },
   pageSubtitle: { fontSize: fontSize.md, color: colors.textSecondary, marginBottom: spacing.lg },
+  sectionTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, color: colors.text, marginTop: spacing.md, marginBottom: spacing.sm },
+  card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm },
+  cardTitle: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.text },
+  cardMeta: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: spacing.xs },
   pageHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.lg },
   actionBtn: { backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: spacing.sm + 4, paddingHorizontal: spacing.lg, alignItems: 'center' },
   actionBtnText: { color: colors.white, fontSize: fontSize.md, fontWeight: fontWeight.semibold },

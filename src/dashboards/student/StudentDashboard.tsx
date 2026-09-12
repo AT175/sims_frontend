@@ -216,6 +216,27 @@ export function StudentDashboard() {
         return (
           <View>
             <Text style={styles.pageTitle}>Assignments</Text>
+
+            {/* Published assignments from teachers */}
+            <Text style={styles.sectionTitle}>New Assignments from Your Teachers</Text>
+            {sStore.publishedAssignments.length > 0 ? (
+              sStore.publishedAssignments.map((item) => (
+                <View key={item.id} style={styles.assignmentCard}>
+                  <Text style={styles.assignmentTitle}>{item.title}</Text>
+                  <Text style={styles.assignmentMeta}>{item.subject} | Due: {item.dueDate} | Max Score: {item.maxScore}</Text>
+                  {item.description && <Text style={styles.assignmentMeta}>{item.description}</Text>}
+                  <Text style={[styles.assignmentStatus, { color: colors.warning }]}>To Do</Text>
+                  <TouchableOpacity style={styles.actionBtn} onPress={() => { setSubmittingAssignment(item.id); setSubmissionContent(''); setSubmissionFileUrl(''); }}>
+                    <Text style={styles.actionBtnText}>Submit Assignment</Text>
+                  </TouchableOpacity>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>No new assignments from your teachers.</Text>
+            )}
+
+            {/* Submitted assignments */}
+            <Text style={[styles.sectionTitle, { marginTop: 16 }]}>My Submissions</Text>
             {sStore.assignments.length > 0 ? (
               sStore.assignments.map((item) => (
                 <View key={item.id} style={styles.assignmentCard}>
@@ -235,7 +256,24 @@ export function StudentDashboard() {
                 </View>
               ))
             ) : (
-              <Text style={styles.emptyText}>No assignments yet.</Text>
+              <Text style={styles.emptyText}>No submissions yet.</Text>
+            )}
+
+            {/* Daily Lesson Recaps */}
+            <Text style={[styles.sectionTitle, { marginTop: 16 }]}>Daily Lesson Recaps</Text>
+            {sStore.lessonRecaps.length > 0 ? (
+              sStore.lessonRecaps.map((recap) => (
+                <View key={recap.id} style={styles.assignmentCard}>
+                  <Text style={styles.assignmentTitle}>{recap.subject}: {recap.topic}</Text>
+                  <Text style={styles.assignmentMeta}>Date: {recap.date} | Week: {recap.week} | Term: {recap.term}</Text>
+                  {recap.keyPoints && <Text style={styles.assignmentMeta}>Key Points: {recap.keyPoints}</Text>}
+                  {recap.activitiesDone && <Text style={styles.assignmentMeta}>Activities: {recap.activitiesDone}</Text>}
+                  {recap.homework && <Text style={[styles.assignmentMeta, { color: colors.warning }]}>Homework: {recap.homework}</Text>}
+                  {recap.nextLessonPreview && <Text style={styles.assignmentMeta}>Next: {recap.nextLessonPreview}</Text>}
+                </View>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>No lesson recaps yet.</Text>
             )}
           </View>
         );

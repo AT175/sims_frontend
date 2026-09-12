@@ -101,7 +101,7 @@ export function TeacherDashboard() {
     markNotificationRead, markAllNotificationsRead,
     addSharedResource, deleteSharedResource,
     getClassAnalytics, getStudentProfile,
-    generateAILessonPlan, generateGESLessonPlan, refineLessonPlan, loadAll,
+    generateAILessonPlan, generateGESLessonPlan, refineLessonPlan, generateAssessment, createLessonRecap, loadAll,
   } = tStore;
 
   // WebRTC media stream refs for real camera/mic
@@ -341,6 +341,29 @@ export function TeacherDashboard() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<any>(null);
   const [gesResult, setGesResult] = useState<any>(null);
+  const [assessmentForm, setAssessmentForm] = useState<{
+    assessmentType: 'Assignment' | 'Quiz' | 'Exam' | 'Class Exercise' | 'Homework';
+    questionCount: number;
+    formats: ('MCQ' | 'True/False' | 'Short Answer' | 'Essay' | 'Fill in the Blank')[];
+    cognitiveLevels: ('Recall' | 'Comprehension' | 'Application' | 'Analysis' | 'Evaluation' | 'Synthesis')[];
+    duration: number;
+    maxScore?: number;
+  }>({
+    assessmentType: 'Quiz',
+    questionCount: 10,
+    formats: ['MCQ', 'True/False'],
+    cognitiveLevels: ['Recall', 'Comprehension'],
+    duration: 30,
+  });
+  const [assessmentResult, setAssessmentResult] = useState<any>(null);
+  const [assessmentLoading, setAssessmentLoading] = useState(false);
+  const [recapForm, setRecapForm] = useState<{
+    topic: string; date: string; keyPoints: string; activitiesDone: string;
+    homework: string; nextLessonPreview: string; teacherNotes: string;
+  }>({
+    topic: '', date: new Date().toISOString().slice(0, 10), keyPoints: '',
+    activitiesDone: '', homework: '', nextLessonPreview: '', teacherNotes: '',
+  });
   const [refineInput, setRefineInput] = useState('');
   const [refineHistory, setRefineHistory] = useState<{ role: 'user' | 'ai'; message: string }[]>([]);
   const [gesClassKey, setGesClassKey] = useState('basic1');
@@ -1509,6 +1532,211 @@ export function TeacherDashboard() {
                 <Text style={styles.subjectMeta}>{aiResult.homework}</Text>
               </View>
             )}
+
+            {/* ── AI Assessment Generator ── */}
+            <View style={[styles.subjectCard, { borderLeftWidth: 4, borderLeftColor: colors.success }]}>
+              <Text style={styles.subjectName}>AI Assessment Generator</Text>
+              <Text style={styles.subjectMeta}>Generate assignments, quizzes, and exams aligned with your lesson plan — choose question count, format, and Bloom's taxonomy cognitive level</Text>
+
+              <Text style={styles.sectionTitle}>Assessment Type</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: spacing.sm }}>
+                {(['Assignment', 'Quiz', 'Exam', 'Class Exercise', 'Homework'] as const).map((t) => (
+                  <TouchableOpacity key={t} style={[styles.chip, assessmentForm.assessmentType === t && { backgroundColor: colors.primary }]} onPress={() => setAssessmentForm({ ...assessmentForm, assessmentType: t })}>
+                    <Text style={[styles.chipText, assessmentForm.assessmentType === t && { color: '#fff' }]}>{t}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.sectionTitle}>Number of Questions</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 10"
+                placeholderTextColor={colors.textLight}
+                keyboardType="numeric"
+                value={String(assessmentForm.questionCount)}
+                onChangeText={(v) => setAssessmentForm({ ...assessmentForm, questionCount: parseInt(v) || 10 })}
+              />
+
+              <Text style={styles.sectionTitle}>Question Formats (select one or more)</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: spacing.sm }}>
+                {(['MCQ', 'True/False', 'Short Answer', 'Essay', 'Fill in the Blank'] as const).map((f) => {
+                  const selected = assessmentForm.formats.includes(f);
+                  return (
+                    <TouchableOpacity key={f} style={[styles.chip, selected && { backgroundColor: colors.primary }]} onPress={() => {
+                      const formats = selected ? assessmentForm.formats.filter((x) => x !== f) : [...assessmentForm.formats, f];
+                      setAssessmentForm({ ...assessmentForm, formats: formats.length ? formats : ['MCQ'] });
+                    }}>
+                      <Text style={[styles.chipText, selected && { color: '#fff' }]}>{f}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <Text style={styles.sectionTitle}>Cognitive Level — Bloom's Taxonomy (select one or more)</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: spacing.sm }}>
+                {(['Recall', 'Comprehension', 'Application', 'Analysis', 'Evaluation', 'Synthesis'] as const).map((c) => {
+                  const selected = assessmentForm.cognitiveLevels.includes(c);
+                  return (
+                    <TouchableOpacity key={c} style={[styles.chip, selected && { backgroundColor: colors.success }]} onPress={() => {
+                      const levels = selected ? assessmentForm.cognitiveLevels.filter((x) => x !== c) : [...assessmentForm.cognitiveLevels, c];
+                      setAssessmentForm({ ...assessmentForm, cognitiveLevels: levels.length ? levels : ['Recall'] });
+                    }}>
+                      <Text style={[styles.chipText, selected && { color: '#fff' }]}>{c}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <Text style={styles.sectionTitle}>Duration (minutes)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 30"
+                placeholderTextColor={colors.textLight}
+                keyboardType="numeric"
+                value={String(assessmentForm.duration)}
+                onChangeText={(v) => setAssessmentForm({ ...assessmentForm, duration: parseInt(v) || 30 })}
+              />
+
+              <Text style={styles.sectionTitle}>Max Score (optional)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Auto-calculated if empty"
+                placeholderTextColor={colors.textLight}
+                keyboardType="numeric"
+                value={assessmentForm.maxScore ? String(assessmentForm.maxScore) : ''}
+                onChangeText={(v) => setAssessmentForm({ ...assessmentForm, maxScore: parseInt(v) || undefined })}
+              />
+
+              <TouchableOpacity
+                style={[styles.actionBtn, { backgroundColor: colors.success, marginTop: spacing.md }]}
+                onPress={async () => {
+                  setAssessmentLoading(true);
+                  try {
+                    const branding = getCachedBranding();
+                    const result = await generateAssessment({
+                      classForm: gesClassKey,
+                      subject: gesSubject,
+                      week: gesWeek,
+                      term: gesTerm,
+                      lessonPlanTopic: gesResult?.subStrand || gesResult?.topic,
+                      strand: gesResult?.strand,
+                      subStrand: gesResult?.subStrand,
+                      indicator: gesResult?.indicator,
+                      assessmentType: assessmentForm.assessmentType,
+                      questionCount: assessmentForm.questionCount,
+                      formats: assessmentForm.formats,
+                      cognitiveLevels: assessmentForm.cognitiveLevels,
+                      schoolName: branding?.schoolName || user?.schoolName,
+                      teacherName: user?.displayName,
+                      duration: assessmentForm.duration,
+                      maxScore: assessmentForm.maxScore,
+                    });
+                    setAssessmentResult(result);
+                  } catch (e: any) {
+                    Alert.alert('Error', 'Could not generate assessment: ' + (e?.message || ''));
+                  }
+                  setAssessmentLoading(false);
+                }}
+              >
+                <Text style={styles.actionBtnText}>{assessmentLoading ? 'Generating...' : 'Generate Assessment'}</Text>
+              </TouchableOpacity>
+
+              {assessmentResult && (
+                <View style={{ marginTop: spacing.md }}>
+                  <Text style={styles.subjectName}>{assessmentResult.title}</Text>
+                  <Text style={styles.subjectMeta}>Topic: {assessmentResult.topic}</Text>
+                  <Text style={styles.subjectMeta}>Strand: {assessmentResult.strand} → Sub-Strand: {assessmentResult.subStrand}</Text>
+                  <Text style={styles.subjectMeta}>Indicator: {assessmentResult.indicator}</Text>
+                  <Text style={styles.subjectMeta}>Duration: {assessmentResult.duration} min | Total Marks: {assessmentResult.maxScore}</Text>
+                  <Text style={styles.subjectMeta}>Questions: {assessmentResult.questions.length}</Text>
+
+                  <Text style={[styles.sectionTitle, { marginTop: spacing.md }]}>{assessmentResult.instructions}</Text>
+
+                  {assessmentResult.questions.map((q: any, i: number) => (
+                    <View key={i} style={[styles.subjectCard, { marginTop: spacing.sm }]}>
+                      <Text style={styles.subjectMeta}>Q{q.number}. {q.question}</Text>
+                      <Text style={[styles.subjectMeta, { fontStyle: 'italic' }]}>Format: {q.format} | Level: {q.cognitiveLevel} | Marks: {q.marks}</Text>
+                      {q.options?.map((opt: string, j: number) => (
+                        <Text key={j} style={[styles.subjectMeta, { marginLeft: spacing.md }]}>{opt}</Text>
+                      ))}
+                      <Text style={[styles.subjectMeta, { color: colors.success }]}>Answer: {q.correctAnswer}</Text>
+                      {q.explanation && <Text style={[styles.subjectMeta, { fontStyle: 'italic' }]}>{q.explanation}</Text>}
+                    </View>
+                  ))}
+
+                  {/* Export buttons */}
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: spacing.md }}>
+                    <TouchableOpacity
+                      style={[styles.actionBtn, { backgroundColor: colors.primary, flex: 1 }]}
+                      onPress={() => {
+                        const html = `<html><head><meta charset="utf-8"><title>${assessmentResult.title}</title></head><body><pre style="font-family: 'Times New Roman', serif; font-size: 12pt; white-space: pre-wrap;">${assessmentResult.rawContent.replace(/</g, '<')}</pre></body></html>`;
+                        const win = window.open('', '_blank');
+                        if (win) { win.document.write(html); win.document.close(); win.print(); }
+                      }}
+                    >
+                      <Text style={styles.actionBtnText}>Export PDF</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.actionBtn, { backgroundColor: colors.success, flex: 1 }]}
+                      onPress={() => {
+                        const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'><head><meta charset="utf-8"><title>${assessmentResult.title}</title></head><body><pre style="font-family: 'Times New Roman', serif; font-size: 12pt; white-space: pre-wrap;">${assessmentResult.rawContent.replace(/</g, '<')}</pre></body></html>`;
+                        const blob = new Blob([html], { type: 'application/msword' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${assessmentResult.title.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      }}
+                    >
+                      <Text style={styles.actionBtnText}>Export Word</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+            </View>
+
+            {/* ── Daily Lesson Recap ── */}
+            <View style={[styles.subjectCard, { borderLeftWidth: 4, borderLeftColor: colors.warning }]}>
+              <Text style={styles.subjectName}>Daily Lesson Recap</Text>
+              <Text style={styles.subjectMeta}>Record what was taught today — sent to student and parent dashboards</Text>
+
+              <Text style={styles.sectionTitle}>Topic</Text>
+              <TextInput style={styles.input} placeholder="What was taught today" placeholderTextColor={colors.textLight} value={recapForm.topic} onChangeText={(v) => setRecapForm({ ...recapForm, topic: v })} />
+
+              <Text style={styles.sectionTitle}>Date</Text>
+              <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textLight} value={recapForm.date} onChangeText={(v) => setRecapForm({ ...recapForm, date: v })} />
+
+              <Text style={styles.sectionTitle}>Key Points</Text>
+              <TextInput style={[styles.input, { minHeight: 60 }]} placeholder="Main concepts covered" placeholderTextColor={colors.textLight} multiline value={recapForm.keyPoints} onChangeText={(v) => setRecapForm({ ...recapForm, keyPoints: v })} />
+
+              <Text style={styles.sectionTitle}>Activities Done</Text>
+              <TextInput style={[styles.input, { minHeight: 60 }]} placeholder="Class activities" placeholderTextColor={colors.textLight} multiline value={recapForm.activitiesDone} onChangeText={(v) => setRecapForm({ ...recapForm, activitiesDone: v })} />
+
+              <Text style={styles.sectionTitle}>Homework Given</Text>
+              <TextInput style={[styles.input, { minHeight: 60 }]} placeholder="Homework assigned" placeholderTextColor={colors.textLight} multiline value={recapForm.homework} onChangeText={(v) => setRecapForm({ ...recapForm, homework: v })} />
+
+              <Text style={styles.sectionTitle}>Next Lesson Preview</Text>
+              <TextInput style={styles.input} placeholder="What will be taught next" placeholderTextColor={colors.textLight} value={recapForm.nextLessonPreview} onChangeText={(v) => setRecapForm({ ...recapForm, nextLessonPreview: v })} />
+
+              <TouchableOpacity
+                style={[styles.actionBtn, { backgroundColor: colors.warning, marginTop: spacing.md }]}
+                onPress={async () => {
+                  if (!recapForm.topic || !recapForm.date) { Alert.alert('Required', 'Please enter topic and date'); return; }
+                  await createLessonRecap({
+                    classForm: gesClassKey,
+                    subject: gesSubject,
+                    ...recapForm,
+                    week: gesWeek,
+                    term: gesTerm,
+                  });
+                  Alert.alert('Saved', 'Lesson recap saved. Students and parents can now view it.');
+                  setRecapForm({ topic: '', date: new Date().toISOString().slice(0, 10), keyPoints: '', activitiesDone: '', homework: '', nextLessonPreview: '', teacherNotes: '' });
+                }}
+              >
+                <Text style={styles.actionBtnText}>Save Lesson Recap</Text>
+              </TouchableOpacity>
+            </View>
           </ScrollView>
         );
 
@@ -2728,6 +2956,8 @@ const styles = StyleSheet.create({
   subjectMeta: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: spacing.sm },
   actionBtn: { backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: spacing.sm + 4, alignItems: 'center', marginBottom: spacing.lg },
   actionBtnText: { color: colors.white, fontSize: fontSize.md, fontWeight: fontWeight.semibold },
+  chip: { backgroundColor: colors.surface, borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderWidth: 1, borderColor: colors.border },
+  chipText: { color: colors.text, fontSize: fontSize.sm, fontWeight: fontWeight.medium },
   avActions: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg },
   recordBtn: { flex: 1, backgroundColor: colors.surface, borderRadius: radius.md, paddingVertical: spacing.sm + 4, alignItems: 'center', borderWidth: 1, borderColor: colors.primary },
   recordBtnText: { color: colors.primary, fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
