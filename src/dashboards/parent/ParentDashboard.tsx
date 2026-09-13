@@ -492,6 +492,56 @@ function AcademicReportsPage() {
   const [loading, setLoading] = useState(true);
   const [academicData, setAcademicData] = useState<any>(null);
   const [dataLoading, setDataLoading] = useState(false);
+  const [language, setLanguage] = useState('English');
+  const [languages, setLanguages] = useState<string[]>(['English']);
+  const [voiceMessage, setVoiceMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    apiClient.get<any>('/voice/languages').then((data) => setLanguages(data.languages || ['English'])).catch(() => {});
+  }, []);
+
+  const playVoiceMessage = async (template: string) => {
+    if (!selectedWard) return;
+    try {
+      const data = await apiClient.get<any>(`/voice/message/${template}/${language}/${selectedWard.id}`);
+      setVoiceMessage(data.text);
+      // Use Web Speech API if available
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(data.text);
+        utterance.lang = language === 'Twi' ? 'tw' : language === 'Ewe' ? 'ee' : language === 'Ga' ? 'ga' : language === 'Dagbani' ? 'dag' : 'en';
+        utterance.rate = 0.9;
+        window.speechSynthesis.speak(utterance);
+      }
+    } catch (e) {
+      console.error('Failed to load voice message:', e);
+    }
+  };
+
+  const stopVoice = () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setVoiceMessage(null);
+  };
+
+  const sendWhatsApp = async (type: string) => {
+    if (!selectedWard) return;
+    try {
+      let endpoint = '';
+      if (type === 'recap') endpoint = `/whatsapp/recap/${selectedWard.id}`;
+      else if (type === 'fee') endpoint = `/whatsapp/fee-reminder/${selectedWard.id}`;
+      else if (type === 'attendance') endpoint = `/whatsapp/attendance-alert/${selectedWard.id}`;
+      else if (type === 'result') endpoint = `/whatsapp/result/${selectedWard.id}`;
+      const data = await apiClient.get<any>(endpoint);
+      if (data.link) {
+        window.open(data.link, '_blank');
+      } else {
+        alert(data.message || 'No data available to send.');
+      }
+    } catch (e: any) {
+      alert(e.message || 'Failed to generate WhatsApp message');
+    }
+  };
 
   const loadWards = async () => {
     setLoading(true);
@@ -571,6 +621,61 @@ function AcademicReportsPage() {
 
           {selectedWard && (
             <>
+              {/* Language & WhatsApp Quick Actions */}
+              <View style={[styles.card, { marginBottom: spacing.md }]}>
+                <Text style={styles.cardTitle}>Quick Actions for {selectedWard.name}</Text>
+                <Text style={[styles.inputLabel, { marginTop: spacing.sm }]}>Language</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+                  {languages.map((lang) => (
+                    <TouchableOpacity key={lang} style={[styles.selectChip, language === lang && styles.selectChipActive]} onPress={() => setLanguage(lang)}>
+                      <Text style={[styles.selectChipText, language === lang && styles.selectChipTextActive]}>{lang}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <Text style={[styles.inputLabel, { marginTop: spacing.sm }]}>Send via WhatsApp</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.xs }}>
+                  <TouchableOpacity style={styles.waBtn} onPress={() => sendWhatsApp('recap')}>
+                    <Text style={styles.waBtnText}>Lesson Recap</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.waBtn} onPress={() => sendWhatsApp('fee')}>
+                    <Text style={styles.waBtnText}>Fee Reminder</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.waBtn} onPress={() => sendWhatsApp('attendance')}>
+                    <Text style={styles.waBtnText}>Attendance</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.waBtn} onPress={() => sendWhatsApp('result')}>
+                    <Text style={styles.waBtnText}>Results</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={[styles.inputLabel, { marginTop: spacing.sm }]}>Voice Messages ({language})</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.xs }}>
+                  <TouchableOpacity style={styles.voiceBtn} onPress={() => playVoiceMessage('lesson_recap')}>
+                    <Text style={styles.voiceBtnText}>▶ Lesson Recap</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.voiceBtn} onPress={() => playVoiceMessage('fee_reminder')}>
+                    <Text style={styles.voiceBtnText}>▶ Fee Reminder</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.voiceBtn} onPress={() => playVoiceMessage('attendance_alert')}>
+                    <Text style={styles.voiceBtnText}>▶ Attendance</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.voiceBtn} onPress={() => playVoiceMessage('result_notification')}>
+                    <Text style={styles.voiceBtnText}>▶ Results</Text>
+                  </TouchableOpacity>
+                  {voiceMessage && (
+                    <TouchableOpacity style={[styles.voiceBtn, { backgroundColor: '#ef4444' }]} onPress={stopVoice}>
+                      <Text style={[styles.voiceBtnText, { color: '#fff' }]}>⏹ Stop</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                {voiceMessage && (
+                  <View style={{ marginTop: spacing.sm, backgroundColor: colors.surfaceAlt, borderRadius: radius.sm, padding: spacing.sm }}>
+                    <Text style={{ fontSize: fontSize.sm, color: colors.text }}>{voiceMessage}</Text>
+                  </View>
+                )}
+              </View>
+
               {dataLoading ? (
                 <View style={styles.emptyState}>
                   <Text style={styles.emptyStateText}>Loading academic data for {selectedWard.name}...</Text>
@@ -1481,6 +1586,10 @@ const styles = StyleSheet.create({
   card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm },
   cardTitle: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.text },
   cardMeta: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: spacing.xs },
+  waBtn: { backgroundColor: '#25D366', borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginBottom: spacing.xs },
+  waBtnText: { color: '#fff', fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
+  voiceBtn: { backgroundColor: colors.surfaceAlt, borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderWidth: 1, borderColor: colors.primary, marginBottom: spacing.xs },
+  voiceBtnText: { color: colors.primary, fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
   pageHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.lg },
   actionBtn: { backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: spacing.sm + 4, paddingHorizontal: spacing.lg, alignItems: 'center' },
   actionBtnText: { color: colors.white, fontSize: fontSize.md, fontWeight: fontWeight.semibold },

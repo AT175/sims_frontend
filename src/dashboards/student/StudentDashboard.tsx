@@ -11,6 +11,10 @@ import { useKitchenStore } from '@store/kitchenStore';
 import { useRegistryStore } from '@store/registryStore';
 import { useStudentStore } from '@store/studentStore';
 import { apiClient } from '@shared/api/apiClient';
+import { VirtualLabPage } from './VirtualLabPage';
+import { AITutorPage } from './AITutorPage';
+import { CareerCenterPage } from './CareerCenterPage';
+import { PeerLearningPage } from './PeerLearningPage';
 
 const isWeb = Platform.OS === 'web' || typeof navigator !== 'undefined';
 
@@ -44,6 +48,10 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'exeats', label: 'Exeat Requests' },
   { key: 'announcements', label: 'Announcements' },
   { key: 'teacher-content', label: 'Teacher Content' },
+  { key: 'virtual-lab', label: 'Virtual Lab' },
+  { key: 'ai-tutor', label: 'AI Tutor' },
+  { key: 'career', label: 'Career Center' },
+  { key: 'peer', label: 'Peer Learning' },
   { key: 'house', label: 'My House' },
   { key: 'messages', label: 'Messages' },
   { key: 'elections', label: 'Elections' },
@@ -751,6 +759,14 @@ export function StudentDashboard() {
             )}
           </View>
         );
+      case 'virtual-lab':
+        return <VirtualLabPage />;
+      case 'ai-tutor':
+        return <AITutorPage />;
+      case 'career':
+        return <CareerCenterPage />;
+      case 'peer':
+        return <PeerLearningPage />;
       default:
         return null;
     }

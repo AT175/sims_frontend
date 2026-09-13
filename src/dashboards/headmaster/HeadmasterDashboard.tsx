@@ -26,6 +26,8 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'staff', label: 'Staff Directory & Appraisal' },
   { key: 'approvals', label: 'Approvals Inbox' },
   { key: 'reports', label: 'Reports & Analytics' },
+  { key: 'at-risk', label: 'At-Risk Students' },
+  { key: 'teacher-analytics', label: 'Teacher Analytics' },
   { key: 'communication', label: 'Communication' },
   { key: 'discipline', label: 'Discipline Case Log' },
   { key: 'users', label: 'User Management' },
@@ -620,6 +622,10 @@ export function HeadmasterDashboard() {
           </ScrollView>
         );
 
+      case 'at-risk':
+        return <AtRiskStudentsPage />;
+      case 'teacher-analytics':
+        return <TeacherAnalyticsPage />;
       case 'communication':
         return (
           <ScrollView>
@@ -1611,6 +1617,177 @@ export function HeadmasterDashboard() {
   );
 }
 
+function AtRiskStudentsPage() {
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<string>('');
+  const [scanning, setScanning] = useState(false);
+  const [scanResult, setScanResult] = useState<any>(null);
+
+  const loadAlerts = async (risk?: string) => {
+    setLoading(true);
+    try {
+      const data = await apiClient.get<any[]>(`/analytics/dropout/alerts${risk ? `?risk=${risk}` : ''}`);
+      setAlerts(data);
+    } catch (e) { console.error('Failed to load alerts:', e); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { loadAlerts(); }, []);
+
+  const runScan = async () => {
+    setScanning(true);
+    try {
+      const result = await apiClient.post<any>('/analytics/dropout/run');
+      setScanResult(result);
+      loadAlerts();
+    } catch (e: any) { alert(e.message || 'Failed to run scan'); }
+    finally { setScanning(false); }
+  };
+
+  const sendWhatsApp = async (studentId: string) => {
+    try {
+      const data = await apiClient.get<any>(`/whatsapp/attendance-alert/${studentId}`);
+      if (data.link) window.open(data.link, '_blank');
+    } catch (e) { /* not available */ }
+  };
+
+  const resolveAlert = async (alertId: string) => {
+    try {
+      await apiClient.post(`/analytics/dropout/resolve/${alertId}`);
+      loadAlerts(filter);
+    } catch (e) { /* not available */ }
+  };
+
+  return (
+    <ScrollView>
+      <Text style={styles.pageTitle}>At-Risk Students</Text>
+      <Text style={styles.pageSubtitle}>Early-warning dropout prediction system</Text>
+
+      <TouchableOpacity style={[styles.composeBtn, { marginBottom: spacing.md }]} onPress={runScan} disabled={scanning}>
+        <Text style={styles.composeText}>{scanning ? 'Scanning...' : 'Run Prediction Scan'}</Text>
+      </TouchableOpacity>
+
+      {scanResult && (
+        <View style={[styles.messageCard, { marginBottom: spacing.md }]}>
+          <Text style={styles.messageTitle}>Scan Complete</Text>
+          <Text style={styles.messagePreview}>Scanned: {scanResult.scanned} students | Alerts: {scanResult.alerts} | High Risk: {scanResult.highRisk}</Text>
+        </View>
+      )}
+
+      <View style={{ flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.md, flexWrap: 'wrap' }}>
+        {['', 'High', 'Medium', 'Low'].map((r) => (
+          <TouchableOpacity key={r || 'all'} style={[styles.filterChip, filter === r && styles.filterChipActive]} onPress={() => { setFilter(r); loadAlerts(r); }}>
+            <Text style={[styles.filterChipText, filter === r && styles.filterChipTextActive]}>{r || 'All'}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {loading ? (
+        <Text style={styles.emptyText}>Loading alerts...</Text>
+      ) : alerts.length > 0 ? (
+        alerts.map((a) => (
+          <View key={a.id} style={[styles.messageCard, { borderLeftWidth: 4, borderLeftColor: a.riskLevel === 'High' ? '#ef4444' : a.riskLevel === 'Medium' ? '#f59e0b' : '#22c55e' }]}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={styles.messageTitle}>{a.studentName}</Text>
+              <Text style={[styles.riskBadge, { backgroundColor: a.riskLevel === 'High' ? '#ef4444' : a.riskLevel === 'Medium' ? '#f59e0b' : '#22c55e' }]}>
+                {a.riskLevel} ({a.riskScore})
+              </Text>
+            </View>
+            <Text style={styles.messageMeta}>{a.admissionNumber} | Class: {a.classForm}</Text>
+            {a.riskFactors.map((f: string, i: number) => (
+              <Text key={i} style={[styles.messagePreview, { marginTop: 4 }]}>• {f}</Text>
+            ))}
+            {a.recommendation && (
+              <Text style={[styles.messagePreview, { fontStyle: 'italic', marginTop: spacing.xs }]}>💡 {a.recommendation}</Text>
+            )}
+            <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
+              <TouchableOpacity style={[styles.composeBtn, { paddingHorizontal: spacing.md, paddingVertical: spacing.xs }]} onPress={() => sendWhatsApp(a.studentId)}>
+                <Text style={styles.composeText}>WhatsApp Parent</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.composeBtn, { backgroundColor: colors.surfaceAlt, paddingHorizontal: spacing.md, paddingVertical: spacing.xs }]} onPress={() => resolveAlert(a.id)}>
+                <Text style={[styles.composeText, { color: colors.primary }]}>Resolve</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))
+      ) : (
+        <Text style={styles.emptyText}>No at-risk students detected. Run a scan to check.</Text>
+      )}
+    </ScrollView>
+  );
+}
+
+function TeacherAnalyticsPage() {
+  const [rankings, setRankings] = useState<any[]>([]);
+  const [insights, setInsights] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [ranks, ins] = await Promise.all([
+        apiClient.get<any[]>('/analytics/teacher/rankings').catch(() => []),
+        apiClient.get<any[]>('/analytics/teacher/insights').catch(() => []),
+      ]);
+      setRankings(ranks);
+      setInsights(ins);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <ScrollView>
+        <Text style={styles.pageTitle}>Teacher Analytics</Text>
+        <Text style={styles.pageSubtitle}>Loading...</Text>
+      </ScrollView>
+    );
+  }
+
+  return (
+    <ScrollView>
+      <Text style={styles.pageTitle}>Teacher Analytics</Text>
+      <Text style={styles.pageSubtitle}>Teacher performance and student outcome insights</Text>
+
+      {insights.length > 0 && (
+        <>
+          <Text style={[styles.pageSubtitle, { fontWeight: fontWeight.semibold, color: colors.text, fontSize: fontSize.lg }]}>Auto-Generated Insights</Text>
+          {insights.map((ins, i) => (
+            <View key={i} style={[styles.messageCard, { borderLeftWidth: 4, borderLeftColor: ins.severity === 'critical' ? '#ef4444' : ins.severity === 'warning' ? '#f59e0b' : ins.severity === 'success' ? '#22c55e' : colors.primary }]}>
+              <Text style={styles.messagePreview}>{ins.message}</Text>
+            </View>
+          ))}
+        </>
+      )}
+
+      <Text style={[styles.pageSubtitle, { fontWeight: fontWeight.semibold, color: colors.text, fontSize: fontSize.lg, marginTop: spacing.md }]}>Subject Rankings by Student Performance</Text>
+      {rankings.length > 0 ? (
+        rankings.map((r, i) => (
+          <View key={i} style={styles.messageCard}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View>
+                <Text style={styles.messageTitle}>{r.subject}</Text>
+                <Text style={styles.messageMeta}>Class: {r.classForm} | {r.studentCount} students</Text>
+              </View>
+              <Text style={[styles.riskBadge, { backgroundColor: parseFloat(r.averagePercent) >= 70 ? '#22c55e' : parseFloat(r.averagePercent) >= 50 ? '#f59e0b' : '#ef4444' }]}>
+                {r.averagePercent}%
+              </Text>
+            </View>
+          </View>
+        ))
+      ) : (
+        <Text style={styles.emptyText}>No analytics data available yet. Ensure teachers are submitting grades.</Text>
+      )}
+    </ScrollView>
+  );
+}
+
 const styles = StyleSheet.create({
   pageTitle: {
     fontSize: fontSize.xl,
@@ -1653,6 +1830,11 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     paddingVertical: spacing.md,
   },
+  filterChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, borderRadius: 20, backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.border },
+  filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  filterChipText: { fontSize: fontSize.sm, color: colors.textSecondary },
+  filterChipTextActive: { color: colors.white, fontWeight: fontWeight.semibold },
+  riskBadge: { color: '#fff', fontSize: fontSize.xs, fontWeight: fontWeight.bold, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs + 2, borderRadius: 12 },
   quickApprovalRow: {
     backgroundColor: colors.surfaceAlt,
     borderRadius: radius.md,

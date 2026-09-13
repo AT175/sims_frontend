@@ -6,6 +6,7 @@ import { useAuthStore } from '@store/authStore';
 import { usePLCStore, OBSERVATION_RATINGS } from '@store/plcStore';
 import type { ObservationRating } from '@store/plcStore';
 import { useTeacherStore } from '@store/teacherStore';
+import { apiClient } from '@shared/api/apiClient';
 import { preloadLetterhead, getLetterheadHTML, getDocumentFooterHTML, getCachedBranding } from '@shared/utils/letterhead';
 import { GES_CLASS_LEVELS, GES_WEEKS, GES_TERMS, getSubjectsForClass } from '@shared/utils/ges-curriculum';
 import {
@@ -58,6 +59,8 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'syllabus', label: 'Syllabus Tracker' },
   { key: 'remedial', label: 'Remedial Support' },
   { key: 'parentComms', label: 'Parent Communication' },
+  { key: 'myAnalytics', label: 'My Analytics' },
+  { key: 'peerModeration', label: 'Peer Moderation' },
   { key: 'announcements', label: 'Class Announcements' },
   { key: 'sharedResources', label: 'Shared Resources' },
   { key: 'notifications', label: 'Notifications' },
@@ -2284,6 +2287,10 @@ export function TeacherDashboard() {
           </View>
         );
 
+      case 'myAnalytics':
+        return <MyAnalyticsPage />;
+      case 'peerModeration':
+        return <PeerModerationPage />;
       case 'sharedResources':
         return (
           <View>
@@ -2946,6 +2953,101 @@ export function TeacherDashboard() {
   );
 }
 
+function MyAnalyticsPage() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiClient.get<any>('/analytics/teacher/performance').then(setData).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <View><Text style={styles.pageTitle}>My Analytics</Text><Text style={styles.pageSubtitle}>Loading...</Text></View>;
+
+  return (
+    <ScrollView>
+      <Text style={styles.pageTitle}>My Analytics</Text>
+      <Text style={styles.pageSubtitle}>Your teaching activity and student performance</Text>
+
+      <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md, flexWrap: 'wrap' }}>
+        <View style={[styles.statCard, { flex: 1, minWidth: 140 }]}>
+          <Text style={styles.statValue}>{data?.lessonPlansGenerated || 0}</Text>
+          <Text style={styles.statLabel}>Lesson Plans</Text>
+        </View>
+        <View style={[styles.statCard, { flex: 1, minWidth: 140 }]}>
+          <Text style={styles.statValue}>{data?.assignmentsCreated || 0}</Text>
+          <Text style={styles.statLabel}>Assignments</Text>
+        </View>
+        <View style={[styles.statCard, { flex: 1, minWidth: 140 }]}>
+          <Text style={styles.statValue}>{data?.quizzesCreated || 0}</Text>
+          <Text style={styles.statLabel}>Quizzes</Text>
+        </View>
+        <View style={[styles.statCard, { flex: 1, minWidth: 140 }]}>
+          <Text style={styles.statValue}>{data?.lessonRecapsSubmitted || 0}</Text>
+          <Text style={styles.statLabel}>Recaps</Text>
+        </View>
+      </View>
+
+      <Text style={[styles.pageTitle, { fontSize: fontSize.lg }]}>Subject Performance</Text>
+      {data?.subjectAverages && data.subjectAverages.length > 0 ? (
+        data.subjectAverages.map((s: any, i: number) => (
+          <View key={i} style={styles.subjectCard}>
+            <Text style={styles.subjectName}>{s.subject}</Text>
+            <Text style={styles.subjectMeta}>Average: {s.averagePercent}% | Students: {s.studentCount}</Text>
+          </View>
+        ))
+      ) : (
+        <Text style={styles.emptyText}>No performance data yet. Start by submitting grades in the Gradebook.</Text>
+      )}
+    </ScrollView>
+  );
+}
+
+function PeerModerationPage() {
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const data = await apiClient.get<any[]>('/peer/questions?status=flagged');
+      setQuestions(data);
+    } catch (e) { /* not available */ }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const pinQuestion = async (id: string) => {
+    try { await apiClient.post(`/peer/questions/${id}/pin`); load(); } catch (e) { /* not available */ }
+  };
+
+  return (
+    <ScrollView>
+      <Text style={styles.pageTitle}>Peer Moderation</Text>
+      <Text style={styles.pageSubtitle}>Review and moderate student peer learning content</Text>
+
+      <Text style={[styles.pageTitle, { fontSize: fontSize.lg, marginTop: spacing.md }]}>Flagged Questions</Text>
+      {loading ? (
+        <Text style={styles.emptyText}>Loading...</Text>
+      ) : questions.length > 0 ? (
+        questions.map((q) => (
+          <View key={q.id} style={styles.subjectCard}>
+            <Text style={styles.subjectName}>{q.question}</Text>
+            <Text style={styles.subjectMeta}>{q.studentName} | {q.subject} | {q.upvotes} upvotes</Text>
+            <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
+              <TouchableOpacity style={styles.actionBtn} onPress={() => pinQuestion(q.id)}>
+                <Text style={styles.actionBtnText}>Pin Question</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))
+      ) : (
+        <Text style={styles.emptyText}>No flagged questions. Students are behaving well!</Text>
+      )}
+    </ScrollView>
+  );
+}
+
 const styles = StyleSheet.create({
   pageTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.text, marginBottom: spacing.sm },
   pageSubtitle: { fontSize: fontSize.md, color: colors.textSecondary, marginBottom: spacing.lg },
@@ -2973,6 +3075,9 @@ const styles = StyleSheet.create({
   logoutBtn: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   logoutText: { color: colors.danger, fontSize: fontSize.sm, fontWeight: fontWeight.medium },
   emptyText: { fontSize: fontSize.md, color: colors.textLight, fontStyle: 'italic', paddingVertical: spacing.md },
+  statCard: { backgroundColor: colors.surface, borderRadius: 12, padding: spacing.md, alignItems: 'center' },
+  statValue: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.primary },
+  statLabel: { fontSize: fontSize.xs, color: colors.textSecondary, marginTop: spacing.xs },
   badge: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.sm },
   badgeText: { fontSize: fontSize.xs, fontWeight: fontWeight.bold },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
