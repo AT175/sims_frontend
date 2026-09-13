@@ -37,3 +37,4 @@ export { InternalAuditorDashboard } from './internalAuditor/InternalAuditorDashb
 export { HeadmasterSecretaryDashboard } from './headmasterSecretary/HeadmasterSecretaryDashboard';
 export { SubscriptionDashboard } from './subscription/SubscriptionDashboard';
 export { GesDashboard } from './ges/GesDashboard';
+export { InvestorDashboard } from './investor/InvestorDashboard';

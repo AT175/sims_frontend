@@ -48,6 +48,7 @@ import {
   HeadmasterSecretaryDashboard,
   SubscriptionDashboard,
   GesDashboard,
+  InvestorDashboard,
 } from '@dashboards/index';
 import { VerificationDashboard } from '@dashboards/verification/VerificationDashboard';
 import { ForceChangePasswordModal } from '@shared/components/ForceChangePasswordModal';
@@ -96,6 +97,7 @@ const DASHBOARD_COMPONENTS: Record<string, React.ComponentType> = {
   Subscription: SubscriptionDashboard,
   SystemFinance: SubscriptionDashboard,
   GES: GesDashboard,
+  Investor: InvestorDashboard,
 };
 
 class ErrorBoundary extends React.Component<

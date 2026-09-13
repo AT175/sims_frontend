@@ -49,6 +49,7 @@ export const ROLE_DASHBOARD_MAP: Record<RoleId, string> = {
   siso: 'GES',
   ges_auditor: 'GES',
   emis: 'GES',
+  investor: 'Investor',
 };
 
 /** Human-readable role labels */
@@ -100,4 +101,5 @@ export const ROLE_LABELS: Record<RoleId, string> = {
   siso: 'SISO (School Improvement Support Officer)',
   ges_auditor: 'GES Auditor',
   emis: 'EMIS Officer',
+  investor: 'Investor',
 };
